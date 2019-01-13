@@ -116,24 +116,28 @@ function decodeCpuUsage(input)
 }
 
 
-function computeLoadColor(load)
+// compute linear gradient from #6699cc (green => 0% load)' to #f56 (red => 100% load)
+function computeLoadGradientColor(load)
 {
-    let color = ''
-    if (load === 0) {
-        color = '#6699cc';
-    } else if (load <=25) {
-        color = '#4b7'; // turquoise
-    } else if (load <= 50) {
-        color = '#fa4';
-    } else if (load <=75) {
-        color = '#ff6600';
-    } else {
-        color = '#f56';
+    const white = [255, 255, 255];
+    const blue = [153, 204, 255];
+    const red = [255, 85, 102];
+    const w1 = load / 100;
+    const w2 = 1 - w1;
+
+    if (load < 10.0) {
+        return [
+            Math.round(blue[0] * w1 + white[0] * w2),
+            Math.round(blue[1] * w1 + white[2] * w2),
+            Math.round(blue[2] * w1 + white[2] * w2)
+        ];
     }
-
-    return color
+    return [
+        Math.round(red[0] * w1 + white[0] * w2),
+        Math.round(red[1] * w1 + white[2] * w2),
+        Math.round(red[2] * w1 + white[2] * w2)
+    ];
 }
-
 
 function K8sLoad(data, loadType)
 {
@@ -199,6 +203,16 @@ function K8sLoad(data, loadType)
         }
     );
 
+    less = {
+        env: "development",
+        async: false,
+        fileAsync: false,
+        poll: 1000,
+        functions: {},
+        dumpLineNumbers: "comments",
+        relativeUrls: false,
+        rootpath: ":/a.com/"
+    };
 
     // parse nodes' metrics
     $.each(data[1].items,
@@ -211,11 +225,11 @@ function K8sLoad(data, loadType)
             mainClass.popupContent += createPopupEntry(node);
             switch (loadType) {
                 case 'Memory Usage':
-                    node.color = computeLoadColor(node.memLoad);
+                    node.color = 'rgb('+computeLoadGradientColor(node.memLoad)+')';
                     break;
                 case 'CPU Usage':
                 default:
-                    node.color = computeLoadColor(node.cpuLoad);
+                    node.color = 'rgb('+computeLoadGradientColor(node.cpuLoad)+')';
                     break;
             }
             mainClass.nodes.set(nodeMetric.metadata.name, node)
@@ -317,7 +331,7 @@ function refreshLoadMap(data, loadType)
         // draw the node core per core
         node.shape = raphael.set();
         // draw node bounding shape
-        raphael.rect(drawingCursor.x, drawingCursor.y, DEFAULT_NODE_SIDE, DEFAULT_NODE_SIDE).attr({fill: '#E6E6E6', 'stroke-width': 0});
+        raphael.rect(drawingCursor.x, drawingCursor.y, DEFAULT_NODE_SIDE, DEFAULT_NODE_SIDE).attr({fill: '#E6E6E6', 'stroke-width': 0.5});
 
         // draw each individual cores
         for (let cpuIndex=0; cpuIndex < node.cpuCapacity; ++cpuIndex) {
@@ -326,7 +340,7 @@ function refreshLoadMap(data, loadType)
                 drawingCursor.y + (cpuIndex % DEFAULT_NODE_ROW_COUNT) * (DEFAULT_CELL_SHAPE.side + DEFAULT_CELL_SHAPE.margin),
                 DEFAULT_CELL_SHAPE.side,
                 DEFAULT_CELL_SHAPE.side);
-            cpuShape.attr({fill: node.color, 'stroke-width': 0});
+            cpuShape.attr({fill: node.color, 'stroke-width': 0.5});
             cpuShape.attr({title: generateTooltip(node)});
             node.shape.push(cpuShape);
         }
@@ -350,7 +364,7 @@ function triggerRefreshLoadMap(dataFile, loadType)
             refreshLoadMap(data, currentLoadType);
             $("#title-container").html(currentLoadType);
             currentLoadType = loadType;
-            },
+        },
         error: function (xhr, ajaxOptions, thrownError) {
             $("#error-message").html('error ' + xhr.status + ' (' + thrownError +')');
         }
