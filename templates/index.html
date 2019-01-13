@@ -50,6 +50,8 @@ limitations under the License.
             <ul class="dropdown-menu" aria-labelledby="themes">
               <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', 'CPU Usage');">CPU Usage</a></li>
               <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', 'Memory Usage');">Memory Usage</a></li>
+                <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', 'Pods\' CPU Usage');">Pods' CPU Usage</a></li>
+                <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', 'Pods\' Memory Usage');">Pods' Memory Usage</a></li>
             </ul>
           </li>
           </ul>
@@ -143,7 +145,6 @@ License v2.0</a>.</p>
     <script src="../js/bootstrap.min.js"></script>
     <script src="../js/bootswatch.js"></script>
     <script type='text/javascript' >
-        var k8sLoad;
         var dataFile='{{ data_file }}';
         var currentLoadType = 'CPU Usage';
     </script>
