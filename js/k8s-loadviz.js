@@ -145,9 +145,9 @@ function K8sLoad(data, loadType)
     this.maxCpu = 1;
 
     if (data.length != 4 || ! 'items' in data[0]) {
+        console.log(data)
         $("#error-message").show();
         $("#error-message").html('invalid data, see console for details');
-        console.log(data)
     } else {
         $("#error-message").hide();
     }
@@ -285,8 +285,10 @@ function K8sLoad(data, loadType)
     // set pods' load for each node
     for (let [pName, pod] of mainClass.pods) {
         let node = mainClass.nodes.get(pod.nodeName);
-        node.pods.push(pod)
-        mainClass.nodes.set(node.name, node);
+        if (pod.phase != "Pending") {
+            node.pods.push(pod)
+            mainClass.nodes.set(node.name, node);
+        }
     }
 
     return this;
