@@ -284,8 +284,8 @@ function K8sLoad(data, loadType)
 
     // set pods' load for each node
     for (let [pName, pod] of mainClass.pods) {
-        let node = mainClass.nodes.get(pod.nodeName);
         if (pod.phase != "Pending") {
+            let node = mainClass.nodes.get(pod.nodeName);
             node.pods.push(pod)
             mainClass.nodes.set(node.name, node);
         }
