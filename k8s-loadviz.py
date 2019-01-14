@@ -5,7 +5,7 @@ import time
 import os
 
 
-PULLING_INTERVAL_SEC = 60 # in seconds
+PULLING_INTERVAL_SEC = 30
 
 data_file = './static/resources.json'
 log_file = './static/puller.log'

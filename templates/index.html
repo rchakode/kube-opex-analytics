@@ -32,6 +32,15 @@ limitations under the License.
       <script src="../bower_components/html5shiv/dist/html5shiv.js"></script>
       <script src="../bower_components/respond/dest/respond.min.js"></script>
     <![endif]-->
+      <script type='text/javascript' >
+          const Menus = Object.freeze(
+              {
+                  "NodesCpuUsage": "Nodes CPU Usage",
+                  "NodesMemoryUsage": "Nodes Memory Usage",
+                  "PodsCpuUsage": "Pods CPU Heatmap",
+                  "PodsMemoryUsage": "Pods Memory Heatmap",
+              });
+      </script>
   </head>
   <body>
     <div class="navbar navbar-default navbar-fixed-top">
@@ -49,10 +58,10 @@ limitations under the License.
           <li class="dropdown">
             <a class="dropdown-toggle" data-toggle="dropdown" href="#" id="themes">Load Types<span class="caret"></span></a>
             <ul class="dropdown-menu" aria-labelledby="themes">
-              <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', 'CPU Usage');">CPU Usage</a></li>
-              <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', 'Memory Usage');">Memory Usage</a></li>
-                <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', 'Pods\' CPU Usage');">Pods' CPU Usage</a></li>
-                <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', 'Pods\' Memory Usage');">Pods' Memory Usage</a></li>
+              <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', Menus.NodesCpuUsage);">Nodes CPU Usage</a></li>
+              <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', Menus.NodesMemoryUsage);">Nodes Memory Usage</a></li>
+                <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', Menus.PodsCpuUsage);">Pods CPU Usage</a></li>
+                <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', Menus.PodsMemoryUsage);">Pods Memory Usage</a></li>
             </ul>
           </li>
           </ul>
@@ -147,7 +156,7 @@ License v2.0</a>.</p>
     <script src="../js/bootswatch.js"></script>
     <script type='text/javascript' >
         var dataFile='{{ data_file }}';
-        var currentLoadType = 'CPU Usage';
+        var currentLoadType = 'Nodes CPU Usage';
     </script>
     <script type="text/javascript" src="../js/k8s-loadviz.js"></script>
   </body>
