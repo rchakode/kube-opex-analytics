@@ -35,7 +35,7 @@ function generateTooltip(node)
 
 function createPopupContent(nodeInfo)
 {
-    return '<div class="modal fade" id="'+nodeInfo.id+'" tabindex="-1" role="dialog" aria-labelledby="'+nodeInfo.name+'" aria-hidden="true">'
+    return ('<div class="modal fade" id="'+nodeInfo.id+'" tabindex="-1" role="dialog" aria-labelledby="'+nodeInfo.name+'" aria-hidden="true">'
         +'<div class="modal-dialog">'
         +'<div class="modal-content">'
         +'<div class="modal-header">'
@@ -50,7 +50,7 @@ function createPopupContent(nodeInfo)
         +'</div>'
         +'</div>'
         +'</div>'
-        +'</div>';
+        +'</div>');
 }
 
 function decodeMemoryCapacity(input)
@@ -135,6 +135,15 @@ function computeLoadGradientColor(load)
         Math.round(red[1] * w1 + white[2] * w2),
         Math.round(red[2] * w1 + white[2] * w2)
     ];
+}
+
+function generateRandomColor() {
+    let letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
 }
 
 function K8sLoad(data, loadType)
@@ -358,20 +367,14 @@ function refreshLoadMapByPodUsage(k8sLoad)
     $( "#host-list-container" ).html('<ul class="list-unstyled">');
 
     const DEFAULT_NODE_ROW_COUNT = Math.ceil( Math.sqrt(k8sLoad.maxCpu) );
-    const DEFAULT_CELL_SHAPE = {side: 50, margin: 2, node_margin: 7.5};
-    const DEFAULT_NODE_SIDE = DEFAULT_NODE_ROW_COUNT * DEFAULT_CELL_SHAPE.side + (DEFAULT_NODE_ROW_COUNT - 1) * DEFAULT_CELL_SHAPE.margin;
+    const DEFAULT_CELL_SETTINGS = {side: 50, margin: 10};
+    const DEFAULT_NODE_SIDE = DEFAULT_NODE_ROW_COUNT * DEFAULT_CELL_SETTINGS.side;
     const DRAWING_AREA_SIZE = {width: 750, height: "100%"};
 
     let raphael = new Raphael("load-map-container", DRAWING_AREA_SIZE.width, DRAWING_AREA_SIZE.height);
-    let drawingCursor = {x: DEFAULT_CELL_SHAPE.node_margin, y : DEFAULT_CELL_SHAPE.node_margin};
+    let drawingCursor = {x: DEFAULT_CELL_SETTINGS.margin, y : DEFAULT_CELL_SETTINGS.margin};
 
     for (let [name, node] of k8sLoad.nodes) {
-
-        if (drawingCursor.x + DEFAULT_NODE_SIDE > DRAWING_AREA_SIZE.width) {
-            drawingCursor.y += DEFAULT_NODE_SIDE + 2 * DEFAULT_CELL_SHAPE.node_margin;
-            drawingCursor.x = DEFAULT_CELL_SHAPE.node_margin;
-        }
-
         let loadField = '';
         switch (k8sLoad.loadType) {
             case 'Pods\' Memory Usage':
@@ -387,6 +390,17 @@ function refreshLoadMapByPodUsage(k8sLoad)
         }
 
         if (node[loadField] == 0) {
+            console.log('no load on node '+node.name+' is null');
+            continue;
+        }
+
+        if (drawingCursor.x + DEFAULT_NODE_SIDE > DRAWING_AREA_SIZE.width) {
+            drawingCursor.y += DEFAULT_NODE_SIDE + DEFAULT_CELL_SETTINGS.margin;
+            drawingCursor.x = DEFAULT_CELL_SETTINGS.margin;
+        }
+
+
+        if (node[loadField] == 0) {
             $("#error-message").html('ignoring node '+node.name+' with '+loadField+' equals to zero ');
             $("#error-message").show();
             continue;
@@ -394,14 +408,16 @@ function refreshLoadMapByPodUsage(k8sLoad)
 
         let podLoads = [];
         for (let pod of node.pods) {
-            podLoads.push(pod[loadField])
+            if (typeof pod[loadField] !== "undefined") {
+                podLoads.push(pod[loadField]);
+            }
         }
         podLoads.sort();
         podLoads.reverse();
 
         node.shape = raphael.set();
         raphael.rect(drawingCursor.x, drawingCursor.y, DEFAULT_NODE_SIDE, DEFAULT_NODE_SIDE)
-            .attr({fill: '#E6E6E6', 'stroke-width': 0.5})
+            .attr({fill: '#99ccff', 'stroke-width': 0.1}) // #99ccff is used for used resources
             .attr({title: generateTooltip(node)});
 
         // draw each individual cores
@@ -410,29 +426,54 @@ function refreshLoadMapByPodUsage(k8sLoad)
         let remainingHeight = DEFAULT_NODE_SIDE;
         let shiftX = 0.0;
         let shiftY = 0.0;
+        let DrawingOrientations = Object.freeze({"Horizontal":1, "Vertical":2});
+        let drawingOrientation = DrawingOrientations.Horizontal;
         for (let ldi = 0; ldi < podLoads.length; ldi++) {
-            console.log(podLoads[ldi] +'/'+ node[loadField]);
             let load = podLoads[ldi] / node[loadField];
-            let loadColor = 'rgb('+computeLoadGradientColor(100 * load)+')';
+            //let loadColor = 'rgb('+computeLoadGradientColor(100 * load)+')';
+            let podLoadColor = generateRandomColor();
 
-            let podArea =  (1e4 * load * NODE_AREA) / (1e4 * node[loadField])
-            let podWidth = remainingWidth;
-            let podHeight = podArea / podWidth;
+            let podArea =  load * NODE_AREA;
+            let podWidth = 0.0;
+            let podHeight = 0.0;
+            if (drawingOrientation == DrawingOrientations.Horizontal) {
+                podWidth = remainingWidth;
+                podHeight = podArea / podWidth;
+            } else {
+                podHeight = remainingHeight;
+                podWidth = podArea / podHeight;
+            }
 
-            let podShape = raphael.rect(drawingCursor.x + shiftX, drawingCursor.y + shiftY, podWidth, podHeight);
-            podShape.attr({fill: loadColor, 'stroke-width': 0.5});
-            podShape.attr({title: generateTooltip(node)});
+            let podShape = raphael.rect(drawingCursor.x + shiftX, drawingCursor.y + shiftY, podWidth, podHeight)
+                .attr({fill: podLoadColor, 'stroke-width': 0.1})
+                .attr({title: generateTooltip(node)});
             node.shape.push(podShape);
-            shiftX += 0;
-            shiftY += podHeight;
-            remainingHeight -= podHeight;
+            if (drawingOrientation == DrawingOrientations.Horizontal) {
+                // no shift on x (shiftX += 0;)
+                shiftY += podHeight;
+                remainingHeight -= podHeight;
+                // FIXME: if (remainingHeight < 0) ...
+                if (remainingHeight < 0) {
+                    continue;
+                }
+                drawingOrientation = DrawingOrientations.Vertical;
+            } else {
+                // no shift on y (shiftY += 0;)
+                shiftX += podWidth;
+                remainingWidth -= podWidth;
+                // FIXME: if (remainingWidth < 0) ...
+                if (remainingWidth < 0) {
+                    continue;
+                }
+                drawingOrientation = DrawingOrientations.Horizontal;
+            }
         }
         k8sLoad.nodes.set(name, node);
-        drawingCursor.x += DEFAULT_NODE_SIDE + 2 * DEFAULT_CELL_SHAPE.node_margin;
+        drawingCursor.x += DEFAULT_NODE_SIDE + 2 * DEFAULT_CELL_SETTINGS.margin;
     }
 
     // set dynamic HTML content
-    $("#load-map-container").height(drawingCursor.y + DEFAULT_NODE_SIDE + DEFAULT_CELL_SHAPE.node_margin);
+    $("#load-map-container").height(drawingCursor.y + DEFAULT_NODE_SIDE + DEFAULT_CELL_SETTINGS.margin);
     $("#host-list-container").html('<ul>'+k8sLoad.nodeHtmlList+"</ul>");
     $("#popup-container").html(k8sLoad.popupContent);
 }
