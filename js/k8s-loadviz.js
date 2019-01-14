@@ -149,7 +149,7 @@ function K8sLoad(data, loadType)
     this.nodeHtmlList = '';
     this.maxCpu = 1;
 
-    if (data.size != 4 ||
+    if (data.length != 4 ||
         ! 'items' in data[0] ||
         ! 'items' in data[1] ||
         ! 'items' in data[2] ||
@@ -302,7 +302,7 @@ function refreshLoadMapByNodeUsage(k8sLoad)
     const DEFAULT_NODE_ROW_COUNT = Math.ceil( Math.sqrt(k8sLoad.maxCpu) );
     const DEFAULT_CELL_SHAPE = {side: 50, margin: 2, node_margin: 7.5};
     const DEFAULT_NODE_SIDE = DEFAULT_NODE_ROW_COUNT * DEFAULT_CELL_SHAPE.side + (DEFAULT_NODE_ROW_COUNT - 1) * DEFAULT_CELL_SHAPE.margin;
-    const DRAWING_AREA_SIZE = {width: 750, height: "100%"};
+    const DRAWING_AREA_SIZE = {width: "75%", height: "100%"};
 
     let raphael = new Raphael("load-map-container", DRAWING_AREA_SIZE.width, DRAWING_AREA_SIZE.height);
     let drawingCursor = {x: DEFAULT_CELL_SHAPE.node_margin, y : DEFAULT_CELL_SHAPE.node_margin};
