@@ -149,13 +149,15 @@ function K8sLoad(data, loadType)
     this.nodeHtmlList = '';
     this.maxCpu = 1;
 
-    if (data.length != 4 ||
+    if (data.size != 4 ||
         ! 'items' in data[0] ||
         ! 'items' in data[1] ||
         ! 'items' in data[2] ||
         ! 'items' in data[3]) {
+        $("#error-message").html('invalid data, check console for details');
         $("#error-message").show();
-        $("#error-message").html('invalid data, see console for details');
+        console.log(data);
+        return;
     } else {
         $("#error-message").hide();
     }
@@ -377,12 +379,14 @@ function refreshLoadMapByPodUsage(k8sLoad)
                 loadField = 'cpuUsage';
                 break;
             default:
-                console.log("unknown load type: "+ k8sLoad.loadType);
+                $("#error-message").html('unknown load type: '+ k8sLoad.loadType);
+                $("#error-message").show();
                 return;
         }
 
         if (node[loadField] == 0) {
-            console.log('ignoring node '+node.name+' with '+loadField+' equals to zero ');
+            $("#error-message").html('ignoring node '+node.name+' with '+loadField+' equals to zero ');
+            $("#error-message").show();
             continue;
         }
 
@@ -438,11 +442,16 @@ function triggerRefreshLoadMap(dataFile, loadType)
         dataType: "json",
         success: function(data) {
             let k8sLoad = K8sLoad(data, loadType)
+            if (typeof k8sLoad === "undefined") {
+                return;
+            }
+
             if (loadType === 'Pods\' CPU Usage' || loadType === 'Pods\' Memory Usage') {
                 refreshLoadMapByPodUsage(k8sLoad)
             } else {
                 refreshLoadMapByNodeUsage(k8sLoad);
             }
+
             $("#title-container").html(loadType);
         },
         error: function (xhr, ajaxOptions, thrownError) {
