@@ -33,9 +33,9 @@ function generateTooltip(node)
     return tooltip;
 }
 
-function createPopupEntry(nodeInfo)
+function createPopupContent(nodeInfo)
 {
-    var popupHtmlCode = '<div class="modal fade" id="'+nodeInfo.id+'" tabindex="-1" role="dialog" aria-labelledby="'+nodeInfo.name+'" aria-hidden="true">'
+    return '<div class="modal fade" id="'+nodeInfo.id+'" tabindex="-1" role="dialog" aria-labelledby="'+nodeInfo.name+'" aria-hidden="true">'
         +'<div class="modal-dialog">'
         +'<div class="modal-content">'
         +'<div class="modal-header">'
@@ -51,8 +51,6 @@ function createPopupEntry(nodeInfo)
         +'</div>'
         +'</div>'
         +'</div>';
-
-    return popupHtmlCode;
 }
 
 function decodeMemoryCapacity(input)
@@ -228,7 +226,7 @@ function K8sLoad(data, loadType)
             node.memUsage = decodeMemoryCapacity(nodeMetric.usage.memory)
             node.cpuLoad = Math.round(1e4 * node.cpuUsage / node.cpuCapacity) / 100;
             node.memLoad = Math.round(1e4 * node.memUsage / node.memCapacity) / 100;
-            mainClass.popupContent += createPopupEntry(node);
+            mainClass.popupContent += createPopupContent(node);
             mainClass.nodes.set(nodeMetric.metadata.name, node)
         }
     );
@@ -313,7 +311,12 @@ function refreshLoadMapByNodeUsage(k8sLoad)
         }
 
         node.shape = raphael.set();
-        raphael.rect(drawingCursor.x, drawingCursor.y, DEFAULT_NODE_SIDE, DEFAULT_NODE_SIDE).attr({fill: '#E6E6E6', 'stroke-width': 0.5});
+        raphael.rect(drawingCursor.x,
+            drawingCursor.y,
+            DEFAULT_NODE_SIDE,
+            DEFAULT_NODE_SIDE)
+            .attr({fill: '#E6E6E6', 'stroke-width': 0.5})
+            .attr({title: generateTooltip(node)});
 
         // draw each individual cores
         let nodeLoadColor = '';
@@ -332,9 +335,8 @@ function refreshLoadMapByNodeUsage(k8sLoad)
                 drawingCursor.x + Math.floor(cpuIndex / DEFAULT_NODE_ROW_COUNT) * (DEFAULT_CELL_SHAPE.side + DEFAULT_CELL_SHAPE.margin),
                 drawingCursor.y + (cpuIndex % DEFAULT_NODE_ROW_COUNT) * (DEFAULT_CELL_SHAPE.side + DEFAULT_CELL_SHAPE.margin),
                 DEFAULT_CELL_SHAPE.side,
-                DEFAULT_CELL_SHAPE.side);
-            cpuShape.attr({fill: nodeLoadColor, 'stroke-width': 0.5});
-            cpuShape.attr({title: generateTooltip(node)});
+                DEFAULT_CELL_SHAPE.side)
+                .attr({fill: nodeLoadColor, 'stroke-width': 0.5});
             node.shape.push(cpuShape);
         }
 
@@ -398,7 +400,9 @@ function refreshLoadMapByPodUsage(k8sLoad)
         podLoads.reverse();
 
         node.shape = raphael.set();
-        raphael.rect(drawingCursor.x, drawingCursor.y, DEFAULT_NODE_SIDE, DEFAULT_NODE_SIDE).attr({fill: '#E6E6E6', 'stroke-width': 0.5});
+        raphael.rect(drawingCursor.x, drawingCursor.y, DEFAULT_NODE_SIDE, DEFAULT_NODE_SIDE)
+            .attr({fill: '#E6E6E6', 'stroke-width': 0.5})
+            .attr({title: generateTooltip(node)});
 
         // draw each individual cores
         const NODE_AREA = DEFAULT_NODE_SIDE * DEFAULT_NODE_SIDE;
