@@ -388,11 +388,11 @@ function refreshPodLoadHeatmap(k8sLoad)
         let resUsage = '';
         let resCapacity = '';
         switch (k8sLoad.loadType) {
-            case Menus.PodsMemoryUsage:
+            case Menus.PodsMemoryUsageHeatMap:
                 resUsage = 'memUsage';
                 resCapacity = 'memCapacity';
                 break;
-            case Menus.PodsCpuUsage:
+            case Menus.PodsCpuUsageHeatMap:
                 resUsage = 'cpuUsage';
                 resCapacity = 'cpuCapacity';
                 break;
@@ -509,6 +509,7 @@ function refreshPodLoadHeatmap(k8sLoad)
 
 function triggerRefreshLoadMap(dataFile, loadType)
 {
+    currentLoadType = loadType;
     $.ajax({
         type: "GET",
         url: dataFile,
@@ -524,8 +525,8 @@ function triggerRefreshLoadMap(dataFile, loadType)
                 case Menus.NodesCpuUsage:
                     refreshLoadMapByNodeUsage(k8sLoad);
                     break;
-                case Menus.PodsCpuUsage:
-                case Menus.PodsMemoryUsage:
+                case Menus.PodsCpuUsageHeatMap:
+                case Menus.PodsMemoryUsageHeatMap:
                     //refreshLoadMapByPodUsage(k8sLoad);
                     refreshPodLoadHeatmap(k8sLoad);
                     break;
@@ -562,7 +563,7 @@ function triggerRefreshLoadMap(dataFile, loadType)
                     $('#load-map-container').show();
                 }
             });
-        triggerRefreshLoadMap(dataFile, Menus.PodsCpuUsage)
+        triggerRefreshLoadMap(dataFile, currentLoadType)
         setInterval(function() {
                 triggerRefreshLoadMap(dataFile);
             },
