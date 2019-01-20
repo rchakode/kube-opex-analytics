@@ -380,15 +380,15 @@ function refreshResouceUsageByPod(k8sLoad)
         node.podsRunning.reverse();
 
         if (currentNodeIndex % MAP_NODE_PER_ROW == 0) {
-            drawingCursor.x = 0;
-            drawingCursor.y = (currentNodeIndex / MAP_NODE_PER_ROW) * NODE_SHIFT;
+            drawingCursor.x = CELL_MARGIN;
+            drawingCursor.y = (currentNodeIndex / MAP_NODE_PER_ROW) * NODE_SHIFT + CELL_MARGIN;
         } else {
             drawingCursor.x += NODE_SHIFT;
         }
 
-        raphael.rect(drawingCursor.x, drawingCursor.y, NODE_SIDE, NODE_SIDE, RECT_ROUND)
+        raphael.rect(drawingCursor.x-1, drawingCursor.y-1, NODE_SIDE+3, NODE_SIDE+3, RECT_ROUND)
             .attr({
-                'stroke-width': 2.5,
+                'stroke-width': 3,
                 'stroke': computeLoadHeatMapColor(computeLoad(node[resUsage], node[resCapacity])),
                 fill: '#E6E6E6',
                 title: generateTooltip(node)
@@ -523,8 +523,8 @@ function refreshPodLoadHeatmapCentered(k8sLoad)
         node.podsRunning.reverse();
 
         if (currentNodeIndex % MAP_NODE_PER_ROW == 0) {
-            drawingCursor.x = 0;
-            drawingCursor.y = (currentNodeIndex / MAP_NODE_PER_ROW) * NODE_SHIFT;
+            drawingCursor.x = CELL_MARGIN;
+            drawingCursor.y = (currentNodeIndex / MAP_NODE_PER_ROW) * NODE_SHIFT + CELL_MARGIN;
         } else {
             drawingCursor.x += NODE_SHIFT;
         }
