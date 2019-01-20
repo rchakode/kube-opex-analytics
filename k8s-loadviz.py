@@ -4,14 +4,16 @@ import threading
 import time
 import os
 
-
-PULLING_INTERVAL_SEC = 30
-
-data_file = './static/resources.json'
-log_file = './static/puller.log'
-k8s_api_endpoint = os.getenv('K8S_API_ENDPOINT', 'http://127.0.0.1:8001')
+RESOURCE_FILE = './static/resources.json'
+LOG_FILE = './static/puller.log'
+K8S_API_ENDPOINT = os.getenv('K8S_API_ENDPOINT', 'http://127.0.0.1:8001')
+PULLING_INTERVAL_SEC = os.getenv('PULLING_INTERVAL_SEC', '30')
 
 app = flask.Flask(__name__, static_url_path='/static')
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 @app.route('/js/<path:path>')
 def send_js(path):
@@ -23,17 +25,18 @@ def send_css(path):
 
 @app.route('/')
 def render():
-    return flask.render_template('index.html', data_file=data_file)
+    return flask.render_template('index.html', data_file=RESOURCE_FILE)
 
 def pull_k8s(api_context):
     output = ''
-    k8s_proxy_req = requests.get('%s%s' % (k8s_api_endpoint, api_context))
+    apiEndpoint = '%s%s' % (K8S_API_ENDPOINT, api_context)
+    k8s_proxy_req = requests.get(apiEndpoint)
     if k8s_proxy_req.status_code == 200:
         output += k8s_proxy_req.text
     else:
         output += '{}'
-        with open(log_file, 'a') as the_file:
-            the_file.write(time.strftime("%Y-%M-%d %H:%M:%S") + '[ERROR] '+k8s_proxy_req.text)
+        with open(LOG_FILE, 'a') as the_file:
+            the_file.write(time.strftime("%Y-%M-%d %H:%M:%S") + ' [ERROR] %s returned error (%s)'  % (apiEndpoint, k8s_proxy_req.text))
     return output
 
 def k8s_puller():
@@ -46,10 +49,10 @@ def k8s_puller():
                  ',' + pull_k8s('/apis/metrics.k8s.io/v1beta1/pods')+ \
                  ']'
         # write output
-        with open(data_file, 'w') as the_file:
+        with open(RESOURCE_FILE, 'w') as the_file:
             the_file.write(output)
 
-        time.sleep(PULLING_INTERVAL_SEC)
+        time.sleep(int(PULLING_INTERVAL_SEC))
 
 
 if __name__ == '__main__':

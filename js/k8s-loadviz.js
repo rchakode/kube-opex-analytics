@@ -1,7 +1,7 @@
 /*
 # File: k8s-loadviz.js                                                             #
 #                                                                                 #
-# Copyright © 2014 by Rodrigue Chakode <rodrigue.chakode at gmail dot com>        #
+# Copyright © 2019 by Rodrigue Chakode <rodrigue.chakode at gmail dot com>        #
 #                                                                                 #
 # This file is part of k8s-loadviz, authored by Rodrigue Chakode as part of        #
 # RealOpInsight Labs (http://realopinsight.com).                                  #
@@ -17,13 +17,13 @@
 */
 
 
-const DrawingAreaWith = 0.7 * (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth);
-const HostListAreaWidth = 0.25 * (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth);
+const DrawingAreaWith = 0.8 * (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth);
 
 function generateTooltip(node)
 {
     let tooltip = 'Host: '+node.name;
     tooltip += '\nID: '+node.id;
+    tooltip += '\nContainer Runtime: ' + node.containerRuntime;
     tooltip += '\nState: '+ node.state;
     tooltip += '\nCPU: ' + node.cpuCapacity;
     tooltip += '\n  Allocatable: ' + computeLoad(node.cpuAllocatable, node.cpuCapacity) + '%';
@@ -31,8 +31,9 @@ function generateTooltip(node)
     tooltip += '\nMemory: ' + node.memCapacity;
     tooltip += '\n  Allocatable: ' + computeLoad(node.memAllocatable, node.memAllocatable) + '%';
     tooltip += '\n  Usage: ' + computeLoad(node.memUsage, node.memCapacity)+ '%';
-    tooltip += '\nPods: ' + node.pods.length;
-    tooltip += '\nContainer Runtime: ' + node.containerRuntime;
+    tooltip += '\nPods: ' + parseInt(node.podsRunning.length + node.podsNotRunning.length);
+    tooltip += '\n  Running: ' + node.podsRunning.length;
+    tooltip += '\n  Not Running: ' + node.podsNotRunning.length;
     return tooltip;
 }
 
@@ -123,27 +124,34 @@ function computeLoad(used, capacity)
 }
 
 
-// compute linear gradient from #6699cc (green => 0% load)' to #f56 (red => 100% load)
-function computeLoadGradientColor(load)
-{
-    const white = [255, 255, 255];
-    const blue = [153, 204, 255];
-    const red = [255, 85, 102];
-    const w1 = load / 100;
-    const w2 = 1 - w1;
+function  computeLoadHeatMapColor(load) {
+    const NUM_COLORS = 4;
+    const HeatMapColors = Object.freeze({
+        '0': [0,0,255],
+        '1': [0,255,0],
+        '2': [255,255,0],
+        '3': [255,0,0]
+    });
 
-    if (load < 10.0) {
-        return [
-            Math.round(blue[0] * w1 + white[0] * w2),
-            Math.round(blue[1] * w1 + white[2] * w2),
-            Math.round(blue[2] * w1 + white[2] * w2)
-        ];
+    let colorLevel = load / 100;
+    let idx1 = 0;
+    let idx2 = 0;
+    let fractBetween = 0;
+    if (colorLevel <= 0) {
+        idx1 = idx2 = 0;
+    } else if (colorLevel >= 1)  {
+        idx1 = idx2 = NUM_COLORS - 1;
+    } else {
+        let tmpValue = colorLevel * (NUM_COLORS - 1);
+        idx1  = Math.floor(tmpValue);
+        idx2  = idx1+1;
+        fractBetween = tmpValue - idx1;
     }
-    return [
-        Math.round(red[0] * w1 + white[0] * w2),
-        Math.round(red[1] * w1 + white[2] * w2),
-        Math.round(red[2] * w1 + white[2] * w2)
-    ];
+
+    let r = (HeatMapColors[idx2][0] - HeatMapColors[idx1][0])*fractBetween + HeatMapColors[idx1][0];
+    let g = (HeatMapColors[idx2][1] - HeatMapColors[idx1][1])*fractBetween + HeatMapColors[idx1][1];
+    let b = (HeatMapColors[idx2][2] - HeatMapColors[idx1][2])*fractBetween + HeatMapColors[idx1][2];
+    return 'rgb('+r+','+g+',' +b+')';
 }
 
 function generateRandomColor() {
@@ -164,12 +172,9 @@ function K8sLoad(data, loadType)
     this.popupContent = '';
     this.nodeHtmlList = '';
     this.maxCpu = 1;
+    this.maxMem = 1;
 
-    if (data.length != 4 ||
-        ! 'items' in data[0] ||
-        ! 'items' in data[1] ||
-        ! 'items' in data[2] ||
-        ! 'items' in data[3]) {
+    if (data.length != 4 || data[0] == '{}' || data[1] == '{}' || data[2] == '{}' || data[3] == '{}') {
         $("#error-message").html('invalid data, check console for details');
         $("#error-message").show();
         console.log(data);
@@ -188,9 +193,10 @@ function K8sLoad(data, loadType)
             node.memCapacity = decodeMemoryCapacity(nodeApiData.status.capacity.memory);
             node.memAllocatable = decodeMemoryCapacity(nodeApiData.status.allocatable.memory);
             node.containerRuntime = nodeApiData.status.nodeInfo.containerRuntimeVersion;
-            mainClass.maxCpu = Math.max(mainClass.maxCpu, node.cpuCapacity)
-            node.pods = [];
-            //TODO node.runningPods = parseInt( $(this).find('RUNNING_VMS').text() );
+            mainClass.maxCpu = Math.max(mainClass.maxCpu, node.cpuCapacity);
+            mainClass.maxMem = Math.max(mainClass.maxMem, node.memCapacity);
+            node.podsRunning = [];
+            node.podsNotRunning = [];
 
             for (let i = 0; i < nodeApiData.status.conditions.length; ++i) {
                 let cond = nodeApiData.status.conditions[i];
@@ -236,17 +242,17 @@ function K8sLoad(data, loadType)
         rootpath: ":/a.com/"
     };
 
+
     // parse nodes' metrics
     $.each(data[1].items,
         function(index, nodeMetric) {
             let node = mainClass.nodes.get(nodeMetric.metadata.name);
             node.cpuUsage = decodeCpuUsage(nodeMetric.usage.cpu);
-            node.memUsage = decodeMemoryCapacity(nodeMetric.usage.memory)
+            node.memUsage = decodeMemoryCapacity(nodeMetric.usage.memory);
             mainClass.popupContent += createPopupContent(node);
             mainClass.nodes.set(nodeMetric.metadata.name, node)
         }
     );
-
 
     // parse pods' info
     $.each(data[2].items,
@@ -299,7 +305,11 @@ function K8sLoad(data, loadType)
     for (let [pName, pod] of mainClass.pods) {
         if (pod.phase != "Pending") {
             let node = mainClass.nodes.get(pod.nodeName);
-            node.pods.push(pod)
+            if (typeof pod.cpuUsage !== "undefined" &&  typeof pod.memUsage !== "undefined") {
+                node.podsRunning.push(pod)
+            } else {
+                node.podsNotRunning.push(pod)
+            }
             mainClass.nodes.set(node.name, node);
         }
     }
@@ -316,7 +326,7 @@ function refreshLoadMapByNodeUsage(k8sLoad)
     const DEFAULT_NODE_ROW_COUNT = Math.ceil( Math.sqrt(k8sLoad.maxCpu) );
     const DEFAULT_CELL_SHAPE = {side: 50, margin: 2, node_margin: 7.5};
     const DEFAULT_NODE_SIDE = DEFAULT_NODE_ROW_COUNT * DEFAULT_CELL_SHAPE.side + (DEFAULT_NODE_ROW_COUNT - 1) * DEFAULT_CELL_SHAPE.margin;
-    const DRAWING_AREA_SIZE = {width: DrawingAreaWith, height: HostListAreaWidth};
+    const DRAWING_AREA_SIZE = {width: DrawingAreaWith, height: '100%'};
     const RECT_ROUND = 3;
 
     let raphael = new Raphael("load-map-container", DRAWING_AREA_SIZE.width, DRAWING_AREA_SIZE.height);
@@ -328,26 +338,42 @@ function refreshLoadMapByNodeUsage(k8sLoad)
         }
 
         let nodeTooltip = generateTooltip(node);
-        node.shape = raphael.set();
         raphael.rect(drawingCursor.x,
             drawingCursor.y,
             DEFAULT_NODE_SIDE,
             DEFAULT_NODE_SIDE,
             RECT_ROUND)
-            .attr({fill: '#E6E6E6', 'stroke-width': 0.5, title: nodeTooltip});
+            .attr({
+                fill: '#E6E6E6',
+                'stroke-width': 0.2,
+                title: nodeTooltip
+            });
 
-        // draw each individual cores
-        let nodeLoadColor = '';
+
+        let resUsage = '';
+        let resCapacity = '';
         switch (k8sLoad.loadType) {
             case Menus.NodesMemoryUsage:
-                nodeLoadColor = 'rgb('+computeLoadGradientColor(computeLoad(node.memUsage, node.memCapacity))+')';
+                resUsage = 'memUsage';
+                resCapacity = 'memCapacity';
                 break;
             case Menus.NodesCpuUsage:
-            default:
-                nodeLoadColor = 'rgb('+computeLoadGradientColor(computeLoad(node.cpuUsage, node.cpuCapacity))+')';
+                resUsage = 'cpuUsage';
+                resCapacity = 'cpuCapacity';
                 break;
+            default:
+                $("#error-message").html('unknown load type: '+ k8sLoad.loadType);
+                $("#error-message").show();
+                return;
         }
 
+        if (typeof node[resUsage] === "undefined" || node[resUsage] == 0) {
+            console.log('No '+resUsage+' on node', node);
+            continue;
+        }
+
+        let nodeLoadColor = computeLoadHeatMapColor(computeLoad(node[resUsage], node[resCapacity]));
+        node.shape = raphael.set();
         for (let cpuIndex=0; cpuIndex < node.cpuCapacity; ++cpuIndex) {
             let cpuShape = raphael.rect(
                 drawingCursor.x + Math.floor(cpuIndex / DEFAULT_NODE_ROW_COUNT) * (DEFAULT_CELL_SHAPE.side + DEFAULT_CELL_SHAPE.margin),
@@ -355,7 +381,11 @@ function refreshLoadMapByNodeUsage(k8sLoad)
                 DEFAULT_CELL_SHAPE.side,
                 DEFAULT_CELL_SHAPE.side,
                 RECT_ROUND)
-                .attr({fill: nodeLoadColor, 'stroke-width': 0.5, title: nodeTooltip});
+                .attr({
+                    fill: nodeLoadColor,
+                    'stroke-width': 0.5,
+                    title: nodeTooltip
+                });
             node.shape.push(cpuShape);
         }
 
@@ -370,29 +400,28 @@ function refreshLoadMapByNodeUsage(k8sLoad)
 }
 
 
-function refreshPodLoadHeatmap(k8sLoad)
+function refreshResouceUsageByPod(k8sLoad)
 {
     $( "#load-map-container" ).empty();
     $( "#host-list-container" ).html('<ul class="list-unstyled">');
 
-    const DEFAULT_NODE_ROW_COUNT = Math.ceil( Math.sqrt(k8sLoad.maxCpu) );
-    const DEFAULT_CELL_SETTINGS = {side: 50, margin: 10};
-    const DEFAULT_NODE_SIDE = DEFAULT_NODE_ROW_COUNT * DEFAULT_CELL_SETTINGS.side;
-    const DRAWING_AREA_SIZE = {width: DrawingAreaWith, HOST_LIST_AREA_WIDTH: HostListAreaWidth};
+    const DRAWING_AREA_SIZE = {width: DrawingAreaWith, height: '100%'};
+    const CELL_MARGIN = 10;
     const RECT_ROUND = 3;
+    const NODE_SIDE = Math.min(Math.max(Math.sqrt(Math.ceil(k8sLoad.maxMem / 2e5)), 256), 512);
 
     let raphael = new Raphael("load-map-container", DRAWING_AREA_SIZE.width, DRAWING_AREA_SIZE.height);
-    let drawingCursor = {x: DEFAULT_CELL_SETTINGS.margin, y : DEFAULT_CELL_SETTINGS.margin};
+    let drawingCursor = {x: CELL_MARGIN, y : CELL_MARGIN};
 
     for (let [name, node] of k8sLoad.nodes) {
         let resUsage = '';
         let resCapacity = '';
         switch (k8sLoad.loadType) {
-            case Menus.PodsMemoryUsageHeatMap:
+            case Menus.MemoryUsageByPod:
                 resUsage = 'memUsage';
                 resCapacity = 'memCapacity';
                 break;
-            case Menus.PodsCpuUsageHeatMap:
+            case Menus.CpuUsageByPod:
                 resUsage = 'cpuUsage';
                 resCapacity = 'cpuCapacity';
                 break;
@@ -404,13 +433,13 @@ function refreshPodLoadHeatmap(k8sLoad)
 
 
         if (typeof node[resUsage] === "undefined" || node[resUsage] == 0) {
-            console.log('no '+resUsage+' on node '+node.name);
+            console.log('No '+resUsage+' on node ', node);
             continue;
         }
 
-        if (drawingCursor.x + DEFAULT_NODE_SIDE > DRAWING_AREA_SIZE.width) {
-            drawingCursor.y += DEFAULT_NODE_SIDE + DEFAULT_CELL_SETTINGS.margin;
-            drawingCursor.x = DEFAULT_CELL_SETTINGS.margin;
+        if (drawingCursor.x + NODE_SIDE > DRAWING_AREA_SIZE.width) {
+            drawingCursor.y += NODE_SIDE + CELL_MARGIN;
+            drawingCursor.x = CELL_MARGIN;
         }
 
 
@@ -420,18 +449,12 @@ function refreshPodLoadHeatmap(k8sLoad)
             continue;
         }
 
-        // let podResUsages = [];
-
-        let podsList = []
         let sumPodResUsages = 0.0;
-        for (let pod of node.pods) {
-            if (typeof pod[resUsage] !== "undefined") {
-                podsList.push(pod);
-                sumPodResUsages += pod[resUsage];
-            }
+        for (let pod of node.podsRunning) {
+            sumPodResUsages += pod[resUsage];
         }
 
-        podsList.sort(
+        node.podsRunning.sort(
             function(p1, p2) {
                 if (p1[resUsage] < p2[resUsage])
                     return -1;
@@ -440,25 +463,30 @@ function refreshPodLoadHeatmap(k8sLoad)
                 return 0;
             }
         );
-        podsList.reverse();
+        node.podsRunning.reverse();
 
         node.shape = raphael.set();
-        raphael.rect(drawingCursor.x, drawingCursor.y, DEFAULT_NODE_SIDE, DEFAULT_NODE_SIDE, RECT_ROUND)
-            .attr({'stroke-width': 0.1})
-            .attr({title: generateTooltip(node)});
+        raphael.rect(drawingCursor.x, drawingCursor.y, NODE_SIDE, NODE_SIDE, RECT_ROUND)
+            .attr({
+                'stroke-width': 2.5,
+                'stroke': computeLoadHeatMapColor(computeLoad(node[resUsage], node[resCapacity])),
+                fill: '#E6E6E6',
+                title: generateTooltip(node)
+            });
 
         // draw each individual cores
-        const NODE_AREA = DEFAULT_NODE_SIDE * DEFAULT_NODE_SIDE;
-        let remainingWidth = DEFAULT_NODE_SIDE;
-        let remainingHeight = DEFAULT_NODE_SIDE;
+        const NODE_AREA = NODE_SIDE * NODE_SIDE;
+        let remainingWidth = NODE_SIDE;
+        let remainingHeight = NODE_SIDE;
         let shiftX = 0.0;
         let shiftY = 0.0;
         let DrawingOrientations = Object.freeze({"Horizontal":1, "Vertical":2});
         let drawingOrientation = DrawingOrientations.Horizontal;
 
-        for (let pid = 0; pid < podsList.length; pid++) {
-            let pod = podsList[pid];
-            let usageRatio = pod[resUsage] / sumPodResUsages;
+        for (let pid = 0; pid < node.podsRunning.length; pid++) {
+            let pod = node.podsRunning[pid];
+            //let usageRatio = pod[resUsage] / sumPodResUsages;
+            let usageRatio = pod[resUsage] / node[resUsage];
             let podArea =  usageRatio * NODE_AREA;
             let podWidth = 0.0;
             let podHeight = 0.0;
@@ -481,7 +509,13 @@ function refreshPodLoadHeatmap(k8sLoad)
                 Math.max(podWidth, 0),
                 Math.max(podHeight, 0),
                 RECT_ROUND)
-                .attr({fill: generateRandomColor(), 'stroke-width': 0.2, title: heatMapTooltip});
+                .attr({
+                    //fill: generateRandomColor(),
+                    fill: computeLoadHeatMapColor(100 * usageRatio),
+                    'stroke-width': 0.5,
+                    'stroke': '#000',
+                    title: heatMapTooltip
+                });
 
             node.shape.push(podShape);
             if (drawingOrientation == DrawingOrientations.Horizontal) {
@@ -497,15 +531,136 @@ function refreshPodLoadHeatmap(k8sLoad)
             }
         }
         k8sLoad.nodes.set(name, node);
-        drawingCursor.x += DEFAULT_NODE_SIDE + 2 * DEFAULT_CELL_SETTINGS.margin;
+        drawingCursor.x += NODE_SIDE + 2 * CELL_MARGIN;
     }
 
     // set dynamic HTML content
-    $("#load-map-container").height(drawingCursor.y + DEFAULT_NODE_SIDE + DEFAULT_CELL_SETTINGS.margin);
+    $("#load-map-container").height(drawingCursor.y + NODE_SIDE + CELL_MARGIN);
     $("#host-list-container").html('<ul>'+k8sLoad.nodeHtmlList+"</ul>");
     $("#popup-container").html(k8sLoad.popupContent);
 }
 
+
+function refreshPodLoadHeatmapCentered(k8sLoad)
+{
+    $( "#load-map-container" ).empty();
+    $( "#host-list-container" ).html('<ul class="list-unstyled">');
+
+    const DRAWING_AREA_SIZE = {width: DrawingAreaWith, height: '100%'};
+    const DEFAULT_MARGIN = 10;
+    const RECT_ROUND = 3;
+    const NODE_SIDE = Math.min(Math.max(Math.sqrt(Math.ceil(k8sLoad.maxMem / 2e5)), 256), 512);
+
+    let raphael = new Raphael("load-map-container", DRAWING_AREA_SIZE.width, DRAWING_AREA_SIZE.height);
+
+    let drawingCursor = {
+        x: DEFAULT_MARGIN,
+        y : DEFAULT_MARGIN
+    };
+
+    for (let [name, node] of k8sLoad.nodes) {
+        let resUsage = '';
+        let resCapacity = '';
+        switch (k8sLoad.loadType) {
+            case Menus.PodsMemoryUsageHeatMap:
+                resUsage = 'memUsage';
+                resCapacity = 'memCapacity';
+                break;
+            case Menus.PodsCpuUsageHeatMap:
+                resUsage = 'cpuUsage';
+                resCapacity = 'cpuCapacity';
+                break;
+            default:
+                $("#error-message").html('unknown load type: '+ k8sLoad.loadType);
+                $("#error-message").show();
+                return;
+        }
+
+
+        if (typeof node[resUsage] === "undefined" || node[resUsage] == 0) {
+            console.log('No '+resUsage+' on node ', node);
+            continue;
+        }
+
+        if (node[resUsage] == 0) {
+            $("#error-message").html('ignoring node '+node.name+' with '+resUsage+' equals to zero ');
+            $("#error-message").show();
+            continue;
+        }
+
+        node.podsRunning.sort(
+            function(p1, p2) {
+                if (p1[resUsage] < p2[resUsage])
+                    return -1;
+                if (p1[resUsage] > p2[resUsage])
+                    return 1;
+                return 0;
+            }
+        );
+        node.podsRunning.reverse();
+
+        if (drawingCursor.x + NODE_SIDE > DRAWING_AREA_SIZE.width) {
+            drawingCursor.y += NODE_SIDE + DEFAULT_MARGIN;
+            drawingCursor.x = DEFAULT_MARGIN;
+        }
+
+        raphael.rect(
+            drawingCursor.x,
+            drawingCursor.y,
+            NODE_SIDE,
+            NODE_SIDE, RECT_ROUND)
+            .attr({
+                'stroke-width': 3,
+                'stroke': computeLoadHeatMapColor(computeLoad(node[resUsage], node[resCapacity])),
+                fill: '#E6E6E6',
+                title: generateTooltip(node)
+            });
+
+        let sumPodResUsages = 0.0;
+        for (let pod of node.podsRunning) {
+            sumPodResUsages += pod[resUsage];
+        }
+
+        const NODE_AREA = NODE_SIDE * NODE_SIDE;
+        node.shape = raphael.set();
+        for (let pid = 0; pid < node.podsRunning.length; pid++) {
+            let pod = node.podsRunning[pid];
+            //let usageRatio = pod[resUsage] / node.podsRunning[0][resUsage];
+            //let usageRatio = pod[resUsage] / sumPodResUsages;
+            let usageRatio = pod[resUsage] / node[resUsage];
+            let podArea =  usageRatio * NODE_AREA;
+            let podSide = Math.ceil(Math.sqrt(podArea));
+            let shift = (NODE_SIDE / 2) - (podSide / 2);
+
+            let heatMapTooltip =
+                'Node => '+node.name+' => ' + computeLoad(node[resUsage], node[resCapacity]) + '% of global resources' +
+                '\n|||||||||||||||||||||||||||||||||||||||||||||||||||||' +
+                '\nPod => ' + pod.name + ' => ' + Math.round(1e4 * usageRatio) / 1e2 + '% of used resources'
+
+            let podShape = raphael.rect(
+                drawingCursor.x + shift,
+                drawingCursor.y + shift,
+                podSide,
+                podSide,
+                RECT_ROUND)
+                .attr({
+                    fill: computeLoadHeatMapColor(100 * usageRatio),
+                    'stroke-width': 0.25,
+                    'stroke': '#fff',
+                    title: heatMapTooltip
+                });
+
+            node.shape.push(podShape);
+        }
+        k8sLoad.nodes.set(name, node);
+        drawingCursor.x += NODE_SIDE + 2 * DEFAULT_MARGIN;
+    }
+
+    // set dynamic HTML content
+    $("#load-map-container").height(drawingCursor.y + NODE_SIDE + DEFAULT_MARGIN);
+    $("#host-list-container").html('<ul>'+k8sLoad.nodeHtmlList+"</ul>");
+    $("#popup-container").html(k8sLoad.popupContent);
+}
 
 function triggerRefreshLoadMap(dataFile, loadType)
 {
@@ -525,13 +680,16 @@ function triggerRefreshLoadMap(dataFile, loadType)
                 case Menus.NodesCpuUsage:
                     refreshLoadMapByNodeUsage(k8sLoad);
                     break;
+                case Menus.CpuUsageByPod:
+                case Menus.MemoryUsageByPod:
+                    refreshResouceUsageByPod(k8sLoad);
+                    break;
                 case Menus.PodsCpuUsageHeatMap:
                 case Menus.PodsMemoryUsageHeatMap:
-                    //refreshLoadMapByPodUsage(k8sLoad);
-                    refreshPodLoadHeatmap(k8sLoad);
+                    refreshPodLoadHeatmapCentered(k8sLoad);
                     break;
                 default:
-                    refreshPodLoadHeatmap(k8sLoad);
+                    refreshResouceUsageByPod(k8sLoad);
                     break;
             }
 

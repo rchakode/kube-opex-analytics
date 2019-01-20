@@ -24,8 +24,9 @@ limitations under the License.
   <title>k8s-loadviz | Kubernetes Node Loads</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="utf-8">
-    <link rel="stylesheet" href="css/bootstrap.min.css" media="screen">
-    <link rel="stylesheet" href="css/bootswatch.min.css">
+      <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+      <link rel="stylesheet" href="css/bootstrap.min.css" media="screen">
+      <link rel="stylesheet" href="css/bootswatch.min.css">
       <link rel="stylesheet" href="css/k8s-loadviz.css">
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -37,6 +38,8 @@ limitations under the License.
               {
                   "NodesCpuUsage": "Nodes CPU Usage",
                   "NodesMemoryUsage": "Nodes Memory Usage",
+                  "CpuUsageByPod": "CPU Usage By Pod",
+                  "MemoryUsageByPod": "Memory Usage By Pod",
                   "PodsCpuUsageHeatMap": "HeatMap - Pods CPU Usage",
                   "PodsMemoryUsageHeatMap": "HeatMap - Pods Memory Usage",
               });
@@ -58,8 +61,12 @@ limitations under the License.
           <li class="dropdown">
             <a class="dropdown-toggle" data-toggle="dropdown" href="#" id="themes">Load Types<span class="caret"></span></a>
             <ul class="dropdown-menu" aria-labelledby="themes">
+              <!--
               <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', Menus.NodesCpuUsage);">Nodes CPU Usage</a></li>
               <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', Menus.NodesMemoryUsage);">Nodes Memory Usage</a></li>
+              -->
+                <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', Menus.CpuUsageByPod);">CPU Usage By Pod</a></li>
+                <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', Menus.MemoryUsageByPod);">Pods Memory By Pod</a></li>
                 <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', Menus.PodsCpuUsageHeatMap);">HeatMap - Pods CPU Usage</a></li>
                 <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', Menus.PodsMemoryUsageHeatMap);">HeatMap - Pods Memory Usage</a></li>
             </ul>
@@ -79,7 +86,7 @@ limitations under the License.
        <div class="page-header">
            <h1 id="title-container">Resource Usage</h1></div>
          <div id="error-message" class="alert alert-danger" role="alert"></div>
-       <div id="load-map-container"></div>
+       <div class="container" id="load-map-container"></div>
      </div>
      <div class="col-md-3">
        <div class="page-header"><h1 id="title-container">Nodes</h1></div>
