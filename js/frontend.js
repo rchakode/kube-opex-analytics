@@ -22,6 +22,16 @@ const DrawingMemScaleUnit = 2e6;
 const DrawingMinNodeSide = 256;
 const DrawingMaxNodeSide = 512;
 
+const DataIndices = Object.freeze(
+    {
+        "Namespaces": 0,
+        "Nodes": 1,
+        "NodeMetrics": 2,
+        "Pods": 3,
+        "PodMetrics": 4,
+    });
+
+
 function generateTooltip(node)
 {
     let tooltip = 'Host: '+node.name;
@@ -62,16 +72,16 @@ function createPopupContent(nodeInfo)
 
 function decodeMemoryCapacity(input)
 {
-    let dataLength = input.length
-    let memUnit = ''
-    let capacity = ''
+    let dataLength = input.length;
+    let memUnit = '';
+    let capacity = '';
     if (input.endsWith("i")) {
-        memUnit = input.substring(dataLength-2, dataLength)
-        capacity = input.substring(0, dataLength-2)
+        memUnit = input.substring(dataLength-2, dataLength);
+        capacity = input.substring(0, dataLength-2);
     } else {
-        capacity = input
+        capacity = input;
     }
-    let mem = BigInt(0)
+    let mem = 0;
     switch (memUnit){
         case '':
             mem = parseInt(input)
@@ -96,28 +106,28 @@ function decodeMemoryCapacity(input)
             break;
     }
 
-    return mem
+    return mem;
 }
 
 
 function decodeCpuUsage(input)
 {
-    let dataLength = input.length
-    let cpuUnit = input.substring(dataLength-1, dataLength)
-    let capacity = input.substring(0, dataLength-1)
-    let cpu = BigInt(0)
+    let dataLength = input.length;
+    let cpuUnit = input.substring(dataLength-1, dataLength);
+    let capacity = input.substring(0, dataLength-1);
+    let cpu = 0;
     switch (cpuUnit){
         case 'n':
-            cpu = 1e-9 * parseFloat(capacity)
+            cpu = 1e-9 * parseFloat(capacity);
             break;
         case 'm':
-            cpu = 1e-3 * parseFloat(capacity)
+            cpu = 1e-3 * parseFloat(capacity);
             break;
         default:
-            cpu = parseFloat(input)
+            cpu = parseFloat(input);
             break;
     }
-    return cpu
+    return cpu;
 }
 
 
@@ -164,20 +174,28 @@ function K8sLoad(data, loadType)
     this.loadType = loadType;
     this.nodes = new Map();
     this.pods = new Map();
+    this.nsResUsage = new Object();
     this.popupContent = '';
     this.nodeHtmlList = '';
     this.maxCpu = 1;
     this.maxMem = 1;
 
-    if (data.length != 4 || $.isEmptyObject(data[0]) || $.isEmptyObject(data[1]) || $.isEmptyObject(data[2]) || $.isEmptyObject(data[3])) {
+
+    if (data.length != Object.keys(DataIndices).length ||
+        $.isEmptyObject(data[DataIndices.Namespaces]) ||
+        $.isEmptyObject(data[DataIndices.Nodes]) ||
+        $.isEmptyObject(data[DataIndices.Pods]) ||
+        $.isEmptyObject(data[DataIndices.NodeMetrics]) ||
+        $.isEmptyObject(data[DataIndices.PodMetrics])) {
         $("#error-message").html('invalid data:'+ JSON.stringify(data));
         $("#error-message").show();
         return;
     } else {
         $("#error-message").hide();
     }
+
     // parse nodes info
-    $.each(data[0].items,
+    $.each(data[DataIndices.Nodes].items,
         function(index, nodeApiData) {
             let node = new Object();
             node.name = nodeApiData.metadata.name;
@@ -225,20 +243,8 @@ function K8sLoad(data, loadType)
         }
     );
 
-    less = {
-        env: "development",
-        async: false,
-        fileAsync: false,
-        poll: 1000,
-        functions: {},
-        dumpLineNumbers: "comments",
-        relativeUrls: false,
-        rootpath: ":/a.com/"
-    };
-
-
     // parse nodes' metrics
-    $.each(data[1].items,
+    $.each(data[DataIndices.NodeMetrics].items,
         function(index, nodeMetric) {
             let node = mainClass.nodes.get(nodeMetric.metadata.name);
             node.cpuUsage = decodeCpuUsage(nodeMetric.usage.cpu);
@@ -249,10 +255,11 @@ function K8sLoad(data, loadType)
     );
 
     // parse pods' info
-    $.each(data[2].items,
+    $.each(data[DataIndices.Pods].items,
         function(index, podApiData) {
             let pod = new Object();
             pod.name = podApiData.metadata.name;
+            pod.namespace = podApiData.metadata.namespace;
             pod.id = podApiData.metadata.uid;
             pod.nodeName = podApiData.spec.nodeName;
             pod.phase = podApiData.status.phase;
@@ -280,10 +287,20 @@ function K8sLoad(data, loadType)
         }
     );
 
-    // parse pods' metrics
-    $.each(data[3].items,
+
+    // parse namespace' info
+    $.each(data[DataIndices.Namespaces].items,
+        function(index, ns) {
+            mainClass.nsResUsage[ns.metadata.name] = {cpuUsage:0.0, memUsage:0.0};
+        }
+    );
+
+    // parse pods' metrics and update resource usage
+    $.each(data[DataIndices.PodMetrics].items,
         function(index, podMetric) {
             let pod = mainClass.pods.get(podMetric.metadata.name);
+
+            // set pod resource usage
             pod.cpuUsage = 0;
             pod.memUsage = 0;
             for (let i = 0; i < podMetric.containers.length; ++i) {
@@ -291,6 +308,10 @@ function K8sLoad(data, loadType)
                 pod.memUsage += decodeMemoryCapacity(podMetric.containers[i].usage.memory);
             }
             mainClass.pods.set(podMetric.metadata.name, pod)
+
+            // update namespace resource usage
+            mainClass.nsResUsage[pod.namespace].cpuUsage += pod.cpuUsage;
+            mainClass.nsResUsage[pod.namespace].memUsage += pod.memUsage;
         }
     );
 
@@ -307,6 +328,10 @@ function K8sLoad(data, loadType)
             mainClass.nodes.set(node.name, node);
         }
     }
+
+
+    console.log(mainClass.nsResUsage);
+
 
     return this;
 }
@@ -458,6 +483,157 @@ function refreshResouceUsageByPod(k8sLoad)
     $("#host-list-container").html('<ul>'+k8sLoad.nodeHtmlList+"</ul>");
     $("#popup-container").html(k8sLoad.popupContent);
 }
+
+
+
+function refreshResouceUsageByStackedPod(k8sLoad)
+{
+    $( "#load-map-container" ).empty();
+    $( "#host-list-container" ).html('<ul class="list-unstyled">');
+
+    const DRAWING_AREA_SIZE = {width: DrawingAreaWidth, height: '100%'};
+    const CELL_MARGIN = 10;
+    const RECT_ROUND = 3;
+    const NODE_HEIGHT = Math.min(Math.max(Math.sqrt(Math.ceil(k8sLoad.maxMem / DrawingMemScaleUnit)), DrawingMinNodeSide), DrawingMaxNodeSide);
+    const NODE_WIDTH = Math.floor(NODE_HEIGHT / 2);
+    const NODE_SHIFT = NODE_HEIGHT + CELL_MARGIN;
+    const MAP_NODE_PER_ROW = Math.floor(DrawingAreaWidth / NODE_SHIFT);
+
+    let raphael = new Raphael("load-map-container", DRAWING_AREA_SIZE.width, DRAWING_AREA_SIZE.height);
+
+    let drawingCursor = {
+        x: 0,
+        y : 0
+    };
+
+    let currentNodeIndex = 0;
+    for (let [name, node] of k8sLoad.nodes) {
+        let resUsage = '';
+        let resCapacity = '';
+        switch (k8sLoad.loadType) {
+            case Menus.MemoryUsageByPod:
+                resUsage = 'memUsage';
+                resCapacity = 'memCapacity';
+                break;
+            case Menus.CpuUsageByPod:
+                resUsage = 'cpuUsage';
+                resCapacity = 'cpuCapacity';
+                break;
+            default:
+                $("#error-message").html('unknown load type: '+ k8sLoad.loadType);
+                $("#error-message").show();
+                return;
+        }
+
+
+        if (typeof node[resUsage] === "undefined" || node[resUsage] == 0) {
+            $("#error-message").html('No '+resUsage+' metric on node: ' + node.name +'\n');
+            $("#error-message").show();
+            continue;
+        }
+
+        if (node[resUsage] == 0) {
+            $("#error-message").html('ignoring node '+node.name+' with '+resUsage+' equals to zero ');
+            $("#error-message").show();
+            continue;
+        }
+
+        let sumPodResUsages = 0.0;
+        for (let pod of node.podsRunning) {
+            sumPodResUsages += pod[resUsage];
+        }
+
+        node.podsRunning.sort(
+            function(p1, p2) {
+                if (p1[resUsage] < p2[resUsage])
+                    return -1;
+                if (p1[resUsage] > p2[resUsage])
+                    return 1;
+                return 0;
+            }
+        );
+        node.podsRunning.reverse();
+
+        if (currentNodeIndex % MAP_NODE_PER_ROW == 0) {
+            drawingCursor.x = CELL_MARGIN;
+            drawingCursor.y = (currentNodeIndex / MAP_NODE_PER_ROW) * NODE_SHIFT + CELL_MARGIN;
+        } else {
+            drawingCursor.x += NODE_SHIFT;
+        }
+
+        raphael.rect(drawingCursor.x-1, drawingCursor.y-1, NODE_HEIGHT+3, NODE_HEIGHT+3, RECT_ROUND)
+            .attr({
+                'stroke-width': 3,
+                'stroke': computeLoadHeatMapColor(computeLoad(node[resUsage], node[resCapacity])),
+                fill: '#E6E6E6',
+                title: generateTooltip(node)
+            });
+
+        // draw each individual cores
+        const NODE_AREA = NODE_HEIGHT * NODE_HEIGHT;
+        let remainingWidth = NODE_HEIGHT;
+        let remainingHeight = NODE_HEIGHT;
+        let shiftX = 0.0;
+        let shiftY = 0.0;
+        let DrawingOrientations = Object.freeze({"Horizontal":1, "Vertical":2});
+        let drawingOrientation = DrawingOrientations.Horizontal;
+
+        node.shape = raphael.set();
+        for (let pid = 0; pid < node.podsRunning.length; pid++) {
+            let pod = node.podsRunning[pid];
+            //let usageRatio = pod[resUsage] / sumPodResUsages;
+            let usageRatio = pod[resUsage] / node[resUsage];
+            let podArea =  usageRatio * NODE_AREA;
+            let podWidth = 0.0;
+            let podHeight = 0.0;
+            if (drawingOrientation == DrawingOrientations.Horizontal) {
+                podWidth = remainingWidth;
+                podHeight = podArea / podWidth;
+            } else {
+                podHeight = remainingHeight;
+                podWidth = podArea / podHeight;
+            }
+
+            let heatMapTooltip =
+                '\nPod: ' + pod.name + ' (' + Math.round(1e4 * usageRatio) / 1e2 + '% of node\'s '+resUsage+')' +
+                '\nNode: '+node.name+' (' + computeLoad(node[resUsage], node[resCapacity]) + '% of '+resUsage+')';
+
+            let podShape = raphael.rect(drawingCursor.x + shiftX,
+                drawingCursor.y + shiftY,
+                Math.max(podWidth, 0),
+                Math.max(podHeight, 0),
+                RECT_ROUND)
+                .attr({
+                    //fill: generateRandomColor(),
+                    fill: computeLoadHeatMapColor(100 * usageRatio),
+                    'stroke-width': 0.5,
+                    'stroke': '#fff',
+                    title: heatMapTooltip
+                });
+
+            node.shape.push(podShape);
+            if (drawingOrientation == DrawingOrientations.Horizontal) {
+                // no shift on x (shiftX += 0;)
+                shiftY += podHeight;
+                remainingHeight -= podHeight;
+                drawingOrientation = DrawingOrientations.Vertical;
+            } else {
+                // no shift on y (shiftY += 0;)
+                shiftX += podWidth;
+                remainingWidth -= podWidth;
+                drawingOrientation = DrawingOrientations.Horizontal;
+            }
+        }
+        k8sLoad.nodes.set(name, node);
+        currentNodeIndex++;
+    }
+
+    // set dynamic HTML content
+    $("#load-map-container").height(drawingCursor.y + NODE_SHIFT);
+    $("#host-list-container").html('<ul>'+k8sLoad.nodeHtmlList+"</ul>");
+    $("#popup-container").html(k8sLoad.popupContent);
+}
+
 
 
 function refreshPodLoadHeatmapCentered(k8sLoad)

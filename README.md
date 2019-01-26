@@ -1,7 +1,4 @@
-RealOpInsight oneInsight
-========================
-
-Overview
+## Overview
 --------
 RealOpInsight oneInsight, or simply oneInsight, is a visualization add-on for OpenNebula 
 that allows users to have at a glance, an insight on the load of managed hosts. oneInsight 
@@ -16,6 +13,13 @@ provides various kinds of load mappings, that currently include the following me
 Here is a screenshot
 
 ![oneInsight Screenshot](images/oneinsight-screenshot-2.png)
+
+## Requirement
+
+```
+$ sudo apt-get install librrd-dev libpython-dev
+$ pip install rrdtool requests flask
+```
 
 How it Works
 ------------
