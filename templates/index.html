@@ -62,13 +62,13 @@ limitations under the License.
                     <a class="dropdown-toggle" data-toggle="dropdown" href="#" id="themes">Load Types<span class="caret"></span></a>
                     <ul class="dropdown-menu" aria-labelledby="themes">
                         <!--
-              <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', Menus.NodesCpuUsage);">Nodes CPU Usage</a></li>
-              <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', Menus.NodesMemoryUsage);">Nodes Memory Usage</a></li>
+              <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.NodesCpuUsage);">Nodes CPU Usage</a></li>
+              <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.NodesMemoryUsage);">Nodes Memory Usage</a></li>
               -->
-                        <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', Menus.CpuUsageByPod);">Area HeatMap - Pods CPU Usage</a></li>
-                        <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', Menus.MemoryUsageByPod);">Area HeatMap - Pods Memory Usage</a></li>
-                        <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', Menus.PodsCpuUsageHeatMap);">Density HeatMap - Pods CPU Usage</a></li>
-                        <li><a href="#" onclick="triggerRefreshLoadMap('{{ data_file }}', Menus.PodsMemoryUsageHeatMap);">Density HeatMap - Pods Memory Usage</a></li>
+                        <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.CpuUsageByPod);">Area HeatMap - Pods CPU Usage</a></li>
+                        <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.MemoryUsageByPod);">Area HeatMap - Pods Memory Usage</a></li>
+                        <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.PodsCpuUsageHeatMap);">Density HeatMap - Pods CPU Usage</a></li>
+                        <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.PodsMemoryUsageHeatMap);">Density HeatMap - Pods Memory Usage</a></li>
                     </ul>
                 </li>
             </ul>
@@ -166,7 +166,7 @@ limitations under the License.
 <script src="../js/bootstrap.min.js"></script>
 <script src="../js/bootswatch.js"></script>
 <script type='text/javascript' >
-    var dataFile='{{ data_file }}';
+    var dataFile='{{ frontend_resource_location }}';
     var currentLoadType = '';
 </script>
 <script type="text/javascript" src="../js/k8s-loadviz.js"></script>

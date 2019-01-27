@@ -8,18 +8,25 @@ import errno
 import rrdtool
 import logging
 import calendar
+import sys
 
-logging.basicConfig(format='%(asctime)s %(message)s',
-                    datefmt='%m/%d/%Y %I:%M:%S %p')
-
-RRD_FILES_LOCATION = ('%s/.k8s-opex-analytics/db') % os.getenv('HOME', '/tmp')
-RESOURCE_FILE = './static/resources.json'
+# set logger settings
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 LOG_FILE = './static/puller.log'
+
+# load dynamic configuration settings
 K8S_API_ENDPOINT = os.getenv('K8S_API_ENDPOINT', 'http://127.0.0.1:8001')
-PULLING_INTERVAL_SEC = os.getenv('PULLING_INTERVAL_SEC', '300')
+DEFAULT_RRD_FILES_LOCATION = ('%s/.k8s-opex-analytics/db') % os.getenv('HOME', '/tmp')
+RRD_FILES_LOCATION = os.getenv('RRD_FILES_LOCATION', DEFAULT_RRD_FILES_LOCATION)
+POLLING_INTERVAL_SEC = int(os.getenv('POLLING_INTERVAL_SEC', '300'))
+BILING_HOURLY_RATE = float(os.getenv('BILING_HOURLY_RATE'))
+BILLING_CURRENCY_SYMBOL = os.getenv('BILLING_CURRENCY_SYMBOL', '$')
 
-app = flask.Flask(__name__, static_url_path='/static')
+# fixed configuration settings
+STATIC_CONTENT_LOCATION = '/static'
+FRONTEND_RESOURCE_LOCATION = '.%s/frontend' % (STATIC_CONTENT_LOCATION)
 
+app = flask.Flask(__name__, static_url_path=STATIC_CONTENT_LOCATION)
 
 @app.route('/favicon.ico')
 def favicon():
@@ -38,11 +45,11 @@ def send_css(path):
 
 # @app.route('/d3')
 # def render():
-#     return flask.render_template('d3.html', data_file=RESOURCE_FILE)
+#     return flask.render_template('d3.html', frontend_resource_location=FRONTEND_RESOURCE_LOCATION)
 
 @app.route('/')
 def render():
-    return flask.render_template('index.html', data_file=RESOURCE_FILE)
+    return flask.render_template('index.html', frontend_resource_location=FRONTEND_RESOURCE_LOCATION)
 
 
 class Node:
@@ -268,8 +275,6 @@ class K8sUsage:
         if data is None:
             return
         # process likely valid data  
-        self.sumPodCpu = 0.0 
-        self.sumPodMem = 0.0 
         data_json = json.loads(data)
         for _, item in enumerate(data_json['items']):
             pod = self.pods.get(item['metadata']['name'], None)
@@ -279,20 +284,22 @@ class K8sUsage:
                 for _, container in enumerate(item['containers']):
                     pod.cpuUsage += self.decode_cpu_capacity(container['usage']['cpu'])
                     pod.memUsage += self.decode_memory_capacity(container['usage']['memory'])  
-                    self.sumPodCpu += pod.cpuUsage
-                    self.sumPodMem += pod.memUsage
                 self.pods[pod.name] = pod
 
 
-    def consolidate_namespace_usage(self): 
+    def consolidate_ns_usage(self): 
+        self.sumPodCpu = 0.0 
+        self.sumPodMem = 0.0 
         for pod in self.pods.values():
             if hasattr(pod, 'cpuUsage'):
+                self.sumPodCpu += pod.cpuUsage
                 self.nsResUsage[pod.namespace].cpuUsage += pod.cpuUsage
             if hasattr(pod, 'memUsage'):
                 self.nsResUsage[pod.namespace].memUsage += pod.memUsage 
+                self.sumPodMem += pod.memUsage
 
-def computePercentRation(value, total):
-    return round(100 * value / total, 2)
+def compute_usage_percent_ratio(value, total):
+    return float(value) / total
 
 def pull_k8s(api_context):
     api_endpoint = '%s%s' % (K8S_API_ENDPOINT, api_context)
@@ -305,38 +312,55 @@ def pull_k8s(api_context):
                        ' [ERROR] %s returned error (%s)' % (api_endpoint, k8s_proxy_req.text))
     return None
 
+def create_directory_if_not_exists(path):
+    try:
+        os.makedirs(path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
 
 class Rrd:
     def __init__(self, db_files_location, dbname):
+        create_directory_if_not_exists(db_files_location)
         self.dbname = dbname
-        self.db_files_location = RRD_FILES_LOCATION
-        self.rrd_filename = str("%s.rrd" % dbname)
-        self.rrd_location = str('%s/%s' % (RRD_FILES_LOCATION, self.rrd_filename))
-        self.create_rdd_files_location()
+        self.rrd_location = str('%s/%s.rrd' % (RRD_FILES_LOCATION, dbname))
         self.create_rrd_file_if_not_exists()
 
-    def create_rdd_files_location(self):
-        try:
-            os.makedirs(self.db_files_location)
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                raise
-
-
     def create_rrd_file_if_not_exists(self):
-
-        if os.path.exists(self.rrd_location):
-            return
-
-        rrdtool.create(self.rrd_location,
-                    "--step", "300",
-                    "--start", '0',
-                    str('DS:%s:GAUGE:600:U:U' % self.dbname),
-                    "RRA:AVERAGE:0.5:12:24",
-                    "RRA:AVERAGE:0.5:12:8880")
+        if not os.path.exists(self.rrd_location):
+            rrdtool.create(self.rrd_location,
+                "--step", str(POLLING_INTERVAL_SEC),
+                "--start", "0",
+                str('DS:consolidated_usage:GAUGE:%d:U:U' % (2 * POLLING_INTERVAL_SEC)),
+                str('DS:estimated_cost:GAUGE:%d:U:U' % (2 * POLLING_INTERVAL_SEC)),
+                "RRA:AVERAGE:0.5:1:4032",
+                "RRA:AVERAGE:0.5:12:8880")
     
-    def add_value(self, ts, value):
-        rrdtool.update(self.rrd_location, str("%s:%f"%(ts, value)))
+    def add_value(self, probe_ts, ds1Value, dsValue):
+        rrdtool.update(self.rrd_location, '%s:%s:%s'%(str(probe_ts), str(ds1Value), str(dsValue)))
+
+    def dump_data(self, duration):
+        endIn = int(calendar.timegm(time.gmtime()) * POLLING_INTERVAL_SEC) / POLLING_INTERVAL_SEC # align with POLLING_INTERVAL_SEC
+        startIn  = endIn - int(duration) 
+        result = rrdtool.fetch(self.rrd_location, 'AVERAGE', '-r', str(POLLING_INTERVAL_SEC), '-s', str(startIn), '-e', str(endIn))
+        startOut, _, step = result[0]
+        ds = result[1]
+        cpds = result[2]
+        cpdTs = startOut + step
+        consolidated_usage = ''
+        estmated_cost = ''
+        for _, cdp in enumerate(cpds):
+            if len(cdp) == 2:
+                try:
+                    consolidated_usage += '%s,%s,%f\n' % (ds[0], cpdTs, float(cdp[0]))
+                    estmated_cost += '%s,%s,%f\n' % (ds[1], cpdTs, float(cdp[1]))
+                except:
+                    pass
+            cpdTs += step
+        return consolidated_usage, estmated_cost
+        # writer output
+        # with open(dest_file, 'w') as the_file:
+        #     the_file.write(consolidatedUsage)        
 
 
 def create_k8s_puller():
@@ -354,17 +378,23 @@ def create_k8s_puller():
         k8s_usage.extract_pod_metrics(
             pull_k8s('/apis/metrics.k8s.io/v1beta1/pods'))
 
-        k8s_usage.consolidate_namespace_usage()
+        k8s_usage.consolidate_ns_usage()
 
-        print json.dumps(k8s_usage.nodes, cls=JSONMarshaller, indent=2)
-        # create and/or update rrd databases
-        for ns, resUsage in k8s_usage.nsResUsage.iteritems():
-            rrd = Rrd(db_files_location=RRD_FILES_LOCATION, dbname=ns)
-            usage = (computePercentRation(resUsage.cpuUsage, k8s_usage.sumPodCpu) + computePercentRation(resUsage.memUsage, k8s_usage.sumPodMem)) / 2
-            print (ns, 
-            json.dumps(resUsage, cls=JSONMarshaller, indent=2), 
-            usage)
-            rrd.add_value(probe_timestamp, usage)
+        # calculate usage costs and update database
+        if k8s_usage.sumPodCpu > 0.0 and k8s_usage.sumPodMem > 0.0:
+            for ns, nsUsage in k8s_usage.nsResUsage.iteritems():
+                rrd = Rrd(db_files_location=RRD_FILES_LOCATION, dbname=ns)
+                cpuUsagePercent = compute_usage_percent_ratio(nsUsage.cpuUsage, k8s_usage.sumPodCpu)
+                memUsagePercent = compute_usage_percent_ratio(nsUsage.memUsage, k8s_usage.sumPodMem)
+                consolidated_usage = (cpuUsagePercent + memUsagePercent) / 2
+                estimated_cost =  consolidated_usage * (POLLING_INTERVAL_SEC * BILING_HOURLY_RATE) / 3600 
+                print consolidated_usage, estimated_cost
+                rrd.add_value(probe_timestamp, consolidated_usage, estimated_cost)
+
+                create_directory_if_not_exists(FRONTEND_RESOURCE_LOCATION)
+                export = rrd.dump_data(duration=86400)
+                print export
+                # dest_file=str('%s/ubc.json' % FRONTEND_RESOURCE_LOCATION)
             
 
 
@@ -379,10 +409,15 @@ def create_k8s_puller():
         # with open(RESOURCE_FILE, 'w') as the_file:
         #     the_file.write(output)
 
-        time.sleep(int(PULLING_INTERVAL_SEC))
+        time.sleep(int(POLLING_INTERVAL_SEC))
 
 
 if __name__ == '__main__':
+    if BILING_HOURLY_RATE <= 0.0:
+        logging.critical('invalid BILING_HOURLY_RATE: %f' % BILING_HOURLY_RATE)
+        sys.exit(1)
+
+
     th = threading.Thread(target=create_k8s_puller)
     th.start()
 
