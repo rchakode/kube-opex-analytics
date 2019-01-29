@@ -1,0 +1,30 @@
+language: node_js
+node_js:
+- 6.9.2
+env:
+  - CXX=g++-4.8
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-4.8
+script: yarn run test:travis
+before_deploy: yarn run build && yarn run docs
+deploy:
+  - provider: npm
+    skip_cleanup: true
+    email: npmjs+eng@eventbrite.com
+    api_key:
+      secure: $NPM_TOKEN
+    on:
+      tags: true
+      repo: eventbrite/britecharts
+  - provider: pages
+    skip_cleanup: true
+    github_token: $GITHUB_TOKEN_JAYLUM_CHEN
+    local_dir: docs
+    on:
+      branch: master
+
+# after_deploy: git remote add origin-pages https://${GITHUB_TOKEN_JAYLUM_CHEN}@github.com/eventbrite/britecharts.git > /dev/null 2>&1 && git rm .gitignore && git add docs && git commit -m 'Updating docs' && git push -fu origin-pages HEAD:gh-pages

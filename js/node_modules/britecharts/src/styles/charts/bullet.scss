@@ -1,0 +1,19 @@
+@import "../helpers/_variables.scss";
+
+.bullet-chart {
+
+    // Lines
+    .marker-line {
+        shape-rendering: crispEdges;
+    }
+
+    // Axes
+    .axis-group path {
+        display: none;
+    }
+
+    // Labels
+    .bullet-title {
+        font-size: 16px;
+    }
+}

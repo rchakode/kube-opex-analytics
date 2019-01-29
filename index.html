@@ -1,0 +1,172 @@
+<!--
+File: index.html
+Copyright (c) 2014  Rodrigue Chakode <rodrigue.chakode at gmail dot com>
+
+This file is part of k8s-loadviz by RealOpInsight Labs.
+
+k8s-loadviz is licensed under the Apache License,
+Version 2.0 (the "License"); you may not use this software except
+in compliance with the License. You may obtain a copy of the
+License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>k8s-loadviz | Kubernetes Node Loads</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="css/bootstrap.min.css" media="screen">
+    <link rel="stylesheet" href="css/bootswatch.min.css">
+    <link type="text/css" rel="stylesheet" href="css/britecharts/britecharts.min.css" /> 
+    <link rel="stylesheet" href="css/frontend.css">
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="../bower_components/html5shiv/dist/html5shiv.js"></script>
+      <script src="../bower_components/respond/dest/respond.min.js"></script>
+    <![endif]-->
+    <script type='text/javascript' >
+        const Menus = Object.freeze(
+            {
+                "NodesCpuUsage": "Nodes CPU Usage",
+                "NodesMemoryUsage": "Nodes Memory Usage",
+                "CpuUsageByPod": "CPU Usage By Pod",
+                "MemoryUsageByPod": "Memory Usage By Pod",
+                "PodsCpuUsageHeatMap": "HeatMap - Pods CPU Usage",
+                "PodsMemoryUsageHeatMap": "HeatMap - Pods Memory Usage",
+            });
+    </script>
+</head>
+<body>
+<div class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+        <div class="navbar-header">
+            <a href="/" class="navbar-brand">k8s-loadviz</a>
+            <button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#navbar-main">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+        </div>
+        <div class="navbar-collapse collapse" id="navbar-main">
+            <ul class="nav navbar-nav">
+                <li class="dropdown">
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="#" id="themes">Load Types<span class="caret"></span></a>
+                    <ul class="dropdown-menu" aria-labelledby="themes">
+                        <!--
+              <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.NodesCpuUsage);">Nodes CPU Usage</a></li>
+              <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.NodesMemoryUsage);">Nodes Memory Usage</a></li>
+              -->
+                        <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.CpuUsageByPod);">Area HeatMap - Pods CPU Usage</a></li>
+                        <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.MemoryUsageByPod);">Area HeatMap - Pods Memory Usage</a></li>
+                        <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.PodsCpuUsageHeatMap);">Density HeatMap - Pods CPU Usage</a></li>
+                        <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.PodsMemoryUsageHeatMap);">Density HeatMap - Pods Memory Usage</a></li>
+                    </ul>
+                </li>
+            </ul>
+
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="#" data-toggle="modal" data-target="#myModal">About</a></li>
+            </ul>
+
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="col-md-9">
+        <div class="page-header">
+            <h1 id="title-container">Resource Usage</h1>
+        </div>
+        <div class="alert alert-danger alert-dismissible">
+            <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+            <p id="error-message"></p>
+        </div>
+        <div class="js-stacked-area-chart-tooltip-container card--chart"></div>
+        <div id="load-map-container"></div>
+    </div>
+    <div class="col-md-3">
+        <div class="page-header"><h1 id="title-container">Nodes</h1></div>
+        <div id="host-list-container"></div>
+    </div>
+</div>
+
+<!-- Host popup container -->
+<div id="popup-container"></div>
+
+<!-- About Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel">About k8s-loadviz by RealOpInsight Labs</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    k8s-loadviz version 0.1
+                </p>
+                <p>
+                    Copyright &copy; 2014-2015 Rodrigue Chakode
+                </p>
+                <p>
+                    k8s-loadviz is authored by
+                    <a href="mailto:rodrigue.chakode at gmail dot com">Rodrigue Chakode</a>
+                    as part of RealOpInsight Labs (<a href="http://realopinsight.com">http://realopinsight.com</a>).
+                </p>
+                <p>
+                    The product is licensed under the Apache License,
+                    Version 2.0 (the "License"); you may not use this product except
+                    in compliance with the License. You may obtain a copy of the
+                    License at: <a href="http://www.apache.org/licenses/LICENSE-2.0">
+                    http://www.apache.org/licenses/LICENSE-2.0
+                </a>
+                </p>
+                <p>
+                    Unless required by applicable law or agreed to in writing, software
+                    distributed under the License is distributed on an "AS IS" BASIS,
+                    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+                    See the License for the specific language governing permissions and
+                    limitations under the License.
+                </p>
+                <p>
+                    This product includes the following third-party tools released under their own licenses: Twitter Bootstrap,
+                    Raphael Javascript Library, Bootswatch.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="container">
+        <div class="col-lg-12">
+            <ul class="list-unstyled">
+                <li><a href="https://twitter.com/realopinsight">Twitter</a></li>
+                <li><a href="https://github.com/rchakode/k8s-loadviz">GitHub</a></li>
+            </ul>
+            <p>Copyright &copy; 2019 <a href="https://www.linkedin.com/in/rodriguechakode">Rodrigue Chakode</a>.
+                Licensed under the terms of <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache
+                    License v2.0</a>.</p>
+        </div>
+    </div>
+</footer>
+<script type='text/javascript' >
+    var dataFile='{{ frontend_resource_location }}';
+</script>
+
+<script data-main="js/frontend.js" src="js/require-v2.3.6.min.js"></script>
+</body>
+</html>

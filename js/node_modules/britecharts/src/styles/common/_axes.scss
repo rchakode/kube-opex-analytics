@@ -1,0 +1,22 @@
+$text-padding: 12px;
+$text-size: 1rem;
+$tick-size: 1;
+
+.tick {
+    line {
+        fill: none;
+        stroke: $grey-500;
+        stroke-width: $tick-size;
+        shape-rendering: crispEdges;
+    }
+    text {
+        font-size: $text-size;
+        fill: $grey-600;
+        padding: $text-padding;
+    }
+}
+.y-axis-label,
+.x-axis-label {
+    font-size: $text-size;
+    fill: $grey-500;
+}

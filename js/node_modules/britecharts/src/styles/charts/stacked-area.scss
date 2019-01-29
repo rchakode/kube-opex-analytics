@@ -1,0 +1,34 @@
+@import "../helpers/_variables.scss";
+
+$outline-stroke-width: 1.2;
+
+.stacked-area {
+
+    // Data points
+    .dot {
+        display: none;
+    }
+
+    // Axes
+    .y-axis-group path {
+        display: none;
+    }
+    .x-axis-group path {
+        display: none;
+    }
+
+    .area-outline {
+        shape-rendering: geometricPrecision;
+        fill: none;
+        stroke-width: $outline-stroke-width;
+    }
+
+    .data-point-highlighter {
+        stroke-width: $outline-stroke-width;
+    }
+
+    .empty-data-line {
+        stroke-width: 2px;
+        stroke-linecap: round;
+    }
+}

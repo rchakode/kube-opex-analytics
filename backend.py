@@ -24,9 +24,9 @@ BILLING_CURRENCY_SYMBOL = os.getenv('BILLING_CURRENCY_SYMBOL', '$')
 
 # fixed configuration settings
 STATIC_CONTENT_LOCATION = '/static'
-FRONTEND_RESOURCE_LOCATION = '.%s/frontend' % (STATIC_CONTENT_LOCATION)
+FRONTEND_RESOURCE_LOCATION = '.%s/data' % (STATIC_CONTENT_LOCATION)
 
-app = flask.Flask(__name__, static_url_path=STATIC_CONTENT_LOCATION)
+app = flask.Flask(__name__, static_url_path=STATIC_CONTENT_LOCATION, template_folder='.')
 
 @app.route('/favicon.ico')
 def favicon():
@@ -43,13 +43,13 @@ def send_css(path):
     return flask.send_from_directory('css', path)
 
 
-# @app.route('/d3')
+# @app.route('/')
 # def render():
 #     return flask.render_template('d3.html', frontend_resource_location=FRONTEND_RESOURCE_LOCATION)
 
 @app.route('/')
 def render():
-    return flask.render_template('index.html', frontend_resource_location=FRONTEND_RESOURCE_LOCATION)
+    return flask.render_template('index.html', frontend_resource_location=str('%s/usage.json' % FRONTEND_RESOURCE_LOCATION))
 
 
 class Node:
@@ -307,8 +307,8 @@ def pull_k8s(api_context):
     if k8s_proxy_req.status_code == 200:
         return k8s_proxy_req.text
 
-    with open(LOG_FILE, 'a') as the_file:
-        the_file.write(time.strftime("%Y-%M-%d %H:%M:%S") +
+    with open(LOG_FILE, 'a') as fd:
+        fd.write(time.strftime("%Y-%M-%d %H:%M:%S") +
                        ' [ERROR] %s returned error (%s)' % (api_endpoint, k8s_proxy_req.text))
     return None
 
@@ -347,21 +347,17 @@ class Rrd:
         ds = result[1]
         cpds = result[2]
         cpdTs = startOut + step
-        consolidated_usage = ''
-        estmated_cost = ''
+        consolidated_usage = []
+        estmated_cost = []
         for _, cdp in enumerate(cpds):
             if len(cdp) == 2:
                 try:
-                    consolidated_usage += '%s,%s,%f\n' % (ds[0], cpdTs, float(cdp[0]))
-                    estmated_cost += '%s,%s,%f\n' % (ds[1], cpdTs, float(cdp[1]))
+                    consolidated_usage.append('{"name":"%s","dateUTC":%d,"usage":%d}' % (self.dbname, int(cpdTs), float(cdp[0]))) 
+                    estmated_cost.append('{"name":"%s", "dateUTC":"%s","usage":%d}' % (self.dbname, time.strftime('%Y-%m-%dT%H:%M:%SZ', time.localtime(cpdTs)), float(cdp[0])) )
                 except:
                     pass
             cpdTs += step
-        return consolidated_usage, estmated_cost
-        # writer output
-        # with open(dest_file, 'w') as the_file:
-        #     the_file.write(consolidatedUsage)        
-
+        return ','.join(consolidated_usage), ','.join(estmated_cost)
 
 def create_k8s_puller():
     while True:
@@ -388,15 +384,23 @@ def create_k8s_puller():
                 memUsagePercent = compute_usage_percent_ratio(nsUsage.memUsage, k8s_usage.sumPodMem)
                 consolidated_usage = (cpuUsagePercent + memUsagePercent) / 2
                 estimated_cost =  consolidated_usage * (POLLING_INTERVAL_SEC * BILING_HOURLY_RATE) / 3600 
-                print consolidated_usage, estimated_cost
                 rrd.add_value(probe_timestamp, consolidated_usage, estimated_cost)
 
+            # export current database content
+            usage = []         
+            cost = []             
+            for ns, nsUsage in k8s_usage.nsResUsage.iteritems():
+                rrd = Rrd(db_files_location=RRD_FILES_LOCATION, dbname=ns)
+                export = rrd.dump_data(duration=1209600)  
                 create_directory_if_not_exists(FRONTEND_RESOURCE_LOCATION)
-                export = rrd.dump_data(duration=86400)
-                print export
-                # dest_file=str('%s/ubc.json' % FRONTEND_RESOURCE_LOCATION)
-            
-
+                usage.append(export[0])
+                cost.append(export[1])
+            with open(str('%s/usage.json' % FRONTEND_RESOURCE_LOCATION), 'w') as fd:
+                fd.write('['+','.join(usage)+']')   
+            with open(str('%s/cost.json' % FRONTEND_RESOURCE_LOCATION), 'w') as fd:
+                fd.write('['+','.join(usage)+']')                                             
+                
+        
 
         # TODO write data out for frontend
         # output = '[' + pull_k8s('/api/v1/namespaces') + \
@@ -406,8 +410,8 @@ def create_k8s_puller():
         #          ',' + pull_k8s('/apis/metrics.k8s.io/v1beta1/pods')+ \
         #          ']'
         # # write output
-        # with open(RESOURCE_FILE, 'w') as the_file:
-        #     the_file.write(output)
+        # with open(RESOURCE_FILE, 'w') as fd:
+        #     fd.write(output)
 
         time.sleep(int(POLLING_INTERVAL_SEC))
 
