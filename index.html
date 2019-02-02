@@ -1,21 +1,19 @@
 <!--
-File: index.html
-Copyright (c) 2014  Rodrigue Chakode <rodrigue.chakode at gmail dot com>
-
-This file is part of k8s-loadviz by RealOpInsight Labs.
-
-k8s-loadviz is licensed under the Apache License,
-Version 2.0 (the "License"); you may not use this software except
-in compliance with the License. You may obtain a copy of the
-License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+# File: index.html                                                                       #
+#                                                                                        #
+# Copyright © 2019 Rodrigue Chakode <rodrigue.chakode at gmail dot com>                  #
+#                                                                                        #
+# This file is part of kube-opex-analytics software authored by Rodrigue Chakode         #
+# as part of RealOpInsight Labs (http://realopinsight.com).                              #
+#                                                                                        #
+# kube-opex-analytics is licensed under the Apache License, Version 2.0 (the "License"); #
+# you may not use this file except in compliance with the License. You may obtain        #
+# a copy of the License at: http://www.apache.org/licenses/LICENSE-2.0                   #
+#                                                                                        #
+# Unless required by applicable law or agreed to in writing, software distributed        #
+# under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR            #
+# CONDITIONS OF ANY KIND, either express or implied. See the License for the             #
+# specific language governing permissions and limitations under the License.             # 
 -->
 
 <!DOCTYPE html>
@@ -25,10 +23,10 @@ limitations under the License.
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="utf-8">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <link rel="stylesheet" href="css/bootstrap.min.css" media="screen">
-    <link rel="stylesheet" href="css/bootswatch.min.css">
-    <link type="text/css" rel="stylesheet" href="css/britecharts/britecharts.min.css" /> 
-    <link rel="stylesheet" href="css/frontend.css">
+    <link rel="stylesheet" href="./css/bootstrap.min.css" media="screen">
+    <link rel="stylesheet" href="./css/bootswatch.min.css">
+    <link type="text/css" rel="stylesheet" href="./css/britecharts/britecharts.min.css" /> 
+    <link rel="stylesheet" href="./css/frontend.css">
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
       <script src="../bower_components/html5shiv/dist/html5shiv.js"></script>
@@ -58,22 +56,6 @@ limitations under the License.
             </button>
         </div>
         <div class="navbar-collapse collapse" id="navbar-main">
-            <ul class="nav navbar-nav">
-                <li class="dropdown">
-                    <a class="dropdown-toggle" data-toggle="dropdown" href="#" id="themes">Load Types<span class="caret"></span></a>
-                    <ul class="dropdown-menu" aria-labelledby="themes">
-                        <!--
-              <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.NodesCpuUsage);">Nodes CPU Usage</a></li>
-              <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.NodesMemoryUsage);">Nodes Memory Usage</a></li>
-              -->
-                        <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.CpuUsageByPod);">Area HeatMap - Pods CPU Usage</a></li>
-                        <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.MemoryUsageByPod);">Area HeatMap - Pods Memory Usage</a></li>
-                        <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.PodsCpuUsageHeatMap);">Density HeatMap - Pods CPU Usage</a></li>
-                        <li><a href="#" onclick="triggerRefreshLoadMap('{{ frontend_resource_location }}', Menus.PodsMemoryUsageHeatMap);">Density HeatMap - Pods Memory Usage</a></li>
-                    </ul>
-                </li>
-            </ul>
-
             <ul class="nav navbar-nav navbar-right">
                 <li><a href="#" data-toggle="modal" data-target="#myModal">About</a></li>
             </ul>
@@ -83,20 +65,41 @@ limitations under the License.
 </div>
 
 <div class="container">
-    <div class="col-md-9">
-        <div class="page-header">
-            <h1 id="title-container">Resource Usage</h1>
+
+    <div class="row">
+        <div class="col-md-12"> 
+            <h1>Namespaces - 14 Days Consumption Trends  - Utilization vs Cost Estimate</h1>
+            <hr width='40%' class='pull-left clear' /> 
+            <div id="error-message-container" class="alert alert-danger alert-dismissible">
+                <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+                <p id="error-message"></p>
+            </div>        
         </div>
-        <div class="alert alert-danger alert-dismissible">
-            <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-            <p id="error-message"></p>
-        </div>
-        <div class="js-stacked-area-chart-tooltip-container card--chart"></div>
-        <div id="load-map-container"></div>
     </div>
-    <div class="col-md-3">
-        <div class="page-header"><h1 id="title-container">Nodes</h1></div>
-        <div id="host-list-container"></div>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="col-md-6">
+                <div class="js-14-days-hourly-usage-per-namespace card--chart"></div>
+            </div>
+            <div class="col-md-6">
+                <div class="js-14-days-hourly-estimated-cost-per-namespace card--chart"></div>
+            </div> 
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12"> 
+            <h1>Nodes - HeatMap of Occupation By Pods</h1>
+            <hr width='40%' class='pull-left clear' /> 
+        </div>
+    </div>    
+    <div class="row">
+        <div class="col-md-9"> 
+            <div id="load-map-container"></div>
+        </div>
+        <div class="col-md-3">
+            <label>Available nodes:</label> 
+            <div id="host-list-container"></div>
+        </div>
     </div>
 </div>
 
@@ -164,7 +167,7 @@ limitations under the License.
     </div>
 </footer>
 <script type='text/javascript' >
-    var dataFile='{{ frontend_resource_location }}';
+    var frontendDataLocation='{{ frontend_data_location }}';
 </script>
 
 <script data-main="js/frontend.js" src="js/require-v2.3.6.min.js"></script>

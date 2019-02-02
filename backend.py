@@ -1,3 +1,22 @@
+""" 
+# File: backend.py                                                                       #
+#                                                                                        #
+# Copyright © 2019 Rodrigue Chakode <rodrigue.chakode at gmail dot com>                  #
+#                                                                                        #
+# This file is part of kube-opex-analytics software authored by Rodrigue Chakode         #
+# as part of RealOpInsight Labs (http://realopinsight.com).                              #
+#                                                                                        #
+# kube-opex-analytics is licensed under the Apache License, Version 2.0 (the "License"); #
+# you may not use this file except in compliance with the License. You may obtain        #
+# a copy of the License at: http://www.apache.org/licenses/LICENSE-2.0                   #
+#                                                                                        #
+# Unless required by applicable law or agreed to in writing, software distributed        #
+# under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR            #
+# CONDITIONS OF ANY KIND, either express or implied. See the License for the             #
+# specific language governing permissions and limitations under the License.             # 
+"""
+
+
 import flask
 import requests
 import threading
@@ -24,7 +43,7 @@ BILLING_CURRENCY_SYMBOL = os.getenv('BILLING_CURRENCY_SYMBOL', '$')
 
 # fixed configuration settings
 STATIC_CONTENT_LOCATION = '/static'
-FRONTEND_RESOURCE_LOCATION = '.%s/data' % (STATIC_CONTENT_LOCATION)
+FRONTEND_DATA_LOCATION = '.%s/data' % (STATIC_CONTENT_LOCATION)
 
 app = flask.Flask(__name__, static_url_path=STATIC_CONTENT_LOCATION, template_folder='.')
 
@@ -32,6 +51,13 @@ app = flask.Flask(__name__, static_url_path=STATIC_CONTENT_LOCATION, template_fo
 def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
+@app.after_request
+def add_header(r):
+    r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    r.headers["Pragma"] = "no-cache"
+    r.headers["Expires"] = "0"
+    r.headers['Cache-Control'] = 'public, max-age=0'
+    return r
 
 @app.route('/js/<path:path>')
 def send_js(path):
@@ -43,13 +69,9 @@ def send_css(path):
     return flask.send_from_directory('css', path)
 
 
-# @app.route('/')
-# def render():
-#     return flask.render_template('d3.html', frontend_resource_location=FRONTEND_RESOURCE_LOCATION)
-
 @app.route('/')
 def render():
-    return flask.render_template('index.html', frontend_resource_location=str('%s/usage.json' % FRONTEND_RESOURCE_LOCATION))
+    return flask.render_template('index.html', frontend_data_location=FRONTEND_DATA_LOCATION)
 
 
 class Node:
@@ -108,7 +130,9 @@ class JSONMarshaller(json.JSONEncoder):
                 'name': obj.name,
                 'nodeName': obj.nodeName,
                 'phase': obj.phase,
-                'state': obj.state
+                'state': obj.state,
+                'cpuUsage': obj.cpuUsage,
+                'memUsage': obj.memUsage
             }
         elif isinstance(obj, ResourceUsage):
             return {
@@ -216,11 +240,6 @@ class K8sUsage:
                     break
             self.nodes[node.name] = node
 
-            # TODO build this from the web javascript
-            # self.maxCpu = max(self.maxCpu, node.cpuCapacity)
-            # self.maxMem = max(self.maxMem, node.memCapacity)
-            # mainClass.nodeHtmlList += '<li><a href="#" data-toggle="modal" data-target="#'+node.id+'">'+ node.name+'</a></li>';
-
     def extract_node_metrics(self, data):
         # exit if not valid data
         if data is None:
@@ -233,7 +252,6 @@ class K8sUsage:
                 node.cpuUsage = self.decode_cpu_capacity(item['usage']['cpu'])
                 node.memUsage = self.decode_memory_capacity(item['usage']['memory'])
                 self.nodes[node.name] = node
-                # FIXME TODO in frontend => mainClass.popupContent += createPopupContent(node);
 
     def extract_pods(self, data):
         # exit if not valid data
@@ -291,26 +309,15 @@ class K8sUsage:
         self.sumPodCpu = 0.0 
         self.sumPodMem = 0.0 
         for pod in self.pods.values():
-            if hasattr(pod, 'cpuUsage'):
+            if hasattr(pod, 'cpuUsage') and hasattr(pod, 'memUsage'):
                 self.sumPodCpu += pod.cpuUsage
                 self.nsResUsage[pod.namespace].cpuUsage += pod.cpuUsage
-            if hasattr(pod, 'memUsage'):
                 self.nsResUsage[pod.namespace].memUsage += pod.memUsage 
                 self.sumPodMem += pod.memUsage
+                self.nodes[pod.nodeName].podsRunning.append(pod)
 
 def compute_usage_percent_ratio(value, total):
     return float(value) / total
-
-def pull_k8s(api_context):
-    api_endpoint = '%s%s' % (K8S_API_ENDPOINT, api_context)
-    k8s_proxy_req = requests.get(api_endpoint)
-    if k8s_proxy_req.status_code == 200:
-        return k8s_proxy_req.text
-
-    with open(LOG_FILE, 'a') as fd:
-        fd.write(time.strftime("%Y-%M-%d %H:%M:%S") +
-                       ' [ERROR] %s returned error (%s)' % (api_endpoint, k8s_proxy_req.text))
-    return None
 
 def create_directory_if_not_exists(path):
     try:
@@ -336,32 +343,57 @@ class Rrd:
                 "RRA:AVERAGE:0.5:1:4032",
                 "RRA:AVERAGE:0.5:12:8880")
     
-    def add_value(self, probe_ts, ds1Value, dsValue):
-        rrdtool.update(self.rrd_location, '%s:%s:%s'%(str(probe_ts), str(ds1Value), str(dsValue)))
+    def add_value(self, probe_ts, usage, estimated_cost):
+        rrdtool.update(self.rrd_location, '%s:%s:%s'%(str(probe_ts), str(usage), str(estimated_cost)))
 
     def dump_data(self, duration):
-        endIn = int(calendar.timegm(time.gmtime()) * POLLING_INTERVAL_SEC) / POLLING_INTERVAL_SEC # align with POLLING_INTERVAL_SEC
-        startIn  = endIn - int(duration) 
-        result = rrdtool.fetch(self.rrd_location, 'AVERAGE', '-r', str(POLLING_INTERVAL_SEC), '-s', str(startIn), '-e', str(endIn))
-        startOut, _, step = result[0]
-        ds = result[1]
+        # align with POLLING_INTERVAL_SEC
+        end_ts_in = int(int(calendar.timegm(time.gmtime()) * POLLING_INTERVAL_SEC) / POLLING_INTERVAL_SEC)
+        start_ts_in  = int(end_ts_in - int(duration))
+        result = rrdtool.fetch(self.rrd_location, 'AVERAGE', '-r', str(POLLING_INTERVAL_SEC), '-s', str(start_ts_in), '-e', str(end_ts_in))
+        start_ts_out, _, step = result[0]
+        # ds = result[1]
         cpds = result[2]
-        cpdTs = startOut + step
+        cpd_ts = start_ts_out + step
         consolidated_usage = []
         estmated_cost = []
+        cumulated_cost = float(0.0)
         for _, cdp in enumerate(cpds):
             if len(cdp) == 2:
                 try:
-                    consolidated_usage.append('{"name":"%s","dateUTC":%d,"usage":%d}' % (self.dbname, int(cpdTs), float(cdp[0]))) 
-                    estmated_cost.append('{"name":"%s", "dateUTC":"%s","usage":%d}' % (self.dbname, time.strftime('%Y-%m-%dT%H:%M:%SZ', time.localtime(cpdTs)), float(cdp[0])) )
+                    cumulated_cost += float(cdp[1])
+                    dateUTC = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(cpd_ts))
+                    consolidated_usage.append('{"name":"%s","dateUTC":"%s","usage":%s}' % (self.dbname, dateUTC, float(cdp[0]))) 
+                    estmated_cost.append('{"name":"%s", "dateUTC":"%s","usage":%s}' % (self.dbname, dateUTC, cumulated_cost))
                 except:
                     pass
-            cpdTs += step
+            cpd_ts += step
         return ','.join(consolidated_usage), ','.join(estmated_cost)
+
+def pull_k8s(api_context):
+    data = None
+
+    api_endpoint = '%s%s' % (K8S_API_ENDPOINT, api_context)
+    try:
+        http_req = requests.get(api_endpoint)
+        if http_req.status_code == 200:
+            data = http_req.text
+        else:
+            with open(LOG_FILE, 'a') as fd:
+                fd.write("%s [ERROR] '%s' returned error (%s)" % (time.strftime("%Y-%M-%d %H:%M:%S"), api_endpoint, http_req.text))
+    except requests.exceptions.RequestException as ex:
+        with open(LOG_FILE, 'a') as fd:
+            fd.write("%s [ERROR] HTTP exception requesting '%s' (%s)" % (time.strftime("%Y-%M-%d %H:%M:%S"), api_endpoint, ex)) 
+    except: 
+        with open(LOG_FILE, 'a') as fd:
+            fd.write("%s [ERROR] exception requesting '%s'" % (time.strftime("%Y-%M-%d %H:%M:%S"), api_endpoint))   
+
+    return data
+
 
 def create_k8s_puller():
     while True:
-        probe_timestamp = calendar.timegm(time.gmtime())
+        
         k8s_usage = K8sUsage()
         k8s_usage.extract_namespaces_and_initialize_usage(
             pull_k8s('/api/v1/namespaces'))
@@ -378,40 +410,32 @@ def create_k8s_puller():
 
         # calculate usage costs and update database
         if k8s_usage.sumPodCpu > 0.0 and k8s_usage.sumPodMem > 0.0:
-            for ns, nsUsage in k8s_usage.nsResUsage.iteritems():
+            probe_ts = calendar.timegm(time.gmtime())
+            for ns, nsUsage in k8s_usage.nsResUsage.items():
                 rrd = Rrd(db_files_location=RRD_FILES_LOCATION, dbname=ns)
                 cpuUsagePercent = compute_usage_percent_ratio(nsUsage.cpuUsage, k8s_usage.sumPodCpu)
                 memUsagePercent = compute_usage_percent_ratio(nsUsage.memUsage, k8s_usage.sumPodMem)
-                consolidated_usage = (cpuUsagePercent + memUsagePercent) / 2
-                estimated_cost =  consolidated_usage * (POLLING_INTERVAL_SEC * BILING_HOURLY_RATE) / 3600 
-                rrd.add_value(probe_timestamp, consolidated_usage, estimated_cost)
+                usage_ratio = (cpuUsagePercent + memUsagePercent) / 2
+                estimated_cost =  usage_ratio * (POLLING_INTERVAL_SEC * BILING_HOURLY_RATE) / 3600 
+                rrd.add_value(probe_ts, usage=100*usage_ratio, estimated_cost=estimated_cost)
 
-            # export current database content
+            # dump nodes
+            with open(str('%s/nodes.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
+                fd.write(json.dumps(k8s_usage.nodes, cls=JSONMarshaller))  
+
+            # dump consolidated resource usage
             usage = []         
-            cost = []             
-            for ns, nsUsage in k8s_usage.nsResUsage.iteritems():
+            costs = []             
+            for ns, nsUsage in k8s_usage.nsResUsage.items():
                 rrd = Rrd(db_files_location=RRD_FILES_LOCATION, dbname=ns)
-                export = rrd.dump_data(duration=1209600)  
-                create_directory_if_not_exists(FRONTEND_RESOURCE_LOCATION)
-                usage.append(export[0])
-                cost.append(export[1])
-            with open(str('%s/usage.json' % FRONTEND_RESOURCE_LOCATION), 'w') as fd:
+                exported_data = rrd.dump_data(duration=1209600)  
+                create_directory_if_not_exists(FRONTEND_DATA_LOCATION)
+                usage.append(exported_data[0])
+                costs.append(exported_data[1])
+            with open(str('%s/usage.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
                 fd.write('['+','.join(usage)+']')   
-            with open(str('%s/cost.json' % FRONTEND_RESOURCE_LOCATION), 'w') as fd:
-                fd.write('['+','.join(usage)+']')                                             
-                
-        
-
-        # TODO write data out for frontend
-        # output = '[' + pull_k8s('/api/v1/namespaces') + \
-        #          ',' + pull_k8s('/api/v1/nodes') + \
-        #          ',' + pull_k8s('/apis/metrics.k8s.io/v1beta1/nodes') + \
-        #          ',' + pull_k8s('/api/v1/pods') + \
-        #          ',' + pull_k8s('/apis/metrics.k8s.io/v1beta1/pods')+ \
-        #          ']'
-        # # write output
-        # with open(RESOURCE_FILE, 'w') as fd:
-        #     fd.write(output)
+            with open(str('%s/estimated_costs.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
+                fd.write('['+','.join(costs)+']')                                             
 
         time.sleep(int(POLLING_INTERVAL_SEC))
 
@@ -421,8 +445,7 @@ if __name__ == '__main__':
         logging.critical('invalid BILING_HOURLY_RATE: %f' % BILING_HOURLY_RATE)
         sys.exit(1)
 
-
     th = threading.Thread(target=create_k8s_puller)
     th.start()
 
-    app.run()
+    app.run() # host=None, port=5483, debug=None
