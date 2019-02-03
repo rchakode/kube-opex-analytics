@@ -262,8 +262,8 @@ class K8sUsage:
         data_json = json.loads(data)
         for _, item in enumerate(data_json['items']):
             pod = Pod()
-            pod.name = item['metadata']['name']
             pod.namespace = item['metadata']['namespace']
+            pod.name = '%s.%s' % (item['metadata']['name'], pod.namespace)
             pod.id = item['metadata']['uid']
             pod.phase = item['status']['phase']
             pod.state = 'PodNotScheduled'
@@ -295,7 +295,8 @@ class K8sUsage:
         # process likely valid data  
         data_json = json.loads(data)
         for _, item in enumerate(data_json['items']):
-            pod = self.pods.get(item['metadata']['name'], None)
+            podName = '%s.%s' % (item['metadata']['name'], item['metadata']['namespace'])
+            pod = self.pods.get(podName, None)
             if pod is not None:
                 pod.cpuUsage = 0.0
                 pod.memUsage = 0.0

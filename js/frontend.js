@@ -17,15 +17,25 @@
 */
 'use strict';
 
+
+
+var currentLoadType = '';
+const DrawingAreaWidth = 0.745 * (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth);
+const DrawingMemScaleUnit = 2e6;
+const DrawingMinNodeSide = 128;
+const DrawingMaxNodeSide = 512;
+
 requirejs.config({
     baseUrl: 'js',
     paths: {
         jquery: './lib/jquery-1.11.0.min',
         bootswatch: './lib/bootswatch',
         bootstrap: './lib/bootstrap.min',
-        raphael: './lib/raphael-min',
         d3Selection: './d3-selection/dist/d3-selection.min',
         stackedAreaChart: './britecharts/umd/stackedArea.min',
+        stackedBarChart: './britecharts/umd/stackedBar.min',
+        dotnutChart: './britecharts/umd/donut.min',
+        legend: './britecharts/umd/legend.min',
         colors: './britecharts/umd/colors.min',
         tooltip: './britecharts/umd/tooltip.min'
     },
@@ -35,21 +45,35 @@ requirejs.config({
     }
 });
 
-var currentLoadType = '';
 
-define(['jquery', 'bootswatch', 'bootstrap', 'raphael', 'd3Selection', 'stackedAreaChart', 'colors', 'tooltip'],
-    function ($, bootswatch, bootstrap, raphael, d3Selection, stackedAreaChart, colors, tooltip) {
+define(['jquery', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutChart', 'legend', 'colors', 'tooltip'], 
+    function ($, d3Selection, stackedAreaChart, stackedBarChart, donut, legend, colors, tooltip) {
+        let stackedArea14DaysUsage = stackedAreaChart();
+        let stackedArea14CostEstimate = stackedAreaChart();
+        let donutChartNode = donut();
 
-        function createUsageChartWithTooltip(dataset, chartContainer, yLabel, optionalColorSchema) {
-            let stackedArea = stackedAreaChart();
+        const truncateText = function(str, length, ending) {
+            if (length == null) {
+              length = 100;
+            }
+            if (ending == null) {
+              ending = '...';
+            }
+            if (str.length > length) {
+              return str.substring(0, length - ending.length) + ending;
+            } else {
+              return str;
+            }
+        };
+
+        function updateStackedAreaChart(dataset, myStackedAreaChart, targetDivContainer, yLabel, optionalColorSchema) {
             let chartTooltip = tooltip();
-            let container = d3Selection.select('.'+chartContainer);
+            let container = d3Selection.select('.'+targetDivContainer);
             let containerWidth = container.node() ? container.node().getBoundingClientRect().width : false;
-            let tooltipContainer;
 
             if (containerWidth) {
-                stackedArea
-                    .isAnimated(true)
+                myStackedAreaChart
+                    .isAnimated(false)
                     .aspectRatio(0.5)
                     .margin(5)
                     .grid('full')
@@ -60,8 +84,8 @@ define(['jquery', 'bootswatch', 'bootstrap', 'raphael', 'd3Selection', 'stackedA
                     .width(containerWidth)
                     .dateLabel('dateUTC')
                     .valueLabel('usage')
+                    //.colorSchema(colors.colorSchemas.orange)
                     .on('customDataEntryClick', function(d, mousePosition) {
-                        // eslint-disable-next-line no-console
                         console.log('Data entry marker clicked', d, mousePosition);
                     })
                     .on('customMouseOver', chartTooltip.show)
@@ -71,32 +95,122 @@ define(['jquery', 'bootswatch', 'bootstrap', 'raphael', 'd3Selection', 'stackedA
                     .on('customMouseOut', chartTooltip.hide);
 
                 if (optionalColorSchema) {
-                    stackedArea.colorSchema(optionalColorSchema);
+                    myStackedAreaChart.colorSchema(optionalColorSchema);
                 }
 
-                container.datum(dataset.data).call(stackedArea);
+                container.datum(dataset.data).call(myStackedAreaChart);
 
-                // Tooltip Setup and start
                 chartTooltip
                     .topicLabel('values')
-                    .title('Namespaces\' Resource Usage');
+                    .title('Namespaces Usage');
 
-                // Note that if the viewport width is less than the tooltipThreshold value,
-                // this container won't exist, and the tooltip won't show up
-                tooltipContainer = d3Selection.select('.'+chartContainer+' .metadata-group .vertical-marker-container');
+                let tooltipContainer = d3Selection.select('.'+targetDivContainer+' .metadata-group .vertical-marker-container');
                 tooltipContainer.datum([]).call(chartTooltip);
 
                 d3Selection.select('#button').on('click', function() {
-                    stackedArea.exportChart('stacked-area.png', 'Britecharts Stacked Area');
+                    myStackedAreaChart.exportChart('stacked-area.png', 'Britecharts Stacked Area');
                 });
             }
         }
 
 
-        const DrawingAreaWidth = 0.745 * (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth);
-        const DrawingMemScaleUnit = 2e6;
-        const DrawingMinNodeSide = 128;
-        const DrawingMaxNodeSide = 512;
+        function updateStackedBarChart(dataset, myStackedBarChart, targetDivContainer, optionalColorSchema) {
+            let chartTooltip = tooltip();
+            let container = d3Selection.select('.'+targetDivContainer);
+            let containerWidth = container.node() ? container.node().getBoundingClientRect().width : false;
+
+            if (containerWidth) {
+                myStackedBarChart
+                    .width(containerWidth)
+                    .tooltipThreshold(400)
+                    .betweenBarsPadding(0.3)
+                    .isAnimated(true)
+                    .isHorizontal(false)
+                    .nameLabel('category')
+                    .stackLabel('item')
+                    .valueLabel('value')
+                    .margin({left: 50, top: 0, right: 0, bottom: 20})
+                    .on('customMouseOver', chartTooltip.show)
+                    .on('customMouseMove', function(dataPoint, topicColorMap, x, y) {
+                        chartTooltip.update(dataPoint, topicColorMap, x, y);
+                    })
+                    .on('customMouseOut', chartTooltip.hide);
+
+                container.datum(dataset.data).call(myStackedBarChart);
+
+                chartTooltip
+                    .title('Pod Usage (%)')
+                    .topicLabel('values')
+                    .dateLabel('date');
+
+                let tooltipContainer = d3Selection.select('.metadata-group');
+                tooltipContainer.datum([]).call(chartTooltip);
+
+                d3Selection.select('#button').on('click', function() {
+                    stackedBar.exportChart('stacked-bar.png', 'Britecharts Stacked Bar');
+                });
+            }
+        }
+
+        function getLegendChart(dataset, targetDivContainer, optionalColorSchema) {
+            let legendChart = legend();
+            let legendContainer = d3Selection.select('.'+targetDivContainer);
+
+            let containerWidth = legendContainer.node() ? legendContainer.node().getBoundingClientRect().width : false;
+
+            if (containerWidth) {
+                d3Selection.select('.'+targetDivContainer+' .britechart-legend').remove();
+                legendChart
+                    .width(containerWidth*0.8)
+                    .colorSchema(colors.colorSchemas.orange)
+                    .height(200)
+                    .numberFormat('s');
+
+                if (optionalColorSchema) {
+                    legendChart.colorSchema(optionalColorSchema);
+                }
+                legendContainer.datum(dataset).call(legendChart);
+                return legendChart;
+            }
+        }
+
+        function updateDonutChart(dataset, myDonutChart, targetDivContainer, legendContainer, optionalColorSchema) {
+            let legendChart = getLegendChart(dataset, legendContainer, optionalColorSchema);
+            let donutContainer = d3Selection.select('.'+targetDivContainer);
+            let containerWidth = donutContainer.node() ? donutContainer.node().getBoundingClientRect().width : false;
+
+            if (containerWidth) {
+                d3Selection.select('#button').on('click', function() {
+                    myDonutChart.exportChart();
+                });
+
+                myDonutChart
+                    .isAnimated(true)
+                    .highlightSliceById(2)
+                    .width(containerWidth)
+                    .height(containerWidth)
+                    .externalRadius(containerWidth/2.5)
+                    .internalRadius(containerWidth/5)
+                    .colorSchema(colors.colorSchemas.orange)
+                    .on('customMouseOver', function(data) {
+                        legendChart.highlight(data.data.id);
+                    })
+                    .on('customMouseOut', function() {
+                        legendChart.clearHighlight();
+                    });
+
+                if (optionalColorSchema) {
+                    myDonutChart.colorSchema(optionalColorSchema);
+                }
+
+                donutContainer.datum(dataset).call(myDonutChart);
+
+                d3Selection.select('#button').on('click', function() {
+                    myDonutChart.exportChart('donut.png', 'Britecharts Donut Chart');
+                });
+            }
+        }
+
 
         function generateTooltip(node)
         {
@@ -137,42 +251,26 @@ define(['jquery', 'bootswatch', 'bootstrap', 'raphael', 'd3Selection', 'stackedA
         }
 
 
-        function refreshPodLoadHeatmapCentered(data, loadType)
+        function buildNodesLoadDataSet(data, loadType)
         {
+            let dataset = { "data": new Map };
+
             let nodeHtmlList = '';
             let popupContent = '';
-            let maxCpu = 1;
-            let maxMem = 1;
             for (let nname in data) {
                 if (data.hasOwnProperty(nname)) {
                     let node = data[nname];
-                    maxCpu = Math.max(maxCpu, node.cpuCapacity);
-                    maxMem = Math.max(maxMem, node.memCapacity);
                     nodeHtmlList += '<li><a href="#" data-toggle="modal" data-target="#'+node.id+'">'+ node.name+'</a></li>';
                     popupContent += createPopupContent(node);
                 }
             }
             $("#host-list-container").html('<ul>'+nodeHtmlList+"</ul>");
             $("#popup-container").html(popupContent);
-            $("#load-map-container").empty();
 
-            const DRAWING_AREA_SIZE = {width: DrawingAreaWidth, height: '100%'};
-            const CELL_MARGIN = 10;
-            const RECT_ROUND = 3;
-            const NODE_SIDE = Math.min(Math.max(Math.sqrt(Math.ceil(maxMem / DrawingMemScaleUnit)), DrawingMinNodeSide), DrawingMaxNodeSide);
-            const NODE_SHIFT = NODE_SIDE + CELL_MARGIN;
-            const MAP_NODE_PER_ROW = Math.floor(DrawingAreaWidth / NODE_SHIFT);
-
-            let raphael = new Raphael("load-map-container", DRAWING_AREA_SIZE.width, DRAWING_AREA_SIZE.height);
-
-            let drawingCursor = { x: 0, y : 0};
-
-            let currentNodeIndex = 0;
             for (let nname in data) {
                 if (! data.hasOwnProperty(nname)) {
                     continue;
                 }
-                let node = data[nname];
                 let resUsage = '';
                 let resCapacity = '';
 
@@ -187,10 +285,11 @@ define(['jquery', 'bootswatch', 'bootstrap', 'raphael', 'd3Selection', 'stackedA
                         break;
                     default:
                         $("#error-message").html('unknown load type: '+ loadType);
-                        $("#error-message").show();
+                        $("#error-message-container").show();
                         return;
                 }
 
+                let node = data[nname];
                 if (typeof node[resUsage] === "undefined" || node[resUsage] == 0) {
                     $("#error-message").html('No '+resUsage+' metric on node: ' + node.name +'\n');
                     $("#error-message-container").show();
@@ -203,6 +302,7 @@ define(['jquery', 'bootswatch', 'bootstrap', 'raphael', 'd3Selection', 'stackedA
                     continue;
                 }
 
+                // sort pods in ascending order in against resource usage
                 node.podsRunning.sort(
                     function(p1, p2) {
                         if (p1[resUsage] < p2[resUsage])
@@ -212,66 +312,35 @@ define(['jquery', 'bootswatch', 'bootstrap', 'raphael', 'd3Selection', 'stackedA
                         return 0;
                     }
                 );
-                node.podsRunning.reverse();
 
-                if (currentNodeIndex % MAP_NODE_PER_ROW == 0) {
-                    drawingCursor.x = CELL_MARGIN;
-                    drawingCursor.y = (currentNodeIndex / MAP_NODE_PER_ROW) * NODE_SHIFT + CELL_MARGIN;
-                } else {
-                    drawingCursor.x += NODE_SHIFT;
-                }
-
-                raphael.rect(
-                    drawingCursor.x,
-                    drawingCursor.y,
-                    NODE_SIDE,
-                    NODE_SIDE, RECT_ROUND)
-                    .attr({
-                        'stroke-width': 3,
-                        'stroke': computeLoadHeatMapColor(computeLoad(node[resUsage], node[resCapacity])),
-                        fill: '#E6E6E6',
-                        title: generateTooltip(node)
-                    });
-
-                const NODE_AREA = NODE_SIDE * NODE_SIDE;
-                node.shape = raphael.set();
+                let nodeData = [];
+                let sumLoad = 0.0;
                 for (let pid = 0; pid < node.podsRunning.length; pid++) {
                     let pod = node.podsRunning[pid];
-                    let absUsageRatio = pod[resUsage] / node[resUsage];
-                    let podArea =  absUsageRatio * NODE_AREA;
-                    let podSide = Math.ceil(Math.sqrt(podArea));
-                    let shift = (NODE_SIDE / 2) - (podSide / 2);
-
-                    let heatMapTooltip =
-                        '\nPod: ' + pod.name + ' (' + Math.round(1e4 * absUsageRatio) / 1e2 + '% of node\'s '+resUsage+')' +
-                        '\nNode: '+node.name+' (' + computeLoad(node[resUsage], node[resCapacity]) + '% of '+resUsage+')';
-
-                    let relUsageRatio = pod[resUsage] / node.podsRunning[0][resUsage];
-                    let podShape = raphael.rect(
-                        drawingCursor.x + shift,
-                        drawingCursor.y + shift,
-                        podSide,
-                        podSide,
-                        RECT_ROUND)
-                        .attr({
-                            fill: computeLoadHeatMapColor(100 * relUsageRatio),
-                            'stroke-width': 0.25,
-                            'stroke': '#fff',
-                            title: heatMapTooltip
-                        });
-
-                    node.shape.push(podShape);
+                    let podLoad = computeLoad(pod[resUsage], node[resCapacity]);
+                    sumLoad += podLoad;
+                    nodeData.push({
+                        "name": truncateText(pod.name, 25, '...'),
+                        "id": pid,
+                        "quantity": pod[resUsage],
+                        "percentage": podLoad
+                    });
                 }
-                currentNodeIndex++;
+                nodeData.push({
+                    "name": 'unused',
+                    "id": 9999,
+                    "quantity": node[resCapacity] - (node[resCapacity] * sumLoad/100),
+                    "percentage": (100 - sumLoad)
+                });
+                dataset.data.set(nname, nodeData)
             }
-            // set dynamic HTML content
-            $("#load-map-container").height(drawingCursor.y + NODE_SHIFT);
+            return dataset;
         }
 
 
         function computeLoad(used, capacity)
         {
-            return Math.ceil( (1e4*used)/capacity ) / 100
+            return Math.ceil(1e4*used/capacity ) / 100
         }
 
         function  computeLoadHeatMapColor(load) {
@@ -307,7 +376,7 @@ define(['jquery', 'bootswatch', 'bootstrap', 'raphael', 'd3Selection', 'stackedA
 
         function triggerRefreshUsageCharts(frontendDataLocation, loadType)
         {
-            console.log('updated', Date())
+            console.log(Date(), 'starting update')
             $("#error-message-container").hide();
             if (typeof loadType !== "undefined") {
                 currentLoadType = loadType;
@@ -321,7 +390,8 @@ define(['jquery', 'bootswatch', 'bootstrap', 'raphael', 'd3Selection', 'stackedA
                 dataType: "json",
                 success: function(data) {
                     let dataset = { "data": data };
-                    createUsageChartWithTooltip(dataset, 
+                    updateStackedAreaChart(dataset,
+                        stackedArea14DaysUsage,
                         'js-14-days-hourly-usage-per-namespace',
                         'share (%) of resource usage');
                 },
@@ -337,7 +407,8 @@ define(['jquery', 'bootswatch', 'bootstrap', 'raphael', 'd3Selection', 'stackedA
                 dataType: "json",
                 success: function(data) {
                     let dataset = { "data": data };
-                    createUsageChartWithTooltip(dataset, 
+                    updateStackedAreaChart(dataset,
+                        stackedArea14CostEstimate,
                         'js-14-days-hourly-estimated-cost-per-namespace',
                         'cost estimate in $');
                 },
@@ -352,7 +423,22 @@ define(['jquery', 'bootswatch', 'bootstrap', 'raphael', 'd3Selection', 'stackedA
                 url: frontendDataLocation+'/nodes.json',
                 dataType: "json",
                 success: function(data) {
-                    refreshPodLoadHeatmapCentered(data, loadType);
+                    let dataset = buildNodesLoadDataSet(data, currentLoadType, 'donut');
+                    let dynHtml = '';
+                    for (let [nname, _] of dataset.data) {
+                        dynHtml += '<div class="col-md-4">';
+                        dynHtml += '  <legent>'+nname+'</dilegentv>';
+                        dynHtml += '  <div class="'+nname+'"></div>';
+                        dynHtml += '  <div class="'+nname+'-legend" britechart-legend"></div>';
+                        dynHtml += '</div>';
+                    }
+                    $("#js-nodes-load-container").html(dynHtml);
+                    for (let [nname, ndata] of dataset.data) {
+                        updateDonutChart(ndata,
+                            donutChartNode,
+                            nname,
+                            nname+'-legend');
+                    }
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
                     $("#error-message").html('error ' + xhr.status + ' (' + thrownError +')');
@@ -369,20 +455,18 @@ define(['jquery', 'bootswatch', 'bootstrap', 'raphael', 'd3Selection', 'stackedA
                     {
                         cache: false,
                         beforeSend: function() {
-                            $('#load-map-container').hide();
-                            $('#loading-container').show();
+                            $('#js-node-load-container').hide();
                         },
                         complete: function() {
-                            $('#loading-container').hide();
-                            $('#load-map-container').show();
+                            $('#js-node-load-container').show();
                         },
                         success: function() {
-                            $('#loading-container').hide();
-                            $('#load-map-container').show();
+                            $('#js-node-load-container').show();
                         }
                     });
                 triggerRefreshUsageCharts(frontendDataLocation, Menus.PodsCpuUsageHeatMap);
                 setInterval(function() {triggerRefreshUsageCharts(frontendDataLocation);}, 300000); // update every 5 mins
             });
         })(jQuery);
-    });
+    }
+);
