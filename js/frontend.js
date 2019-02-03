@@ -46,11 +46,10 @@ requirejs.config({
 });
 
 
-define(['jquery', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutChart', 'legend', 'colors', 'tooltip'], 
-    function ($, d3Selection, stackedAreaChart, stackedBarChart, donut, legend, colors, tooltip) {
+define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutChart', 'legend', 'colors', 'tooltip'], 
+    function ($, bootstrap, bootswatch, d3Selection, stackedAreaChart, stackedBarChart, donut, legend, colors, tooltip) {
         let stackedArea14DaysUsage = stackedAreaChart();
         let stackedArea14CostEstimate = stackedAreaChart();
-        let donutChartNode = donut();
 
         const truncateText = function(str, length, ending) {
             if (length == null) {
@@ -66,7 +65,7 @@ define(['jquery', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutC
             }
         };
 
-        function updateStackedAreaChart(dataset, myStackedAreaChart, targetDivContainer, yLabel, optionalColorSchema) {
+        function updateStackedAreaChart(dataset, myStackedAreaChart, targetDivContainer, yLabel, colorSchema) {
             let chartTooltip = tooltip();
             let container = d3Selection.select('.'+targetDivContainer);
             let containerWidth = container.node() ? container.node().getBoundingClientRect().width : false;
@@ -94,8 +93,8 @@ define(['jquery', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutC
                     })
                     .on('customMouseOut', chartTooltip.hide);
 
-                if (optionalColorSchema) {
-                    myStackedAreaChart.colorSchema(optionalColorSchema);
+                if (colorSchema) {
+                    myStackedAreaChart.colorSchema(colorSchema);
                 }
 
                 container.datum(dataset.data).call(myStackedAreaChart);
@@ -114,7 +113,7 @@ define(['jquery', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutC
         }
 
 
-        function updateStackedBarChart(dataset, myStackedBarChart, targetDivContainer, optionalColorSchema) {
+        function updateStackedBarChart(dataset, myStackedBarChart, targetDivContainer, colorSchema) {
             let chartTooltip = tooltip();
             let container = d3Selection.select('.'+targetDivContainer);
             let containerWidth = container.node() ? container.node().getBoundingClientRect().width : false;
@@ -152,7 +151,7 @@ define(['jquery', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutC
             }
         }
 
-        function getLegendChart(dataset, targetDivContainer, optionalColorSchema) {
+        function getLegendChart(dataset, targetDivContainer, colorSchema) {
             let legendChart = legend();
             let legendContainer = d3Selection.select('.'+targetDivContainer);
 
@@ -162,20 +161,19 @@ define(['jquery', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutC
                 d3Selection.select('.'+targetDivContainer+' .britechart-legend').remove();
                 legendChart
                     .width(containerWidth*0.8)
-                    .colorSchema(colors.colorSchemas.orange)
                     .height(200)
                     .numberFormat('s');
 
-                if (optionalColorSchema) {
-                    legendChart.colorSchema(optionalColorSchema);
+                if (colorSchema) {
+                    legendChart.colorSchema(colorSchema);
                 }
                 legendContainer.datum(dataset).call(legendChart);
                 return legendChart;
             }
         }
 
-        function updateDonutChart(dataset, myDonutChart, targetDivContainer, legendContainer, optionalColorSchema) {
-            let legendChart = getLegendChart(dataset, legendContainer, optionalColorSchema);
+        function updateDonutChart(dataset, myDonutChart, targetDivContainer, legendContainer, colorSchema) {
+            let legendChart = getLegendChart(dataset, legendContainer, colorSchema);
             let donutContainer = d3Selection.select('.'+targetDivContainer);
             let containerWidth = donutContainer.node() ? donutContainer.node().getBoundingClientRect().width : false;
 
@@ -191,7 +189,6 @@ define(['jquery', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutC
                     .height(containerWidth)
                     .externalRadius(containerWidth/2.5)
                     .internalRadius(containerWidth/5)
-                    .colorSchema(colors.colorSchemas.orange)
                     .on('customMouseOver', function(data) {
                         legendChart.highlight(data.data.id);
                     })
@@ -199,8 +196,8 @@ define(['jquery', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutC
                         legendChart.clearHighlight();
                     });
 
-                if (optionalColorSchema) {
-                    myDonutChart.colorSchema(optionalColorSchema);
+                if (colorSchema) {
+                    myDonutChart.colorSchema(colorSchema);
                 }
 
                 donutContainer.datum(dataset).call(myDonutChart);
@@ -214,19 +211,21 @@ define(['jquery', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutC
 
         function generateTooltip(node)
         {
-            let tooltip = 'Host: '+node.name;
-            tooltip += '\nID: '+node.id;
-            tooltip += '\nContainer Runtime: ' + node.containerRuntime;
-            tooltip += '\nState: '+ node.state;
-            tooltip += '\nCPU: ' + node.cpuCapacity;
-            tooltip += '\n  Allocatable: ' + computeLoad(node.cpuAllocatable, node.cpuCapacity) + '%';
-            tooltip += '\n  Usage: ' + computeLoad(node.cpuUsage, node.cpuCapacity)+ '%';
-            tooltip += '\nMemory: ' + node.memCapacity;
-            tooltip += '\n  Allocatable: ' + computeLoad(node.memAllocatable, node.memAllocatable) + '%';
-            tooltip += '\n  Usage: ' + computeLoad(node.memUsage, node.memCapacity)+ '%';
-            tooltip += '\nPods: ' + parseInt(node.podsRunning.length + node.podsNotRunning.length);
-            tooltip += '\n  Running: ' + node.podsRunning.length;
-            tooltip += '\n  Not Running: ' + node.podsNotRunning.length;
+            let tooltip = '<table class="table table-striped"><tbody>';
+
+            tooltip += '<tr><td>Host</td><td>'+node.name+'</td></tr>';
+            tooltip += '<tr><td>UID</td><td>'+node.id+'</td></tr>';
+            tooltip += '<tr><td>Container Runtime</td><td>'+node.containerRuntime+'</td></tr>';
+            tooltip += '<tr><td>State</td><td>'+node.state+'</td></tr>';
+            tooltip += '<tr><td>CPU</td><td>'+node.cpuCapacity+'</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>'+computeLoad(node.cpuAllocatable, node.cpuCapacity)+'</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Usage</td><td>'+computeLoad(node.cpuUsage, node.cpuCapacity)+'</td></tr>';
+            tooltip += '<tr><td>Memory</td><td>'+node.memCapacity+'</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>'+computeLoad(node.memAllocatable, node.memAllocatable)+'</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Usage</td><td>'+computeLoad(node.memUsage, node.memCapacity)+'</td></tr>';
+            tooltip += '<tr><td>Pods Running</td><td>'+node.podsRunning.length+'</td></tr>';
+        
+            tooltip += '</tbody></table>';
             return tooltip;
         }
 
@@ -240,7 +239,7 @@ define(['jquery', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutC
                 +'<h4 class="modal-title" id="'+nodeInfo.name+'">'+nodeInfo.name+'</h4>'
                 +'</div>'
                 +'<div class="modal-body">'
-                +''+generateTooltip(nodeInfo).replace(/\n/g, "<br />")+''
+                +generateTooltip(nodeInfo)
                 +'</div>'
                 +'<div class="modal-footer">'
                 +'<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>'
@@ -253,7 +252,7 @@ define(['jquery', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutC
 
         function buildNodesLoadDataSet(data, loadType)
         {
-            let dataset = { "data": new Map };
+            let dataset = { "data": new Map() };
 
             let nodeHtmlList = '';
             let popupContent = '';
@@ -313,26 +312,30 @@ define(['jquery', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutC
                     }
                 );
 
-                let nodeData = [];
+                let chartData = [];
                 let sumLoad = 0.0;
+                let loadColors = [];
                 for (let pid = 0; pid < node.podsRunning.length; pid++) {
                     let pod = node.podsRunning[pid];
                     let podLoad = computeLoad(pod[resUsage], node[resCapacity]);
+                    let podLoadRel = computeLoad(pod[resUsage], node[resUsage]);
+                    loadColors.push(computeLoadHeatMapColor(podLoadRel));
                     sumLoad += podLoad;
-                    nodeData.push({
+                    chartData.push({
                         "name": truncateText(pod.name, 25, '...'),
                         "id": pid,
                         "quantity": pod[resUsage],
                         "percentage": podLoad
                     });
                 }
-                nodeData.push({
+                chartData.push({
                     "name": 'unused',
                     "id": 9999,
                     "quantity": node[resCapacity] - (node[resCapacity] * sumLoad/100),
                     "percentage": (100 - sumLoad)
                 });
-                dataset.data.set(nname, nodeData)
+                loadColors.push(computeLoadHeatMapColor(0));
+                dataset.data.set(nname, {'chartData': chartData, 'colorSchema': loadColors})
             }
             return dataset;
         }
@@ -425,19 +428,22 @@ define(['jquery', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutC
                 success: function(data) {
                     let dataset = buildNodesLoadDataSet(data, currentLoadType, 'donut');
                     let dynHtml = '';
+                    let donuts = new Map();
                     for (let [nname, _] of dataset.data) {
+                        donuts[nname] = donut();
                         dynHtml += '<div class="col-md-4">';
-                        dynHtml += '  <legent>'+nname+'</dilegentv>';
+                        dynHtml += '  <h4>'+nname+'</h4>';
                         dynHtml += '  <div class="'+nname+'"></div>';
                         dynHtml += '  <div class="'+nname+'-legend" britechart-legend"></div>';
                         dynHtml += '</div>';
                     }
                     $("#js-nodes-load-container").html(dynHtml);
                     for (let [nname, ndata] of dataset.data) {
-                        updateDonutChart(ndata,
-                            donutChartNode,
+                        updateDonutChart(ndata['chartData'],
+                            donuts[nname],
                             nname,
-                            nname+'-legend');
+                            nname+'-legend', 
+                            colors.colorSchemas.orange);
                     }
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
