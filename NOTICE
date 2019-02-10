@@ -1,7 +1,7 @@
-RealOpInsight oneInsight
-Copyright 2014 RealOpInsight Labs
+kube-opex-analytics
+Copyright © 2019 Rodrigue Chakode <rodrigue.chakode at gmail dot com>
 
-RealOpInsight oneInsight is licensed under the Apache License, 
+kube-opex-analytics is licensed under the Apache License, 
 Version 2.0 (the "License"); you may not use this file except 
 in compliance with the License. You may obtain a copy of the 
 License at
@@ -14,12 +14,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-This product includes the Bootstrap Library, a web front-end 
-framework released under the MIT license and copyrighted by 
-Twitter. The original software is available from 
-http://getbootstrap.com/. 
+This product includes the following third-party librairies with their own licenses and copyrights:
 
-This product includes the Raphaël Library, a cross-browser 
-vector graphics written by Dmitry Baranovskiy, and Licence under 
-the MIT Licence. The original software is available from 
-http://raphaeljs.com/.
+ * Bootstrap Library: http://getbootstrap.com/. 
+ * BriteCharts: https://github.com/eventbrite/britecharts. 
+ * RRDtool: https://oss.oetiker.ch/rrdtool/
