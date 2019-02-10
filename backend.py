@@ -31,21 +31,28 @@ import sys
 
 # set logger settings
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-LOG_FILE = './static/puller.log'
 
 # load dynamic configuration settings
-K8S_API_ENDPOINT = os.getenv('K8S_API_ENDPOINT', 'http://127.0.0.1:8001')
-DEFAULT_RRD_FILES_LOCATION = ('%s/.k8s-opex-analytics/db') % os.getenv('HOME', '/tmp')
-RRD_FILES_LOCATION = os.getenv('RRD_FILES_LOCATION', DEFAULT_RRD_FILES_LOCATION)
-POLLING_INTERVAL_SEC = int(os.getenv('POLLING_INTERVAL_SEC', '300'))
-BILING_HOURLY_RATE = float(os.getenv('BILING_HOURLY_RATE'))
-BILLING_CURRENCY_SYMBOL = os.getenv('BILLING_CURRENCY_SYMBOL', '$')
+KOA_K8S_API_ENDPOINT = os.getenv('KOA_K8S_API_ENDPOINT', 'http://127.0.0.1:8001')
+KOA_DEFAULT_DB_LOCATION = ('%s/.k8s-opex-analytics/db') % os.getenv('HOME', '/tmp')
+KOA_DB_LOCATION = os.getenv('KOA_DB_LOCATION', KOA_DEFAULT_DB_LOCATION)
+KOA_POLLING_INTERVAL_SEC = int(os.getenv('KOA_POLLING_INTERVAL_SEC', '300'))
+KOA_BILLING_CURRENCY_SYMBOL = os.getenv('KOA_BILLING_CURRENCY_SYMBOL', '$')
 
+KOA_BILING_HOURLY_RATE=0
+try:
+    KOA_BILING_HOURLY_RATE = float(os.getenv('KOA_BILING_HOURLY_RATE'))
+except:
+    KOA_BILING_HOURLY_RATE = 0
+  
 # fixed configuration settings
 STATIC_CONTENT_LOCATION = '/static'
 FRONTEND_DATA_LOCATION = '.%s/data' % (STATIC_CONTENT_LOCATION)
 
 app = flask.Flask(__name__, static_url_path=STATIC_CONTENT_LOCATION, template_folder='.')
+
+def print_error(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 @app.route('/favicon.ico')
 def favicon():
@@ -331,63 +338,67 @@ class Rrd:
     def __init__(self, db_files_location, dbname):
         create_directory_if_not_exists(db_files_location)
         self.dbname = dbname
-        self.rrd_location = str('%s/%s.rrd' % (RRD_FILES_LOCATION, dbname))
+        self.rrd_location = str('%s/%s.rrd' % (KOA_DB_LOCATION, dbname))
         self.create_rrd_file_if_not_exists()
 
     def create_rrd_file_if_not_exists(self):
         if not os.path.exists(self.rrd_location):
+            xfs = 2 * KOA_POLLING_INTERVAL_SEC
             rrdtool.create(self.rrd_location,
-                "--step", str(POLLING_INTERVAL_SEC),
+                "--step", str(KOA_POLLING_INTERVAL_SEC),
                 "--start", "0",
-                str('DS:consolidated_usage:GAUGE:%d:U:U' % (2 * POLLING_INTERVAL_SEC)),
-                str('DS:estimated_cost:GAUGE:%d:U:U' % (2 * POLLING_INTERVAL_SEC)),
+                str('DS:cpu_usage:GAUGE:%d:U:U' % xfs),
+                str('DS:mem_usage:GAUGE:%d:U:U' % xfs),
+                str('DS:consolidated_usage:GAUGE:%d:U:U' % xfs),
+                str('DS:estimated_cost:GAUGE:%d:U:U' % xfs),
                 "RRA:AVERAGE:0.5:1:4032",
                 "RRA:AVERAGE:0.5:12:8880")
     
-    def add_value(self, probe_ts, usage, estimated_cost):
-        rrdtool.update(self.rrd_location, '%s:%s:%s'%(str(probe_ts), str(usage), str(estimated_cost)))
+    def add_value(self, probe_ts, cpu_usage, mem_usage, consolidated_usage, estimated_cost):
+        rrdtool.update(self.rrd_location, '%s:%s:%s:%s:%s'%(probe_ts, cpu_usage, mem_usage, consolidated_usage, estimated_cost))
 
     def dump_data(self, duration):
-        # align with POLLING_INTERVAL_SEC
-        end_ts_in = int(int(calendar.timegm(time.gmtime()) * POLLING_INTERVAL_SEC) / POLLING_INTERVAL_SEC)
+        # align with KOA_POLLING_INTERVAL_SEC
+        end_ts_in = int(int(calendar.timegm(time.gmtime()) * KOA_POLLING_INTERVAL_SEC) / KOA_POLLING_INTERVAL_SEC)
         start_ts_in  = int(end_ts_in - int(duration))
-        result = rrdtool.fetch(self.rrd_location, 'AVERAGE', '-r', str(POLLING_INTERVAL_SEC), '-s', str(start_ts_in), '-e', str(end_ts_in))
+        result = rrdtool.fetch(self.rrd_location, 'AVERAGE', '-r', str(KOA_POLLING_INTERVAL_SEC), '-s', str(start_ts_in), '-e', str(end_ts_in))
         start_ts_out, _, step = result[0]
         # ds = result[1]
         cpds = result[2]
         cpd_ts = start_ts_out + step
+        cpu_usage = []
+        mem_usage = []
         consolidated_usage = []
         estmated_cost = []
         cumulated_cost = float(0.0)
         for _, cdp in enumerate(cpds):
-            if len(cdp) == 2:
+            if len(cdp) == 4:
                 try:
-                    cumulated_cost += float(cdp[1])
                     dateUTC = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(cpd_ts))
-                    consolidated_usage.append('{"name":"%s","dateUTC":"%s","usage":%s}' % (self.dbname, dateUTC, float(cdp[0]))) 
+                    cpu_usage.append('{"name":"%s","dateUTC":"%s","usage":%s}' % (self.dbname, dateUTC, float(cdp[0]))) 
+                    mem_usage.append('{"name":"%s","dateUTC":"%s","usage":%s}' % (self.dbname, dateUTC, float(cdp[1]))) 
+                    consolidated_usage.append('{"name":"%s","dateUTC":"%s","usage":%s}' % (self.dbname, dateUTC, float(cdp[2]))) 
+                    cumulated_cost += float(cdp[3])
                     estmated_cost.append('{"name":"%s", "dateUTC":"%s","usage":%s}' % (self.dbname, dateUTC, cumulated_cost))
                 except:
                     pass
             cpd_ts += step
-        return ','.join(consolidated_usage), ','.join(estmated_cost)
+        return ','.join(cpu_usage), ','.join(mem_usage), ','.join(consolidated_usage), ','.join(estmated_cost)
 
 def pull_k8s(api_context):
     data = None
 
-    api_endpoint = '%s%s' % (K8S_API_ENDPOINT, api_context)
+    api_endpoint = '%s%s' % (KOA_K8S_API_ENDPOINT, api_context)
     try:
         http_req = requests.get(api_endpoint)
         if http_req.status_code == 200:
             data = http_req.text
         else:
-            with open(LOG_FILE, 'a') as fd:
-                fd.write("%s [ERROR] '%s' returned error (%s)" % (time.strftime("%Y-%M-%d %H:%M:%S"), api_endpoint, http_req.text))
+            print_error("%s [ERROR] '%s' returned error (%s)" % (time.strftime("%Y-%M-%d %H:%M:%S"), api_endpoint, http_req.text))
     except requests.exceptions.RequestException as ex:
-        with open(LOG_FILE, 'a') as fd:
-            fd.write("%s [ERROR] HTTP exception requesting '%s' (%s)" % (time.strftime("%Y-%M-%d %H:%M:%S"), api_endpoint, ex)) 
+        print_error("%s [ERROR] HTTP exception requesting '%s' (%s)" % (time.strftime("%Y-%M-%d %H:%M:%S"), api_endpoint, ex)) 
     except: 
-        with open(LOG_FILE, 'a') as fd:
-            fd.write("%s [ERROR] exception requesting '%s'" % (time.strftime("%Y-%M-%d %H:%M:%S"), api_endpoint))   
+        print_error("%s [ERROR] exception requesting '%s'" % (time.strftime("%Y-%M-%d %H:%M:%S"), api_endpoint))   
 
     return data
 
@@ -413,40 +424,54 @@ def create_k8s_puller():
         if k8s_usage.sumPodCpu > 0.0 and k8s_usage.sumPodMem > 0.0:
             probe_ts = calendar.timegm(time.gmtime())
             for ns, nsUsage in k8s_usage.nsResUsage.items():
-                rrd = Rrd(db_files_location=RRD_FILES_LOCATION, dbname=ns)
-                cpuUsagePercent = compute_usage_percent_ratio(nsUsage.cpuUsage, k8s_usage.sumPodCpu)
-                memUsagePercent = compute_usage_percent_ratio(nsUsage.memUsage, k8s_usage.sumPodMem)
-                usage_ratio = (cpuUsagePercent + memUsagePercent) / 2
-                estimated_cost =  usage_ratio * (POLLING_INTERVAL_SEC * BILING_HOURLY_RATE) / 3600 
-                rrd.add_value(probe_ts, usage=100*usage_ratio, estimated_cost=estimated_cost)
+                rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname=ns)
+                cpu_usage = compute_usage_percent_ratio(nsUsage.cpuUsage, k8s_usage.sumPodCpu)
+                mem_usage = compute_usage_percent_ratio(nsUsage.memUsage, k8s_usage.sumPodMem)
+                usage_ratio = (cpu_usage + mem_usage) / 2
+                estimated_cost =  usage_ratio * (KOA_POLLING_INTERVAL_SEC * KOA_BILING_HOURLY_RATE) / 3600
+                consolidated_usage=100*usage_ratio  
+                cpu_usage = compute_usage_percent_ratio(nsUsage.cpuUsage, k8s_usage.sumPodCpu)
+                rrd.add_value(probe_ts, cpu_usage=cpu_usage, mem_usage=mem_usage, consolidated_usage=consolidated_usage, estimated_cost=estimated_cost)
 
+
+            # create dump directory if not exist
+            create_directory_if_not_exists(FRONTEND_DATA_LOCATION)
             # dump nodes
             with open(str('%s/nodes.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
                 fd.write(json.dumps(k8s_usage.nodes, cls=JSONMarshaller))  
-
             # dump consolidated resource usage
-            usage = []         
-            costs = []             
+            cpu_usage = []         
+            mem_usage = []             
+            consolidated_usage = []         
+            estimated_cost = [] 
+                        
             for ns, nsUsage in k8s_usage.nsResUsage.items():
-                rrd = Rrd(db_files_location=RRD_FILES_LOCATION, dbname=ns)
+                rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname=ns)
                 exported_data = rrd.dump_data(duration=1209600)  
-                create_directory_if_not_exists(FRONTEND_DATA_LOCATION)
-                usage.append(exported_data[0])
-                costs.append(exported_data[1])
-            with open(str('%s/usage.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
-                fd.write('['+','.join(usage)+']')   
-            with open(str('%s/estimated_costs.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
-                fd.write('['+','.join(costs)+']')                                             
+                cpu_usage.append(exported_data[0])
+                mem_usage.append(exported_data[1])
+                consolidated_usage.append(exported_data[2])
+                estimated_cost.append(exported_data[3])
 
-        time.sleep(int(POLLING_INTERVAL_SEC))
+            # write consolidated data to files
+            with open(str('%s/cpu_usage.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
+                fd.write('['+','.join(cpu_usage)+']')  
+            with open(str('%s/mem_usage.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
+                fd.write('['+','.join(mem_usage)+']')                  
+            with open(str('%s/consolidated_usage.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
+                fd.write('['+','.join(consolidated_usage)+']')   
+            with open(str('%s/estimated_costs.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
+                fd.write('['+','.join(estimated_cost)+']')                                             
+
+        time.sleep(int(KOA_POLLING_INTERVAL_SEC))
 
 
 if __name__ == '__main__':
-    if BILING_HOURLY_RATE <= 0.0:
-        logging.critical('invalid BILING_HOURLY_RATE: %f' % BILING_HOURLY_RATE)
+    if KOA_BILING_HOURLY_RATE < 0.0:
+        logging.critical('invalid KOA_BILING_HOURLY_RATE: %f' % KOA_BILING_HOURLY_RATE)
         sys.exit(1)
 
     th = threading.Thread(target=create_k8s_puller)
     th.start()
 
-    app.run() # host=None, port=5483, debug=None
+    app.run(host='0.0.0.0', port=5483) # host=None, port=5483, debug=None
