@@ -1,6 +1,6 @@
 ## Overview
 --------
-kube-opex-analytics is an open source Kubernetes operating expenditure tool helping to answer questions related to:
+kube-opex-analytics is a Kubernetes operating expenditure analytics tool helping to answer questions related to:
 
 * Cost sharing on mutualized Kubernetes clusters.
 * Capacity planning based on historic of resource usage.
