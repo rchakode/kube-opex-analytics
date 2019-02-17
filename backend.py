@@ -157,8 +157,12 @@ class K8sUsage:
         self.nsResUsage = {}
         self.popupContent = ''
         self.nodeHtmlList = ''
-        self.sumPodCpu = 0.0
-        self.sumPodMem = 0.0
+        self.cpuUsedByPods = 0.0
+        self.memUsedByPods = 0.0
+        self.cpuCapacity = 0.0
+        self.memCapacity = 0.0
+        self.cpuAllocatable = 0.0
+        self.memAllocatable = 0.0
 
     def decode_memory_capacity(self, cap_input):
         data_length = len(cap_input)
@@ -314,18 +318,34 @@ class K8sUsage:
 
 
     def consolidate_ns_usage(self): 
-        self.sumPodCpu = 0.0 
-        self.sumPodMem = 0.0 
+        self.cpuUsedByPods = 0.0 
+        self.memUsedByPods = 0.0 
         for pod in self.pods.values():
             if hasattr(pod, 'cpuUsage') and hasattr(pod, 'memUsage'):
-                self.sumPodCpu += pod.cpuUsage
+                self.cpuUsedByPods += pod.cpuUsage
                 self.nsResUsage[pod.namespace].cpuUsage += pod.cpuUsage
                 self.nsResUsage[pod.namespace].memUsage += pod.memUsage 
-                self.sumPodMem += pod.memUsage
+                self.memUsedByPods += pod.memUsage
                 self.nodes[pod.nodeName].podsRunning.append(pod)
+        self.cpuCapacity += 0.0
+        self.memCapacity += 0.0  
+        for node in self.nodes.values():
+            if hasattr(node, 'cpuCapacity') and hasattr(node, 'memCapacity'):
+                self.cpuCapacity += node.cpuCapacity
+                self.memCapacity += node.memCapacity  
+        self.cpuAllocatable += 0.0
+        self.memAllocatable += 0.0  
+        for node in self.nodes.values():
+            if hasattr(node, 'cpuAllocatable') and hasattr(node, 'memAllocatable'):
+                self.cpuAllocatable += node.cpuAllocatable
+                self.memAllocatable += node.memAllocatable                         
+
+    def dump_nodes(self):     
+        with open(str('%s/nodes.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
+            fd.write(json.dumps(self.nodes, cls=JSONMarshaller))                    
 
 def compute_usage_percent_ratio(value, total):
-    return float(value) / total
+    return (100 * float(value)) / total
 
 def create_directory_if_not_exists(path):
     try:
@@ -335,7 +355,7 @@ def create_directory_if_not_exists(path):
             raise
 
 class Rrd:
-    def __init__(self, db_files_location, dbname):
+    def __init__(self, db_files_location=None, dbname=None):
         create_directory_if_not_exists(db_files_location)
         self.dbname = dbname
         self.rrd_location = str('%s/%s.rrd' % (KOA_DB_LOCATION, dbname))
@@ -357,13 +377,11 @@ class Rrd:
     def add_value(self, probe_ts, cpu_usage, mem_usage, consolidated_usage, estimated_cost):
         rrdtool.update(self.rrd_location, '%s:%s:%s:%s:%s'%(probe_ts, cpu_usage, mem_usage, consolidated_usage, estimated_cost))
 
-    def dump_data(self, duration):
-        # align with KOA_POLLING_INTERVAL_SEC
-        end_ts_in = int(int(calendar.timegm(time.gmtime()) * KOA_POLLING_INTERVAL_SEC) / KOA_POLLING_INTERVAL_SEC)
+    def dump_data(self, duration, step):
+        end_ts_in = int(int(calendar.timegm(time.gmtime()) * step) / step)
         start_ts_in  = int(end_ts_in - int(duration))
-        result = rrdtool.fetch(self.rrd_location, 'AVERAGE', '-r', str(KOA_POLLING_INTERVAL_SEC), '-s', str(start_ts_in), '-e', str(end_ts_in))
+        result = rrdtool.fetch(self.rrd_location, 'AVERAGE', '-r', str(step), '-s', str(start_ts_in), '-e', str(end_ts_in))
         start_ts_out, _, step = result[0]
-        # ds = result[1]
         cpds = result[2]
         cpd_ts = start_ts_out + step
         cpu_usage = []
@@ -385,10 +403,11 @@ class Rrd:
             cpd_ts += step
         return ','.join(cpu_usage), ','.join(mem_usage), ','.join(consolidated_usage), ','.join(estmated_cost)
 
+
 def pull_k8s(api_context):
     data = None
-
     api_endpoint = '%s%s' % (KOA_K8S_API_ENDPOINT, api_context)
+
     try:
         http_req = requests.get(api_endpoint)
         if http_req.status_code == 200:
@@ -403,75 +422,84 @@ def pull_k8s(api_context):
     return data
 
 
-def create_k8s_puller():
+def create_metrics_puller():
     while True:
-        
         k8s_usage = K8sUsage()
-        k8s_usage.extract_namespaces_and_initialize_usage(
-            pull_k8s('/api/v1/namespaces'))
-        k8s_usage.extract_nodes(
-            pull_k8s('/api/v1/nodes'))
-        k8s_usage.extract_node_metrics(
-            pull_k8s('/apis/metrics.k8s.io/v1beta1/nodes'))
-        k8s_usage.extract_pods(
-            pull_k8s('/api/v1/pods'))
-        k8s_usage.extract_pod_metrics(
-            pull_k8s('/apis/metrics.k8s.io/v1beta1/pods'))
-
+        k8s_usage.extract_namespaces_and_initialize_usage( pull_k8s('/api/v1/namespaces') )
+        k8s_usage.extract_nodes( pull_k8s('/api/v1/nodes') )
+        k8s_usage.extract_node_metrics( pull_k8s('/apis/metrics.k8s.io/v1beta1/nodes') )
+        k8s_usage.extract_pods( pull_k8s('/api/v1/pods') )
+        k8s_usage.extract_pod_metrics( pull_k8s('/apis/metrics.k8s.io/v1beta1/pods') )
         k8s_usage.consolidate_ns_usage()
-
+        k8s_usage.dump_nodes()
         # calculate usage costs and update database
-        if k8s_usage.sumPodCpu > 0.0 and k8s_usage.sumPodMem > 0.0:
+        if k8s_usage.cpuCapacity > 0.0 and k8s_usage.memCapacity > 0.0:
             probe_ts = calendar.timegm(time.gmtime())
+            rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname='infra')
+            cpu_usage = compute_usage_percent_ratio(k8s_usage.cpuCapacity - k8s_usage.cpuAllocatable, k8s_usage.cpuCapacity)
+            mem_usage = compute_usage_percent_ratio(k8s_usage.memCapacity - k8s_usage.memAllocatable, k8s_usage.memCapacity)
+            consolidated_usage = (cpu_usage + mem_usage) / 2
+            estimated_cost =  consolidated_usage * (KOA_POLLING_INTERVAL_SEC * KOA_BILING_HOURLY_RATE) / 36
+            rrd.add_value(probe_ts, cpu_usage=cpu_usage, mem_usage=mem_usage, consolidated_usage=consolidated_usage, estimated_cost=estimated_cost)
             for ns, nsUsage in k8s_usage.nsResUsage.items():
                 rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname=ns)
-                cpu_usage = compute_usage_percent_ratio(nsUsage.cpuUsage, k8s_usage.sumPodCpu)
-                mem_usage = compute_usage_percent_ratio(nsUsage.memUsage, k8s_usage.sumPodMem)
-                usage_ratio = (cpu_usage + mem_usage) / 2
-                estimated_cost =  usage_ratio * (KOA_POLLING_INTERVAL_SEC * KOA_BILING_HOURLY_RATE) / 3600
-                consolidated_usage=100*usage_ratio  
-                cpu_usage = compute_usage_percent_ratio(nsUsage.cpuUsage, k8s_usage.sumPodCpu)
+                cpu_usage = compute_usage_percent_ratio(nsUsage.cpuUsage, k8s_usage.cpuCapacity)
+                mem_usage = compute_usage_percent_ratio(nsUsage.memUsage, k8s_usage.memCapacity)
+                consolidated_usage = (cpu_usage + mem_usage) / 2
+                estimated_cost =  consolidated_usage * (KOA_POLLING_INTERVAL_SEC * KOA_BILING_HOURLY_RATE) / 36
                 rrd.add_value(probe_ts, cpu_usage=cpu_usage, mem_usage=mem_usage, consolidated_usage=consolidated_usage, estimated_cost=estimated_cost)
-
-
-            # create dump directory if not exist
-            create_directory_if_not_exists(FRONTEND_DATA_LOCATION)
-            # dump nodes
-            with open(str('%s/nodes.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
-                fd.write(json.dumps(k8s_usage.nodes, cls=JSONMarshaller))  
-            # dump consolidated resource usage
-            cpu_usage = []         
-            mem_usage = []             
-            consolidated_usage = []         
-            estimated_cost = [] 
-                        
-            for ns, nsUsage in k8s_usage.nsResUsage.items():
-                rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname=ns)
-                exported_data = rrd.dump_data(duration=1209600)  
-                cpu_usage.append(exported_data[0])
-                mem_usage.append(exported_data[1])
-                consolidated_usage.append(exported_data[2])
-                estimated_cost.append(exported_data[3])
-
-            # write consolidated data to files
-            with open(str('%s/cpu_usage.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
-                fd.write('['+','.join(cpu_usage)+']')  
-            with open(str('%s/mem_usage.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
-                fd.write('['+','.join(mem_usage)+']')                  
-            with open(str('%s/consolidated_usage.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
-                fd.write('['+','.join(consolidated_usage)+']')   
-            with open(str('%s/estimated_costs.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
-                fd.write('['+','.join(estimated_cost)+']')                                             
-
         time.sleep(int(KOA_POLLING_INTERVAL_SEC))
 
+
+def dump_analytics_14_days(dbfiles):
+    cpu_usage = []         
+    mem_usage = []             
+    consolidated_usage = []         
+    estimated_cost = [] 
+    for _, dbfile in enumerate(dbfiles):
+        dbfile_splitted=os.path.splitext(dbfile)
+        if len(dbfile_splitted) == 2 and dbfile_splitted[1] == '.rrd':
+            rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname=dbfile_splitted[0])
+            analytics_14_days = rrd.dump_data(duration=1209600, step=KOA_POLLING_INTERVAL_SEC)  
+            if len(analytics_14_days[0]) != 0:
+                cpu_usage.append(analytics_14_days[0])
+            if len(analytics_14_days[1]) != 0:
+                mem_usage.append(analytics_14_days[1])
+            if len(analytics_14_days[2]) != 0:
+                consolidated_usage.append(analytics_14_days[2])
+            if len(analytics_14_days[3]) != 0:
+                estimated_cost.append(analytics_14_days[3])
+    # write consolidated data to files
+    with open(str('%s/cpu_usage_14_days.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
+        fd.write('['+','.join(cpu_usage)+']')  
+    with open(str('%s/mem_usage_14_days.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
+        fd.write('['+','.join(mem_usage)+']')                  
+    with open(str('%s/consolidated_usage_14_days.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
+        fd.write('['+','.join(consolidated_usage)+']')   
+    with open(str('%s/estimated_costs_14_days.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
+        fd.write('['+','.join(estimated_cost)+']')  
+
+def dump_analytics():
+    export_interval = round(1.5 * KOA_POLLING_INTERVAL_SEC)
+    while True:
+        dbfiles = []
+        for (_, _, filenames) in os.walk(KOA_DB_LOCATION):
+            dbfiles.extend(filenames)
+            break
+        dump_analytics_14_days(dbfiles)
+        time.sleep(export_interval)
 
 if __name__ == '__main__':
     if KOA_BILING_HOURLY_RATE < 0.0:
         logging.critical('invalid KOA_BILING_HOURLY_RATE: %f' % KOA_BILING_HOURLY_RATE)
         sys.exit(1)
 
-    th = threading.Thread(target=create_k8s_puller)
-    th.start()
+    # create dump directory if not exist
+    create_directory_if_not_exists(FRONTEND_DATA_LOCATION)
+
+    th_puller = threading.Thread(target=create_metrics_puller)
+    th_exporter = threading.Thread(target=dump_analytics)
+    th_puller.start()
+    th_exporter.start()
 
     app.run(host='0.0.0.0', port=5483) # host=None, port=5483, debug=None

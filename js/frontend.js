@@ -19,7 +19,7 @@
 
 
 
-var currentLoadType = '';
+var currentUsageType = '';
 const DrawingAreaWidth = 0.745 * (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth);
 const DrawingMemScaleUnit = 2e6;
 const DrawingMinNodeSide = 128;
@@ -250,7 +250,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
         }
 
 
-        function buildNodesLoadDataSet(data, loadType)
+        function buildNodesLoadDataSet(data, usageType)
         {
             let dataset = { "data": new Map() };
 
@@ -273,17 +273,17 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 let resUsage = '';
                 let resCapacity = '';
 
-                switch (loadType) {
-                    case Menus.PodsMemoryUsageHeatMap:
+                switch (usageType) {
+                    case UsageTypes.MEM:
                         resUsage = 'memUsage';
                         resCapacity = 'memCapacity';
                         break;
-                    case Menus.PodsCpuUsageHeatMap:
+                    case UsageTypes.CPU:
                         resUsage = 'cpuUsage';
                         resCapacity = 'cpuCapacity';
                         break;
                     default:
-                        $("#error-message").html('unknown load type: '+ loadType);
+                        $("#error-message").html('unknown load type: '+ usageType);
                         $("#error-message-container").show();
                         return;
                 }
@@ -377,19 +377,19 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
         }
 
 
-        function triggerRefreshUsageCharts(frontendDataLocation, loadType)
+        function triggerRefreshUsageCharts(frontendDataLocation, usageType)
         {
             console.log(Date(), 'starting update')
             $("#error-message-container").hide();
-            if (typeof loadType !== "undefined") {
-                currentLoadType = loadType;
-            } else if (typeof currentLoadType === "undefined") {
-                currentLoadType = Menus.PodsCpuUsageHeatMap;
+            if (typeof usageType !== "undefined") {
+                currentUsageType = usageType;
+            } else if (typeof currentUsageType === "undefined") {
+                currentUsageType = UsageTypes.CPU;
             }
 
             $.ajax({
                 type: "GET",
-                url: frontendDataLocation+'/usage.json',
+                url: frontendDataLocation+'/'+usageType+'_usage_14_days.json',
                 dataType: "json",
                 success: function(data) {
                     let dataset = { "data": data };
@@ -406,7 +406,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
 
             $.ajax({
                 type: "GET",
-                url: frontendDataLocation+'/estimated_costs.json',
+                url: frontendDataLocation+'/estimated_costs_14_days.json',
                 dataType: "json",
                 success: function(data) {
                     let dataset = { "data": data };
@@ -426,7 +426,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 url: frontendDataLocation+'/nodes.json',
                 dataType: "json",
                 success: function(data) {
-                    let dataset = buildNodesLoadDataSet(data, currentLoadType, 'donut');
+                    let dataset = buildNodesLoadDataSet(data, currentUsageType, 'donut');
                     let dynHtml = '';
                     let donuts = new Map();
                     for (let [nname, _] of dataset.data) {
@@ -470,7 +470,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                             $('#js-node-load-container').show();
                         }
                     });
-                triggerRefreshUsageCharts(frontendDataLocation, Menus.PodsCpuUsageHeatMap);
+                triggerRefreshUsageCharts(frontendDataLocation, UsageTypes.CPU);
                 setInterval(function() {triggerRefreshUsageCharts(frontendDataLocation);}, 300000); // update every 5 mins
             });
         })(jQuery);
