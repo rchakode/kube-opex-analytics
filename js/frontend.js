@@ -48,8 +48,8 @@ requirejs.config({
 
 define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutChart', 'legend', 'colors', 'tooltip'], 
     function ($, bootstrap, bootswatch, d3Selection, stackedAreaChart, stackedBarChart, donut, legend, colors, tooltip) {
-        let stackedArea14DaysUsage = stackedAreaChart();
-        let stackedArea14CostEstimate = stackedAreaChart();
+        let usageTrendsChart = stackedAreaChart();
+        let dailyUsageChart = stackedBarChart();
 
         const truncateText = function(str, length, ending) {
             if (length == null) {
@@ -65,7 +65,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             }
         };
 
-        function updateStackedAreaChart(dataset, myStackedAreaChart, targetDivContainer, yLabel, colorSchema) {
+        function updateStackedAreaChart(dataset, myStackedAreaChart, targetDivContainer, yLabel, chartTitle, colorSchema) {
             let chartTooltip = tooltip();
             let container = d3Selection.select('.'+targetDivContainer);
             let containerWidth = container.node() ? container.node().getBoundingClientRect().width : false;
@@ -83,7 +83,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                     .width(containerWidth)
                     .dateLabel('dateUTC')
                     .valueLabel('usage')
-                    //.colorSchema(colors.colorSchemas.orange)
+                    //.colorSchema(colorSchema)
                     .on('customDataEntryClick', function(d, mousePosition) {
                         console.log('Data entry marker clicked', d, mousePosition);
                     })
@@ -101,33 +101,34 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
 
                 chartTooltip
                     .topicLabel('values')
-                    .title('Namespaces Usage');
+                    .title(chartTitle);
 
                 let tooltipContainer = d3Selection.select('.'+targetDivContainer+' .metadata-group .vertical-marker-container');
                 tooltipContainer.datum([]).call(chartTooltip);
 
                 d3Selection.select('#button').on('click', function() {
-                    myStackedAreaChart.exportChart('stacked-area.png', 'Britecharts Stacked Area');
+                    myStackedAreaChart.exportChart('stacked-area.png', chartTitle);
                 });
             }
         }
 
 
-        function updateStackedBarChart(dataset, myStackedBarChart, targetDivContainer, colorSchema) {
+        function updateStackedBarChart(dataset, myStackedBarChart, targetDivContainer, chartTitle, colorSchema) {
             let chartTooltip = tooltip();
             let container = d3Selection.select('.'+targetDivContainer);
             let containerWidth = container.node() ? container.node().getBoundingClientRect().width : false;
 
             if (containerWidth) {
                 myStackedBarChart
+                    .tooltipThreshold(600)
                     .width(containerWidth)
-                    .tooltipThreshold(400)
-                    .betweenBarsPadding(0.3)
+                    .grid('horizontal')
                     .isAnimated(true)
-                    .isHorizontal(false)
-                    .nameLabel('category')
-                    .stackLabel('item')
-                    .valueLabel('value')
+                    .stackLabel('stack')
+                    .nameLabel('dateUTC')
+                    .valueLabel('usage')
+                    .betweenBarsPadding(0.3)
+                    //.colorSchema(colorSchema)
                     .margin({left: 50, top: 0, right: 0, bottom: 20})
                     .on('customMouseOver', chartTooltip.show)
                     .on('customMouseMove', function(dataPoint, topicColorMap, x, y) {
@@ -138,7 +139,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 container.datum(dataset.data).call(myStackedBarChart);
 
                 chartTooltip
-                    .title('Pod Usage (%)')
+                    .title(chartTitle)
                     .topicLabel('values')
                     .dateLabel('date');
 
@@ -146,7 +147,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 tooltipContainer.datum([]).call(chartTooltip);
 
                 d3Selection.select('#button').on('click', function() {
-                    stackedBar.exportChart('stacked-bar.png', 'Britecharts Stacked Bar');
+                    stackedBar.exportChart('stacked-bar.png', chartTitle);
                 });
             }
         }
@@ -172,7 +173,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             }
         }
 
-        function updateDonutChart(dataset, myDonutChart, targetDivContainer, legendContainer, colorSchema) {
+        function updateDonutChart(dataset, myDonutChart, targetDivContainer, legendContainer, chartTitle, colorSchema) {
             let legendChart = getLegendChart(dataset, legendContainer, colorSchema);
             let donutContainer = d3Selection.select('.'+targetDivContainer);
             let containerWidth = donutContainer.node() ? donutContainer.node().getBoundingClientRect().width : false;
@@ -203,7 +204,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 donutContainer.datum(dataset).call(myDonutChart);
 
                 d3Selection.select('#button').on('click', function() {
-                    myDonutChart.exportChart('donut.png', 'Britecharts Donut Chart');
+                    myDonutChart.exportChart('donut.png', chartTitle);
                 });
             }
         }
@@ -389,14 +390,16 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
 
             $.ajax({
                 type: "GET",
-                url: frontendDataLocation+'/'+usageType+'_usage_14_days.json',
+                url: frontendDataLocation+'/'+usageType+'_usage_trends.json',
                 dataType: "json",
                 success: function(data) {
                     let dataset = { "data": data };
-                    updateStackedAreaChart(dataset,
-                        stackedArea14DaysUsage,
-                        'js-14-days-hourly-usage-per-namespace',
-                        'share (%) of resource usage');
+                    updateStackedAreaChart(
+                        dataset,
+                        usageTrendsChart,
+                        'js-usage-trends',
+                        'percentage of usage',
+                        'Namespace');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
                     $("#error-message").html('error ' + xhr.status + ' (' + thrownError +')');
@@ -406,20 +409,39 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
 
             $.ajax({
                 type: "GET",
-                url: frontendDataLocation+'/estimated_costs_14_days.json',
+                url: frontendDataLocation+'/'+usageType+'_usage_period_1209600.json',
                 dataType: "json",
                 success: function(data) {
                     let dataset = { "data": data };
-                    updateStackedAreaChart(dataset,
-                        stackedArea14CostEstimate,
-                        'js-14-days-hourly-estimated-cost-per-namespace',
-                        'cost estimate in $');
+                    updateStackedBarChart(
+                        dataset,
+                        dailyUsageChart,
+                        'js-daily-usage',
+                        'Daily Usage');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
                     $("#error-message").html('error ' + xhr.status + ' (' + thrownError +')');
                     $("#error-message-container").show();
                 }
             });
+
+            // $.ajax({
+            //     type: "GET",
+            //     url: frontendDataLocation+'/'+usageType+'_usage_period_31968000.json',
+            //     dataType: "json",
+            //     success: function(data) {
+            //         let dataset = { "data": data };
+            //         updateStackedBarChart(
+            //             dataset,
+            //             dailyUsageChart,
+            //             'js-montly-usage',
+            //             'Monthly Usage');
+            //     },
+            //     error: function (xhr, ajaxOptions, thrownError) {
+            //         $("#error-message").html('error ' + xhr.status + ' (' + thrownError +')');
+            //         $("#error-message-container").show();
+            //     }
+            // });            
 
             $.ajax({
                 type: "GET",

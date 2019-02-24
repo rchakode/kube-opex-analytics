@@ -65,8 +65,7 @@
 
     <div class="row">
         <div class="col-md-12"> 
-            <h1>Namespaces - Utilization vs Cost Estimate on last 14 days</h1>
-            <hr width='40%' class='pull-left clear' /> 
+            <legend>Analytics on last 14 days</legend>
             <div id="error-message-container" class="alert alert-danger alert-dismissible">
                 <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
                 <p id="error-message"></p>
@@ -76,26 +75,31 @@
     <div class="row">
         <div class="col-md-12">
             <div class="col-md-6">
-                <div class="js-14-days-hourly-usage-per-namespace card--chart"></div>
+                <h4>Hourlty trends</h4>
+                <div class="js-usage-trends card--chart"></div>
             </div>
             <div class="col-md-6">
-                <div class="js-14-days-hourly-estimated-cost-per-namespace card--chart"></div>
+                <h4>Daily usage</h4>
+                <div class="js-daily-usage card--chart"></div>
             </div> 
         </div>
     </div>
     <div class="row">
         <div class="col-md-12"> 
-            <h1>Nodes - Occupation By Pods</h1>
-            <hr width='40%' class='pull-left clear' /> 
+            <legend>Monthly Usage</legend>
+            <div class="js-montly-usage card--chart"></div>
+        </div>
+    </div>       
+    <div class="row">
+        <div class="col-md-12"> 
+            <legend>Nodes Occupation By Pods</legend>
+            <div class="col-md-9" id="js-nodes-load-container" > </div>
+            <div class="col-md-3">
+                <label>Available nodes:</label> 
+                <div id="host-list-container"></div>
+            </div>             
         </div>
     </div>    
-    <div class="row">
-        <div id="js-nodes-load-container" class="col-md-9"> </div>
-        <div class="col-md-3">
-            <label>Available nodes:</label> 
-            <div id="host-list-container"></div>
-        </div>
-    </div>
 </div>
 
 <!-- Host popup container -->
