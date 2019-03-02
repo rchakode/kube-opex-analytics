@@ -359,6 +359,12 @@ def create_directory_if_not_exists(path):
 class RrdPeriod(enum.IntEnum):
     PERIOD_14_DAYS_SEC = 1209600
     PERIOD_YEAR_SEC = 31968000
+
+class ResUsageType(enum.IntEnum):
+    CPU = 0
+    MEMORY = 1  
+    CONSOLIDATED = 2   
+    CUMULATED_COST = 3   
     
 class Rrd:
     def __init__(self, db_files_location=None, dbname=None):
@@ -370,7 +376,7 @@ class Rrd:
     @staticmethod
     def get_period_group_key(timeUTC, period):
         if period == RrdPeriod.PERIOD_YEAR_SEC:
-            return time.strftime('%Y-%m', timeUTC)
+            return time.strftime('%b %Y', timeUTC)
         return time.strftime('%Y-%m-%d', timeUTC)
 
     def create_rrd_file_if_not_exists(self):
@@ -394,14 +400,12 @@ class Rrd:
             round(consolidated_usage, 1), 
             round(estimated_cost, 1)))
 
-    def dump_trend_data(self, period, step_in):
+    def dump_trends_data(self, period, step_in):
         end_ts_in = int(int(calendar.timegm(time.gmtime()) * step_in) / step_in)
         start_ts_in  = int(end_ts_in - int(period))
         result = rrdtool.fetch(self.rrd_location, 'AVERAGE', '-r', str(step_in), '-s', str(start_ts_in), '-e', str(end_ts_in)) 
-        cpu_usage_export = []
-        mem_usage_export = []
-        consolidated_usage_export = []
-        estmated_cost_export = []
+        res_usage = collections.defaultdict(list)
+        sum_res_usage = collections.defaultdict(lambda:0.0)
         cumulated_cost = 0.0
         start_ts_out, _, step = result[0]
         current_ts = start_ts_out
@@ -415,13 +419,24 @@ class Rrd:
                     current_consolidated_usage = float(cdp[2])
                     cumulated_cost += float(cdp[3])
                     datetime_utc_json = time.strftime('%Y-%m-%dT%H:%M:%SZ', datetime_utc)
-                    cpu_usage_export.append('{"name":"%s","dateUTC":"%s","usage":%f}' % (self.dbname, datetime_utc_json, current_cpu_usage))
-                    mem_usage_export.append('{"name":"%s","dateUTC":"%s","usage":%f}' % (self.dbname, datetime_utc_json, current_mem_usage)) 
-                    consolidated_usage_export.append('{"name":"%s","dateUTC":"%s","usage":%s}' % (self.dbname, datetime_utc_json, current_consolidated_usage)) 
-                    estmated_cost_export.append('{"name":"%s", "dateUTC":"%s","usage":%s}' % (self.dbname, datetime_utc_json, cumulated_cost))
+                    res_usage[ResUsageType.CPU].append('{"name":"%s","dateUTC":"%s","usage":%f}' % (self.dbname, datetime_utc_json, current_cpu_usage))
+                    res_usage[ResUsageType.MEMORY].append('{"name":"%s","dateUTC":"%s","usage":%f}' % (self.dbname, datetime_utc_json, current_mem_usage)) 
+                    res_usage[ResUsageType.CONSOLIDATED].append('{"name":"%s","dateUTC":"%s","usage":%s}' % (self.dbname, datetime_utc_json, current_consolidated_usage)) 
+                    res_usage[ResUsageType.CUMULATED_COST].append('{"name":"%s", "dateUTC":"%s","usage":%s}' % (self.dbname, datetime_utc_json, cumulated_cost))
+                    sum_res_usage[ResUsageType.CPU] += current_cpu_usage
+                    sum_res_usage[ResUsageType.MEMORY] += current_mem_usage
+                    sum_res_usage[ResUsageType.CONSOLIDATED] += current_consolidated_usage
+                    sum_res_usage[ResUsageType.CUMULATED_COST] += cumulated_cost
                 except:
                     pass
-        return ','.join(cpu_usage_export), ','.join(mem_usage_export), ','.join(consolidated_usage_export), ','.join(estmated_cost_export)
+
+        if sum_res_usage[ResUsageType.CPU] > 0.0 and sum_res_usage[ResUsageType.CPU] > 0.0:
+            return (','.join(res_usage[ResUsageType.CPU]),
+            ','.join(res_usage[ResUsageType.MEMORY]), 
+            ','.join(res_usage[ResUsageType.CONSOLIDATED]), 
+            ','.join(res_usage[ResUsageType.CUMULATED_COST]))            
+        return '', '', '', ''
+
 
     def dump_histogram_data(self, period, step_in):
         end_ts_in = int(int(calendar.timegm(time.gmtime()) * step_in) / step_in)
@@ -429,78 +444,69 @@ class Rrd:
         result = rrdtool.fetch(self.rrd_location, 'AVERAGE', '-r', str(step_in), '-s', str(start_ts_in), '-e', str(end_ts_in))
         periodic_cpu_usage = collections.defaultdict(lambda:0.0)      
         periodic_mem_usage = collections.defaultdict(lambda:0.0)      
-        periodic_consolidated_usage = collections.defaultdict(lambda:0.0)  
+        periodic_consolidated_usage = collections.defaultdict(lambda:0.0)
+        valid_rows = collections.defaultdict(lambda:0.0) 
         start_ts_out, _, step = result[0]
-        current_ts = start_ts_out 
+        current_ts = start_ts_out
         for _, cdp in enumerate( result[2] ):
             current_ts += step
             if len(cdp) == 4:
                 try:
                     datetime_utc = time.gmtime(current_ts)
-                    histogram_date_key = self.get_period_group_key(datetime_utc, period)
+                    date_group = self.get_period_group_key(datetime_utc, period)
                     current_cpu_usage = float(cdp[0])
                     current_mem_usage = float(cdp[1])
                     current_consolidated_usage = float(cdp[2])
-                    periodic_cpu_usage[histogram_date_key] += current_cpu_usage
-                    periodic_mem_usage[histogram_date_key] += current_mem_usage
-                    periodic_consolidated_usage[histogram_date_key] += current_consolidated_usage
+                    periodic_cpu_usage[date_group] += current_cpu_usage
+                    periodic_mem_usage[date_group] += current_mem_usage
+                    periodic_consolidated_usage[date_group] += current_consolidated_usage
+                    valid_rows[date_group] += 1
                 except:
                     pass
-        return periodic_cpu_usage, periodic_mem_usage, periodic_consolidated_usage
+        return periodic_cpu_usage, periodic_mem_usage, periodic_consolidated_usage, valid_rows
 
     @staticmethod
-    def dump_trend_analytics(dbfiles):        
-        cpu_usage_trends = []         
-        mem_usage_trends = []             
-        consolidated_usage_trends = []         
-        estimated_cost_trends = []
+    def dump_trend_analytics(dbfiles):       
+        res_usage = collections.defaultdict(list)  
         for _, dbfile in enumerate(dbfiles):
             dbfile_splitted=os.path.splitext(dbfile)
             if len(dbfile_splitted) == 2 and dbfile_splitted[1] == '.rrd':
                 rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname=dbfile_splitted[0])
-                analytics = rrd.dump_trend_data(period=RrdPeriod.PERIOD_14_DAYS_SEC, step_in=3600)  
-                if analytics[0]:
-                    cpu_usage_trends.append(analytics[0])
-                if analytics[1]:
-                    mem_usage_trends.append(analytics[1])
-                if analytics[2]:
-                    consolidated_usage_trends.append(analytics[2])
-                if analytics[3]:
-                    estimated_cost_trends.append(analytics[3])
-        # write exported data to files
+                analytics = rrd.dump_trends_data(period=RrdPeriod.PERIOD_14_DAYS_SEC, step_in=3600)  
+                for usage_type in range(4):
+                    if analytics[usage_type]:
+                        res_usage[usage_type].append(analytics[usage_type])
         with open(str('%s/cpu_usage_trends.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
-            fd.write('['+','.join(cpu_usage_trends)+']')  
-        with open(str('%s/mem_usage_trends.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
-            fd.write('['+','.join(mem_usage_trends)+']')                  
+            fd.write('['+','.join(res_usage[0])+']')  
+        with open(str('%s/memory_usage_trends.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
+            fd.write('['+','.join(res_usage[1])+']')                  
         with open(str('%s/consolidated_usage_trends.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
-            fd.write('['+','.join(consolidated_usage_trends)+']')   
+            fd.write('['+','.join(res_usage[2])+']')   
         with open(str('%s/estimated_usage_trends.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
-            fd.write('['+','.join(estimated_cost_trends)+']')  
+            fd.write('['+','.join(res_usage[3])+']')  
 
     @staticmethod
-    def dump_histogram_analytics(dbfiles, period):        
-        cpu_usage_export = []         
-        mem_usage_export = []             
-        consolidated_usage_export = []   
+    def dump_histogram_analytics(dbfiles, period):   
+        res_usage = collections.defaultdict(list) 
         for _, dbfile in enumerate(dbfiles):
             dbfile_splitted=os.path.splitext(dbfile)
             if len(dbfile_splitted) == 2 and dbfile_splitted[1] == '.rrd':
                 dbname = dbfile_splitted[0]
                 rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname=dbname)
-                analytics = rrd.dump_histogram_data(period=period, step_in=3600)  
-                for date_key, value in analytics[0].items():
-                    cpu_usage_export.append('{"stack":"%s","name":"%s","usage":%f,"dateUTC":"%s"}' % (dbname, date_key, value, date_key))
-                for date_key, value in analytics[1].items():
-                    mem_usage_export.append('{"stack":"%s","name":"%s","usage":%f,"dateUTC":"%s"}' % (dbname, date_key, value, date_key))
-                for date_key, value in analytics[1].items():
-                    consolidated_usage_export.append('{"stack":"%s","name":"%s","usage":%f,"dateUTC":"%s"}' % (dbname, date_key, value, date_key))                    
+                analytics = rrd.dump_histogram_data(period=period, step_in=3600)
+                valid_rows = analytics[3]
+                for usage_type in range(3):  
+                    for date_key, value in analytics[usage_type].items():
+                        if value > 0.0:
+                            res_usage[usage_type].append('{"stack":"%s","usage":%f,"date":"%s"}' % (dbname, value, date_key))    
+                    
         # write exported data to files
         with open(str('%s/cpu_usage_period_%d.json' % (FRONTEND_DATA_LOCATION, period)), 'w') as fd:
-            fd.write('['+','.join(cpu_usage_export)+']')  
-        with open(str('%s/mem_usage_period_%d.json' % (FRONTEND_DATA_LOCATION, period)), 'w') as fd:
-            fd.write('['+','.join(mem_usage_export)+']')                  
+            fd.write('['+','.join(res_usage[0])+']')  
+        with open(str('%s/memory_usage_period_%d.json' % (FRONTEND_DATA_LOCATION, period)), 'w') as fd:
+            fd.write('['+','.join(res_usage[1])+']')                  
         with open(str('%s/consolidated_usage_period_%d.json' % (FRONTEND_DATA_LOCATION, period)), 'w') as fd:
-            fd.write('['+','.join(consolidated_usage_export)+']')   
+            fd.write('['+','.join(res_usage[2])+']')   
 
 
 
