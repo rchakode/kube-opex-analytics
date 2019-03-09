@@ -1,3 +1,12 @@
 .container{
     width: 98%;
 }
+.navbar-header{
+    min-height: 55px;
+}
+.navbar-brand {
+    padding: 5px;
+}
+.chart-container {
+    min-height: 400px;
+}

@@ -1,12 +1,12 @@
 """ 
 # File: backend.py                                                                       #
+# Author: Rodrigue Chakode <rodrigue.chakode @ gmail dot com>                            #
 #                                                                                        #
-# Copyright © 2019 Rodrigue Chakode <rodrigue.chakode at gmail dot com>                  #
+# Copyright © 2019 Rodrigue Chakode and contributors.                                    #
 #                                                                                        #
-# This file is part of kube-opex-analytics software authored by Rodrigue Chakode         #
-# as part of RealOpInsight Labs (http://realopinsight.com).                              #
+# This file is part of Kubernetes Opex Analytics software.                               #
 #                                                                                        #
-# kube-opex-analytics is licensed under the Apache License, Version 2.0 (the "License"); #
+# Kubernetes Opex Analytics is licensed under the Apache License 2.0 (the "License");    #
 # you may not use this file except in compliance with the License. You may obtain        #
 # a copy of the License at: http://www.apache.org/licenses/LICENSE-2.0                   #
 #                                                                                        #
@@ -58,7 +58,7 @@ def print_error(*args, **kwargs):
 
 @app.route('/favicon.ico')
 def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'images/favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 @app.after_request
 def add_header(r):
@@ -357,6 +357,7 @@ def create_directory_if_not_exists(path):
             raise
 
 class RrdPeriod(enum.IntEnum):
+    PERIOD_7_DAYS_SEC = 604800
     PERIOD_14_DAYS_SEC = 1209600
     PERIOD_YEAR_SEC = 31968000
 
@@ -377,7 +378,7 @@ class Rrd:
     def get_period_group_key(timeUTC, period):
         if period == RrdPeriod.PERIOD_YEAR_SEC:
             return time.strftime('%b %Y', timeUTC)
-        return time.strftime('%Y-%m-%d', timeUTC)
+        return time.strftime('%b %d', timeUTC)
 
     def create_rrd_file_if_not_exists(self):
         if not os.path.exists(self.rrd_location):
@@ -414,10 +415,10 @@ class Rrd:
             if len(cdp) == 4:
                 try:
                     datetime_utc = time.gmtime(current_ts)
-                    current_cpu_usage = float(cdp[0])
-                    current_mem_usage = float(cdp[1])
-                    current_consolidated_usage = float(cdp[2])
-                    cumulated_cost += float(cdp[3])
+                    current_cpu_usage = round(100*float(cdp[0]))/100
+                    current_mem_usage = round(100*float(cdp[1]))/100
+                    current_consolidated_usage = round(100*float(cdp[2]))/100
+                    cumulated_cost += round(100*float(cdp[3]))/100
                     datetime_utc_json = time.strftime('%Y-%m-%dT%H:%M:%SZ', datetime_utc)
                     res_usage[ResUsageType.CPU].append('{"name":"%s","dateUTC":"%s","usage":%f}' % (self.dbname, datetime_utc_json, current_cpu_usage))
                     res_usage[ResUsageType.MEMORY].append('{"name":"%s","dateUTC":"%s","usage":%f}' % (self.dbname, datetime_utc_json, current_mem_usage)) 
@@ -454,9 +455,9 @@ class Rrd:
                 try:
                     datetime_utc = time.gmtime(current_ts)
                     date_group = self.get_period_group_key(datetime_utc, period)
-                    current_cpu_usage = float(cdp[0])
-                    current_mem_usage = float(cdp[1])
-                    current_consolidated_usage = float(cdp[2])
+                    current_cpu_usage = round(100*float(cdp[0]))/100
+                    current_mem_usage = round(100*float(cdp[1]))/100
+                    current_consolidated_usage = round(100*float(cdp[2]))/100
                     periodic_cpu_usage[date_group] += current_cpu_usage
                     periodic_mem_usage[date_group] += current_mem_usage
                     periodic_consolidated_usage[date_group] += current_consolidated_usage
@@ -472,7 +473,7 @@ class Rrd:
             dbfile_splitted=os.path.splitext(dbfile)
             if len(dbfile_splitted) == 2 and dbfile_splitted[1] == '.rrd':
                 rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname=dbfile_splitted[0])
-                analytics = rrd.dump_trends_data(period=RrdPeriod.PERIOD_14_DAYS_SEC, step_in=3600)  
+                analytics = rrd.dump_trends_data(period=RrdPeriod.PERIOD_7_DAYS_SEC, step_in=3600)  
                 for usage_type in range(4):
                     if analytics[usage_type]:
                         res_usage[usage_type].append(analytics[usage_type])
@@ -494,11 +495,12 @@ class Rrd:
                 dbname = dbfile_splitted[0]
                 rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname=dbname)
                 analytics = rrd.dump_histogram_data(period=period, step_in=3600)
-                valid_rows = analytics[3]
+                # valid_rows = analytics[3]
                 for usage_type in range(3):  
                     for date_key, value in analytics[usage_type].items():
                         if value > 0.0:
-                            res_usage[usage_type].append('{"stack":"%s","usage":%f,"date":"%s"}' % (dbname, value, date_key))    
+                            # res_usage[usage_type].append('{"stack":"%s","usage":%f,"date":"%s"}' % (dbname, value/valid_rows[date_key], date_key))   
+                            res_usage[usage_type].append('{"stack":"%s","usage":%f,"date":"%s"}' % (dbname, value, date_key))  
                     
         # write exported data to files
         with open(str('%s/cpu_usage_period_%d.json' % (FRONTEND_DATA_LOCATION, period)), 'w') as fd:

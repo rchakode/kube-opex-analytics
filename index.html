@@ -1,12 +1,12 @@
 <!--
 # File: index.html                                                                       #
+# Author: Rodrigue Chakode <rodrigue.chakode @ gmail dot com>                            #
 #                                                                                        #
-# Copyright © 2019 Rodrigue Chakode <rodrigue.chakode at gmail dot com>                  #
+# Copyright © 2019 Rodrigue Chakode and contributors.                                    #
 #                                                                                        #
-# This file is part of kube-opex-analytics software authored by Rodrigue Chakode         #
-# as part of RealOpInsight Labs (http://realopinsight.com).                              #
+# This file is part of Kubernetes Opex Analytics software.                               #
 #                                                                                        #
-# kube-opex-analytics is licensed under the Apache License, Version 2.0 (the "License"); #
+# Kubernetes Opex Analytics is licensed under the Apache License 2.0 (the "License");    #
 # you may not use this file except in compliance with the License. You may obtain        #
 # a copy of the License at: http://www.apache.org/licenses/LICENSE-2.0                   #
 #                                                                                        #
@@ -19,10 +19,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>kube-opex-analytics | Kubernetes Node Loads</title>
+    <title>Kubernetes Opex Analytics | Hourly, Daily and Monthly Analytics of Kubernetes Cluster Resource Usage</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="utf-8">
-    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
     <link rel="stylesheet" href="css/bootstrap.min.css" media="screen">
     <link rel="stylesheet" href="css/bootswatch.min.css">
     <link type="text/css" rel="stylesheet" href="css/britecharts/britecharts.min.css" /> 
@@ -51,7 +51,7 @@
 <div class="navbar navbar-default navbar-fixed-top">
     <div class="container">
         <div class="navbar-header">
-            <a href="/" class="navbar-brand">kube-opex-analytics</a>
+            <a href="/" class="navbar-brand"><img src="static/images/kube-opex-analytics.png" alt="Kubernetes Opex Analytics logo" height="50px"/></a>
             <button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#navbar-main">
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
@@ -62,7 +62,6 @@
             <ul class="nav navbar-nav navbar-right">
                 <li><a href="#" data-toggle="modal" data-target="#myModal">About</a></li>
             </ul>
-
         </div>
     </div>
 </div>
@@ -70,44 +69,53 @@
 <div class="container">
     <div class="row">
         <div class="col-md-12"> 
-            <div id="error-message-container" class="alert alert-danger alert-dismissible">
-                <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-                <p id="error-message"></p>
-            </div>        
+            <div class="page-header">
+                <h1 id="title-container">Hourly, Daily and Monthly Analytics of Kubernetes Usage</h1>
+            </div>
+            <div id="error-message-container">
+                <div class="alert alert-danger alert-dismissible">
+                    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+                    The following items failed:
+                    <ul id="error-message"></ul>
+                </div>               
+            </div>
+            <script type="javascript">
+                $("#error-message-container").hide();
+            </script>     
         </div>
     </div>
-    <div class="row">
+    <div class="row chart-container">
         <div class="col-md-6">
-            <legend>Hourly CPU Usage per Namespace - 14 Days</legend>
+            <legend>Hourly CPU Usage per Namespace - 7 Days</legend>
             <div class="js-usage-cpu-trends card--chart"></div>
         </div>
         <div class="col-md-6">
-            <legend>Hourly Memory Usage per Namespace - 14 Days</legend>
+            <legend>Hourly Memory Usage per Namespace - 7 Days</legend>
             <div class="js-usage-memory-trends card--chart"></div>
         </div>        
     </div>
-    <div class="row">
+    <div class="row chart-container">
         <div class="col-md-6"> 
-            <legend>Daily CPU Usage per Namespace - 14 Days</legend>
+            <legend>Daily Cumulative CPU Usage per Namespace - 14 Days</legend>
             <div class="js-daily-cpu-usage"></div>
         </div>
         <div class="col-md-6"> 
-            <legend>Daily Memory Usage per Namespace - 14 Days</legend>
+            <legend>Daily Cumulative Memory Usage per Namespace - 14 Days</legend>
             <div class="js-daily-memory-usage"></div>
         </div>        
     </div>   
-    <div class="row">
+    <div class="row chart-container">
         <div class="col-md-6"> 
-            <legend>Monthly CPU Usage per Namespace - 1 Year</legend>
+            <legend>Monthly Cumulative CPU Usage per Namespace - 12 Months</legend>
             <div class="js-montly-cpu-usage"></div>
         </div>
         <div class="col-md-6"> 
-            <legend>Monthly Memory Usage per Namespace - 1 Year</legend>
+            <legend>Monthly Cumulative Memory Usage per Namespace - 12 Months</legend>
             <div class="js-montly-memory-usage"></div>
         </div>        
     </div>          
-    <div class="row">
-        <div class="col-md-12"> 
+    <div class="row chart-container">
+        <div class="col-md-9">
             <legend>Instantaneous
                 <span>
                     <select id="node-usage-type" onchange="FrontendApi.updateNodeUsage(frontendDataDir)">
@@ -117,13 +125,13 @@
                     </select>                 
                 </span>
             Usage per Pod
-            </legend>
-            <div class="col-md-9" id="js-nodes-load-container" > </div>
-            <div class="col-md-3">
-                <label>Available nodes:</label> 
-                <div id="host-list-container"></div>
-            </div>             
+            </legend>            
+            <div id="js-nodes-load-container" > </div>
         </div>
+        <div class="col-md-3">
+            <legend>Available nodes</legend> 
+            <div id="host-list-container"></div>
+        </div>  
     </div>    
 </div>
 
@@ -136,19 +144,17 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title" id="myModalLabel">About kube-opex-analytics by RealOpInsight Labs</h4>
+                <h4 class="modal-title" id="myModalLabel">About Kubernetes Opex Analytics</h4>
             </div>
             <div class="modal-body">
                 <p>
-                    kube-opex-analytics version 0.1
+                    Kubernetes Opex Analytics v0.1.0
                 </p>
                 <p>
-                    Copyright &copy; 2014-2015 Rodrigue Chakode
+                    Copyright &copy; 2019 Rodrigue Chakode and contributors.
                 </p>
                 <p>
-                    kube-opex-analytics is authored by
-                    <a href="mailto:rodrigue.chakode at gmail dot com">Rodrigue Chakode</a>
-                    as part of RealOpInsight Labs (<a href="http://realopinsight.com">http://realopinsight.com</a>).
+                    Kubernetes Opex Analytics is provided as part of RealOpInsight Project (<a href="http://realopinsight.com">http://realopinsight.com</a>).
                 </p>
                 <p>
                     The product is licensed under the Apache License,
@@ -159,15 +165,14 @@
                 </a>
                 </p>
                 <p>
-                    Unless required by applicable law or agreed to in writing, software
-                    distributed under the License is distributed on an "AS IS" BASIS,
-                    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+                    Unless required by applicable law or agreed to in writing, the product 
+                    is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF 
+                    ANY KIND, either express or implied. 
                     See the License for the specific language governing permissions and
                     limitations under the License.
                 </p>
                 <p>
-                    This product includes the following third-party tools released under their own licenses: Twitter Bootstrap,
-                    Raphael Javascript Library, Bootswatch.
+                    This product uses third-party libraries released under their own license terms.
                 </p>
             </div>
             <div class="modal-footer">
@@ -179,16 +184,19 @@
 
 <footer>
     <div class="container">
-        <div class="col-lg-12">
+        <div class="row">
             <ul class="list-unstyled">
+                <li>Copyright &copy; 2019 <a href="https://www.linkedin.com/in/rodriguechakode">Rodrigue Chakode</a> and contributors</li>
+                <li>|</li>
+                <li>Released under <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a></li>
+                <li>|</li>
                 <li><a href="https://twitter.com/realopinsight">Twitter</a></li>
+                <li>|</li>
                 <li><a href="https://github.com/rchakode/kube-opex-analytics">GitHub</a></li>
-            </ul>
-            <p>Copyright &copy; 2019 <a href="https://www.linkedin.com/in/rodriguechakode">Rodrigue Chakode</a>.
-                Licensed under the terms of <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache
-                    License v2.0</a>.</p>
-        </div>
-    </div>
+                <li>|</li>
+                <li>Checkout <a href="http://realopinsight.com/">RealOpInsight</a> for Kubernetes Operations Dashboards</li>
+            </ul>          
+        </div>    
 </footer>
 </body>
 </html>

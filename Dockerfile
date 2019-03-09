@@ -7,6 +7,7 @@ RUN apt update && \
     apt install -y python3 librrd-dev libpython3-dev python3-pip && \
     rm -rf /var/lib/apt/lists/*
 
+
 ADD css $APP_HOME/css
 ADD js $APP_HOME/js
 COPY requirements.txt \
@@ -17,8 +18,11 @@ COPY requirements.txt \
     NOTICE \
     $APP_HOME/
 
+RUN mkdir -p $APP_HOME/static/images
+COPY kube-opex-analytics.png $APP_HOME/static/images/
+COPY favicon.ico $APP_HOME/static/images/
+
 WORKDIR $APP_HOME
-RUN mkdir $APP_HOME/static
     
 RUN pip3 install -r requirements.txt
 
