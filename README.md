@@ -3,9 +3,9 @@ Kubernetes Opex Analytics provides short-, mid- and long-term resource usage das
 
 To meet this goal, Kubernetes Opex Analytics collects CPU and memory usage metrics from Kubernetes API (every 5 minutes currently), stores them for later consolidation to produce resource usage analytics over a year on the basis of namespaces and with different time aggregation perspectives:
 
-* **One-week CPU and Memory Usage Trends** as consolidated hourly usage per namespace and globally for a cluster.
-* **Two-weeks Daily CPU and Memory Usage** per namespace as cumulative hourly usage for each namespace during that day.
-* **One-year Monthly CPU and Memory Usage** per namespace as cumulative daily usage for each namespace during that month.
+* **One-week CPU and Memory Usage Trends** as consolidated hourly usage per namespace and globally for a cluster over the last 7 days.
+* **Two-weeks Daily CPU and Memory Usage** per namespace as cumulative hourly usage for each namespace during each day of the last 14 ones.
+* **One-year Monthly CPU and Memory Usage** per namespace as cumulative daily usage for each namespace during each month of the last 12 ones.
 
 All these analytics are documented below along with sample screenshots.
 
