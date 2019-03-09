@@ -1,10 +1,16 @@
 ## Overview
 Kubernetes Opex Analytics provides short-, mid- and long-term resource usage dashboards to allow you understand how your Kubernetes clusters' operating costs are spending by your differents projects. The main goal of this tool is to help your organization and/or your business units to make cost sharing and capacity planning decisions with factual analytics.
 
-To achieve this goal, Kubernetes Opex Analytics provides resource usage analytics per namespace basis with, with hourly, daily, weekly, and monthly perspectives:
+To meet this goal, Kubernetes Opex Analytics collects CPU and memory usage metrics from Kubernetes API (every 5 minutes currently), stores them for later consolidation to produce resource usage analytics over a year on the basis of namespaces and with different time aggregation perspectives:
+
+* **One-week CPU and Memory Usage Trends** as consolidated hourly usage per namespace and globally for a cluster.
+* **Two-weeks Daily CPU and Memory Usage** per namespace as cumulative hourly usage for each namespace during that day.
+* **One-year Monthly CPU and Memory Usage** per namespace as cumulative daily usage for each namespace during that month.
+
+All these analytics are documented below along with sample screenshots.
 
 
-### Capacity Planning:
+### Last Week Hourly Resource Usage Trends
 In today's on-demand based cloud resource usage, be able to understand how allocated resources are used and be able to scale up/down thoses resources at the right time is safe money. To help you in this direction, Kubernetes Opex Analytics provides:
 
 * Analytics of actual CPU and memory resource usage per namespace and globally, over days, days, weeks, monthes and year. 
@@ -33,7 +39,6 @@ Launch Kubernetes Opex Analytics in a Docker container
 docker run -d \
         --net="host" \
         --name 'Kubernetes Opex Analytics' \
-#        -p5483:5483 \ 
         -v $KOA_DB_LOCATION:/data \
         -e KOA_DB_LOCATION=/data/db \
         rchakode/Kubernetes Opex Analytics
