@@ -123,8 +123,10 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 d3Selection.select('.'+targetDivContainer+' .britechart-legend').remove();
                 legendChart
                     .width(containerWidth*0.8)
-                    .height(200)
-                    .numberFormat('s');
+                    .height(400)
+                    .marginRatio(2)
+                    .markerSize(10)
+                    .numberFormat(',.2%');
 
                 if (KoaColorSchema) {
                     legendChart.colorSchema(KoaColorSchema);
@@ -360,15 +362,18 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 }
                 let resUsage = '';
                 let resCapacity = '';
+                let resAllocatable = '';
 
                 switch (usageType) {
                     case UsageTypes.MEM:
                         resUsage = 'memUsage';
                         resCapacity = 'memCapacity';
+                        resAllocatable = 'memAllocatable';
                         break;
                     case UsageTypes.CPU:
                         resUsage = 'cpuUsage';
                         resCapacity = 'cpuCapacity';
+                        resAllocatable = 'cpuAllocatable';
                         break;               
                     default:                        
                         $("#error-message").append('<li>unknown load type: '+ usageType+'</li>');
@@ -418,6 +423,18 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                         });
                     }
                 }
+
+                let nonAllocatableCapacity = node[resCapacity] - node[resAllocatable]
+                let nonAllocatableRatio = computeLoad(nonAllocatableCapacity, node[resCapacity])
+                sumLoad += nonAllocatableRatio;
+
+                chartData.push({
+                    "name": 'non allocatable',
+                    "id": 9998,
+                    "quantity": nonAllocatableCapacity,
+                    "percentage": nonAllocatableRatio
+                });
+
                 chartData.push({
                     "name": 'unused',
                     "id": 9999,
@@ -495,7 +512,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                     }
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append('<li>download node data'+' ('+thrownError+')</li>');
+                    $("#error-message").append('<li>download node data'+' ('+xhr.status+')</li>');
                     $("#error-message-container").show();
                 }
             });            
@@ -516,11 +533,11 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                         {"data": data},
                         cpuUsageTrendsChart,
                         'js-usage-cpu-trends',
-                        'resource usage ratio (%)',
-                        'Namespace hourly usage');
+                        'CPU Usage (%)',
+                        'Hourly CPU Usage (%)');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append('<li>download hourly cpu usage'+' ('+thrownError+')</li>');
+                    $("#error-message").append('<li>download hourly cpu usage'+' ('+xhr.status+')</li>');
                     $("#error-message-container").show();
                 }
             });
@@ -535,11 +552,11 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                         {"data": data},
                         memoryUsageTrendsChart,
                         'js-usage-memory-trends',
-                        'resource usage ratio (%)',
-                        'Namespace hourly usage');
+                        'Memory Usage (%)',
+                        'Hourly Memory Usage (%)');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append('<li>download hourly memory usage'+' ('+thrownError+')</li>');
+                    $("#error-message").append('<li>download hourly memory usage'+' ('+xhr.status+')</li>');
                     $("#error-message-container").show();
                 }
             });            
@@ -553,11 +570,11 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                         {"data": data},
                         dailyCpuUsageChart,
                         'js-daily-cpu-usage',
-                        'cumulative usage (%)',
-                        'Daily CPU Usage');
+                        'Cumulative CPU Usage (%)',
+                        'Daily CPU Usage (%)');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append('<li>download daily cpu usage'+' ('+thrownError+')</li>');
+                    $("#error-message").append('<li>download daily cpu usage'+' ('+xhr.status+')</li>');
                     $("#error-message-container").show();
                 }
             });
@@ -572,11 +589,11 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                         {"data": data},
                         dailyMemoryUsageChart,
                         'js-daily-memory-usage',
-                        'cumulative usage (%)',
-                        'Daily Memory Usage');
+                        'Cumulative Memory Usage (%)',
+                        'Daily Memory Usage (%)');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append('<li>download daily memory usage'+' ('+thrownError+')</li>');
+                    $("#error-message").append('<li>download daily memory usage'+' ('+xhr.status+')</li>');
                     $("#error-message-container").show();
                 }
             });            
@@ -590,11 +607,11 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                          {"data": data},
                          monthlyCpuUsageChart,
                         'js-montly-cpu-usage',
-                        'cumulative usage (%)',
-                        'Monthly CPU Usage');
+                        'Cumulative CPU Usage (%)',
+                        'Monthly CPU Usage (%)');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append('<li>download monthly cpu usage'+' ('+thrownError+')</li>');
+                    $("#error-message").append('<li>download monthly cpu usage'+' ('+xhr.status+')</li>');
                     $("#error-message-container").show();
                 }
             });       
@@ -608,11 +625,11 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                          {"data": data},
                          monthlyMemoryUsageChart,
                         'js-montly-memory-usage',
-                        'cumulative usage (%)',
-                        'Monthly Memory Usage');
+                        'Cumulative Memory Usage (%)',
+                        'Monthly Memory Usage (%)');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append('<li>download monthly memory usage'+' ('+thrownError+')</li>');
+                    $("#error-message").append('<li>download monthly memory usage'+' ('+xhr.status+')</li>');
                     $("#error-message-container").show();
                 }
             });                   

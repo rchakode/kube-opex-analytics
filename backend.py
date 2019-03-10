@@ -543,7 +543,7 @@ def create_metrics_puller():
         # calculate usage costs and update database
         if k8s_usage.cpuCapacity > 0.0 and k8s_usage.memCapacity > 0.0:
             probe_ts = calendar.timegm(time.gmtime())
-            rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname='infra')
+            rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname='non-allocatable')
             cpu_usage = compute_usage_percent_ratio(k8s_usage.cpuCapacity - k8s_usage.cpuAllocatable, k8s_usage.cpuCapacity)
             mem_usage = compute_usage_percent_ratio(k8s_usage.memCapacity - k8s_usage.memAllocatable, k8s_usage.memCapacity)
             consolidated_usage = (cpu_usage + mem_usage) / 2.0
