@@ -1,4 +1,11 @@
+## Quick Tour for Impatients
+Are you impatient and do first want to see Kubernetes Opex Analytics in action before reading more this README?
 
+* [Take a look at the online demo](http://kube-opex-analytics.realopinsight.com:5483)
+
+The demo is live over an actual small Kubernetes cluster running in GKE. 
+
+It should display charts as follows, each of the charts enables tooltips showing details on resource usage over time. 
 
 ![](./screenshots/kube-opex-analytics-overview.png)
 
@@ -14,7 +21,7 @@ Its current features cover the following analytics:
 * **One-year Monthly CPU and Memory Usage** per namespace as cumulative daily usage for each namespace during each month of the last 12 ones.
 * **Last Nodes' Occupation by Pods** providing for each node the share of resources used active pods on the node.
 
-You can see some screenshorts of these analytics hereafter.
+You can see some screenshorts of the resulting analytics charts hereafter.
 
 ### Last Week Hourly Resource Usage Trends
 
@@ -36,49 +43,43 @@ You can see some screenshorts of these analytics hereafter.
 ### Last Nodes' Occupation by Pods
 ![](./screenshots/sample-last-nodes-occupation-by-pods.png)
 
-
 ## Getting Started
 
-Choose a directory for Kubernetes Opex Analytics database. 
+### Find Kubernetes API Endpoint
+Here we'll use a proxy connection to Kubernetes API
 
 ```
-export KOA_DB_LOCATION=$HOME/.Kubernetes Opex Analytics  # you can choose another folder at your convenience
-mkdir $KOA_DB_LOCATION
+$ kubetcl proxy
 ```
 
-Launch Kubernetes Opex Analytics in a Docker container
+This will open a proxied API access at `http://127.0.0.1:8001`.
+
+### Start Kubernetes Opex Analytics
+Kubernetes Opex Analytics is released as a Docker image. So you can quickly start an instance of the service by running the following command:
+
 ```
-docker run -d \
+$ docker run -d \
         --net="host" \
         --name 'Kubernetes Opex Analytics' \
         -v /var/lib/kube-opex-analytics:/data \
-        -e KOA_K8S_API_ENDPOINT=http://127.0.0.1:8001
         -e KOA_DB_LOCATION=/data/db \
+        -e KOA_K8S_API_ENDPOINT=http://127.0.0.1:8001 \
         rchakode/Kubernetes Opex Analytics
 ```
 
-> 
-  Remark that, in this command we provide the local path `/var/lib/kube-opex-analytics` as a volume mounted to `/data` in the container. That where Kubernetes Opex Analytics stored in internal analytics data. You can change the local path to another location, but you SHOULD NOT change the mount point.
+In this command:
 
-## Gettting Started
-
-TODO
-
+ * We provide a local path `/var/lib/kube-opex-analytics` as data volume for the container. That's where Kubernetes Opex Analytics will store its internal analytics data. You can change the local path to another location, but you MUST take care to adapt the `KOA_DB_LOCATION` environment variable accordingly.
+ * The environment variable `KOA_DB_LOCATION` points to the path to use by Kubernetes Opex Analytics to store its internal data. You can remark that this directory belongs to the data volume atached to the container.
+ * The environment variable `KOA_K8S_API_ENDPOINT` set the address of the Kubernetes API endpoint.
 
 
-## Authors, License, Copyrights, Contributions
-Kubernetes Opex Analytics is authored by [Rodrigue Chakode](https://github.com/rchakode/) as part of the 
-[RealOpInsight Labs Project](http://realopinsight.com) and licensed under the terms of Apache 2.0 License. 
+## License & Copyrights
+This tool (code and documentation) is licensed under the terms of Apache License 2.0. Read the `LICENSE` file for more details on the license terms.
 
-Contributions and third-party libraries are properties of their respective authors.
+The tool includes and is bound to third-party libraries provided with their owns licenses and copyrights. Read the `NOTICE` file for additional information.
 
-This product includes third-party librairies with their own licenses and copyrights:
-
- * Bootstrap Library: http://getbootstrap.com/. 
- * BriteCharts: https://github.com/eventbrite/britecharts. 
- * RRDtool: https://oss.oetiker.ch/rrdtool/
-
-Contributions are accepted subject that the code and documentation be released under Apache 2.0 License.
+## Contributions
+Contributions are accepted subject that the code and documentation be released under the terms of Apache License 2.0.
 
 To contribute bug patches or new features, you can use the Github Pull Request model. 
-
