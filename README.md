@@ -77,7 +77,7 @@ In this command:
  You can then access the web interface at `http://127.0.0.1:5483/`.
  
  >
- You should wait almost a hour to have all charts filled. This is a normal operations of Kubernetes Opex Analytics. 
+  You should wait almost a hour to have all charts filled. This is a normal operations of Kubernetes Opex Analytics. 
 
 ## What's Next
 Kubernetes Opex Analytics is a currently at a ealy stage but is already useful and ready to use. We encourage feedback and promise to be proactive to handle any troubles you may encounter when using it.
