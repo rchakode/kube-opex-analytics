@@ -74,6 +74,8 @@ In this command:
  * The environment variable `KOA_DB_LOCATION` points to the path to use by Kubernetes Opex Analytics to store its internal data. You can remark that this directory belongs to the data volume atached to the container.
  * The environment variable `KOA_K8S_API_ENDPOINT` set the address of the Kubernetes API endpoint.
  
+ You can then access the web interface at `http://127.0.0.1:5483/`.
+ 
  >
  You should wait almost a hour to have all charts filled. This is a normal operations of Kubernetes Opex Analytics. 
 
