@@ -46,7 +46,7 @@ You can see some screenshorts of the resulting analytics charts hereafter.
 
 ## Getting Started
 
-### Find Kubernetes API Endpoint
+### Get Kubernetes API Endpoint
 Here we'll use a proxy connection to Kubernetes API
 
 ```
