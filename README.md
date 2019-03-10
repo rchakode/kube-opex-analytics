@@ -1,7 +1,7 @@
-## Overview
-Kubernetes Opex Analytics provides short-, mid- and long-term resource usage dashboards to allow you understand how your Kubernetes clusters' operating costs are spending by your differents projects. The main goal of this tool is to help your organization and/or your business units to make cost sharing and capacity planning decisions with factual analytics.
+## What is Kubernetes Opex Analytics
+Kubernetes Opex Analytics provides short-, mid- and long-term resource usage dashboards to allow organizations understand how their Kubernetes clusters' operating costs are spending by their differents projects. The final goal is to help to make cost sharing and capacity planning decisions with factual analytics.
 
-To meet this goal, Kubernetes Opex Analytics collects CPU and memory usage metrics from Kubernetes API (every 5 minutes currently), stores them for later consolidation to produce resource usage analytics over a year on the basis of namespaces and with different time aggregation perspectives:
+To meet this goal, Kubernetes Opex Analytics collects CPU and memory usage metrics from Kubernetes API, processes and consolidate them over time to produce resource usage analytics on the basis of namespaces and with different time aggregation perspectives covering up to a year:
 
 * **One-week CPU and Memory Usage Trends** as consolidated hourly usage per namespace and globally for a cluster over the last 7 days.
 * **Two-weeks Daily CPU and Memory Usage** per namespace as cumulative hourly usage for each namespace during each day of the last 14 ones.
