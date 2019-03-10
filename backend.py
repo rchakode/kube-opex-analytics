@@ -16,7 +16,7 @@
 # specific language governing permissions and limitations under the License.             # 
 """
 
-
+import argparse
 import flask
 import requests
 import threading
@@ -30,6 +30,9 @@ import calendar
 import sys
 import collections
 import enum
+
+# set version
+KOA_VERSION='0.1.0'
 
 # set logger settings
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
@@ -80,7 +83,7 @@ def send_css(path):
 
 @app.route('/')
 def render():
-    return flask.render_template('index.html', frontend_data_location=FRONTEND_DATA_LOCATION)
+    return flask.render_template('index.html', koa_frontend_data_location=FRONTEND_DATA_LOCATION, koa_version=KOA_VERSION)
 
 
 class Node:
@@ -572,6 +575,12 @@ def dump_analytics():
         time.sleep(export_interval)
 
 if __name__ == '__main__':
+
+    # parse CLI options
+    parser = argparse.ArgumentParser(description='Kubernetes Opex Analytics Backend.')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s '+KOA_VERSION)
+    args = parser.parse_args()
+
     if KOA_BILING_HOURLY_RATE < 0.0:
         logging.critical('invalid KOA_BILING_HOURLY_RATE: %f' % KOA_BILING_HOURLY_RATE)
         sys.exit(1)
@@ -579,6 +588,7 @@ if __name__ == '__main__':
     # create dump directory if not exist
     create_directory_if_not_exists(FRONTEND_DATA_LOCATION)
 
+    # create workers
     th_puller = threading.Thread(target=create_metrics_puller)
     th_exporter = threading.Thread(target=dump_analytics)
     th_puller.start()

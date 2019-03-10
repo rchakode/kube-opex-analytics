@@ -40,7 +40,7 @@
                 "MEM": "memory",
                 "CONSOLIDATED": "consolidated",
             });
-        var frontendDataDir='{{ frontend_data_location }}';
+        var frontendDataDir='{{ koa_frontend_data_location }}';
     </script>
     <script data-main="js/frontend.js" src="js/require-v2.3.6.min.js" > </script>    
     <script>
@@ -148,7 +148,7 @@
             </div>
             <div class="modal-body">
                 <p>
-                    Kubernetes Opex Analytics v0.1.0
+                    Kubernetes Opex Analytics, Version {{ koa_version }}.
                 </p>
                 <p>
                     Copyright &copy; 2019 Rodrigue Chakode and contributors.
@@ -186,6 +186,8 @@
     <div class="container">
         <div class="row">
             <ul class="list-unstyled">
+            <li>Kubernetes Opex Analytics v{{ koa_version }}</li>
+                <li>|</li>
                 <li>Copyright &copy; 2019 <a href="https://www.linkedin.com/in/rodriguechakode">Rodrigue Chakode</a> and contributors</li>
                 <li>|</li>
                 <li>Released under <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a></li>

@@ -61,11 +61,11 @@ Kubernetes Opex Analytics is released as a Docker image. So you can quickly star
 ```
 $ docker run -d \
         --net="host" \
-        --name 'Kubernetes Opex Analytics' \
+        --name 'kube-opex-analytics' \
         -v /var/lib/kube-opex-analytics:/data \
         -e KOA_DB_LOCATION=/data/db \
         -e KOA_K8S_API_ENDPOINT=http://127.0.0.1:8001 \
-        rchakode/Kubernetes Opex Analytics
+        rchakode/kube-opex-analytics
 ```
 
 In this command:
