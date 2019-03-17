@@ -5,10 +5,7 @@ Are you impatient and do first want to see Kubernetes Opex Analytics in action b
 
 The demo is live over an actual small Kubernetes cluster running in GKE. 
 
-It should display charts as follows, each of the charts enables tooltips showing details on resource usage over time. 
-
-![](./screenshots/kube-opex-analytics-overview.png)
-![](./screenshots/sample-last-nodes-occupation-by-pods.png)
+It should display charts as documented next in this document.
 
 ## What is Kubernetes Opex Analytics
 Kubernetes Opex Analytics provides short-, mid- and long-term resource usage dashboards over Kubernetes clusters so to allow organizations to understand how their Kubernetes operating costs are spending by their different projects. The final **goal being to help them make cost sharing and capacity planning decisions** with factual analytics. 
