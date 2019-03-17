@@ -8,7 +8,7 @@ The demo is live over an actual small Kubernetes cluster running in GKE.
 It should display charts as documented later in this document. Each chart enables a tooltip activable with mouse over action. 
 
 ## What is Kubernetes Opex Analytics
-Kubernetes Opex Analytics provides short-, mid- and long-term resource usage dashboards over Kubernetes clusters so to allow organizations to understand how their Kubernetes operating costs are spending by their different projects. The final **goal being to help them make cost sharing and capacity planning decisions** with factual analytics. 
+Kubernetes Opex Analytics provides short-, mid- and long-term resource usage dashboards over Kubernetes clusters so to allow organizations to understand how their Kubernetes operating costs are spending by their different projects. The final **goal being to help them make cost accounting/sharing and capacity planning decisions** with factual analytics. 
 
 To meet this goal, Kubernetes Opex Analytics collects CPU and memory usage metrics from Kubernetes's metrics APIs, processes and consolidate them over time to produce resource usage analytics on the basis of namespaces and with different time aggregation perspectives that cover up to a year. These perspectives also show a special usage item labelled _non-allocatable_ highlighting the **share of non-allocatable capacity** for both CPU and memory.
 
