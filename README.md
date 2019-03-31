@@ -76,7 +76,7 @@ In this command:
  > Due to the time needed to have sufficient data to consolidate, you may need to wait almost a hour to have all charts filled. This is a normal operations of Kubernetes Opex Analytics.
 
 ## What's Next
-Kubernetes Opex Analytics is a currently at a ealy stage but is already useful and ready to use. We encourage feedback and promise to be proactive to handle any troubles you may encounter when using it.
+Kubernetes Opex Analytics is a currently at a early stage but is already useful and ready to use. We encourage feedback and promise to be proactive to handle any troubles you may encounter when using it.
 
 Meanwhile we already have some ideas of improvments for next releases:
 
