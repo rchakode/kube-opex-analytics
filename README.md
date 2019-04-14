@@ -75,6 +75,19 @@ In this command:
 
  > Due to the time needed to have sufficient data to consolidate, you may need to wait almost a hour to have all charts filled. This is a normal operations of Kubernetes Opex Analytics.
 
+### Deploy Kubernetes Opex Analytics to a Kubernetes cluster
+
+You can use the helm chart in the [helm](./helm/) folder to deploy Kubernetes Opex Analytics in Kubernetes, if you have tiller deployed in your cluster you can use:
+```
+helm upgrade --install kube-opex-analytics --namespace=kube-opex-analytics helm/kube-opex-analytics/
+```
+
+if you don't, you can use helm to render the Kubernetes manifests and apply them with kubectl:
+```
+helm template helm/kube-opex-analytics/ | kubectl apply -f -
+```
+check the [values.yaml](./helm/kube-opex-analytics/values.yaml) file for the available configuration options
+
 ## What's Next
 Kubernetes Opex Analytics is a currently at a early stage but is already useful and ready to use. We encourage feedback and will make our best to be proactive to handle any troubles you may encounter when using it.
 

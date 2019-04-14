@@ -39,7 +39,7 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S
 
 # load dynamic configuration settings
 KOA_K8S_API_ENDPOINT = os.getenv('KOA_K8S_API_ENDPOINT', 'http://127.0.0.1:8001')
-KOA_K8S_API_VERIFY_SLL = os.getenv('KOA_K8S_API_VERIFY_SLL', True)
+KOA_K8S_API_VERIFY_SLL = str_to_bool(os.getenv('KOA_K8S_API_VERIFY_SLL', 'true'))
 KOA_DEFAULT_DB_LOCATION = ('%s/.kube-opex-analytics/db') % os.getenv('HOME', '/tmp')
 KOA_DB_LOCATION = os.getenv('KOA_DB_LOCATION', KOA_DEFAULT_DB_LOCATION)
 KOA_POLLING_INTERVAL_SEC = int(os.getenv('KOA_POLLING_INTERVAL_SEC', '300'))
@@ -56,6 +56,9 @@ STATIC_CONTENT_LOCATION = '/static'
 FRONTEND_DATA_LOCATION = '.%s/data' % (STATIC_CONTENT_LOCATION)
 
 app = flask.Flask(__name__, static_url_path=STATIC_CONTENT_LOCATION, template_folder='.')
+
+def str_to_bool(v):
+  return v.lower() in ("yes", "true", "t", "1")
 
 def print_error(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
