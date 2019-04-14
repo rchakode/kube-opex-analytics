@@ -13,7 +13,7 @@
 # Unless required by applicable law or agreed to in writing, software distributed        #
 # under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR            #
 # CONDITIONS OF ANY KIND, either express or implied. See the License for the             #
-# specific language governing permissions and limitations under the License.             # 
+# specific language governing permissions and limitations under the License.             #
 */
 'use strict';
 
@@ -89,7 +89,7 @@ requirejs.config({
 });
 
 
-define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutChart', 'legend', 'colors', 'tooltip'], 
+define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutChart', 'legend', 'colors', 'tooltip'],
     function ($, bootstrap, bootswatch, d3Selection, stackedAreaChart, stackedBarChart, donut, legend, colors, tooltip) {
         let cpuUsageTrendsChart = stackedAreaChart();
         let memoryUsageTrendsChart = stackedAreaChart();
@@ -134,7 +134,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 legendContainer.datum(dataset).call(legendChart);
                 return legendChart;
             }
-        }        
+        }
 
         function updateStackedAreaChart(dataset, myStackedAreaChart, targetDivContainer, yLabel, chartTitle) {
             let chartTooltip = tooltip();
@@ -203,7 +203,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             let chartTooltip = tooltip();
             let container = d3Selection.select('.'+targetDivContainer);
             let containerWidth = container.node() ? container.node().getBoundingClientRect().width : false;
-            
+
             if (containerWidth) {
 
                 dataset.data.sort(
@@ -238,7 +238,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                     })
                     .on('customMouseOut', function() {
                         chartTooltip.hide();
-                    })                   
+                    })
                     .on('customMouseMove', function(dataPoint, topicColorMap, pos) {
                         chartTooltip.update(dataPoint, topicColorMap, pos);
                     });
@@ -253,7 +253,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                     .title(chartTitle);
 
                 let tooltipContainer = d3Selection.select('.'+targetDivContainer+' .metadata-group');
-                tooltipContainer.datum([]).call(chartTooltip);                
+                tooltipContainer.datum([]).call(chartTooltip);
 
                 d3Selection.select('#button').on('click', function() {
                     stackedBar.exportChart('stacked-bar.png', chartTitle);
@@ -314,7 +314,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>'+computeLoad(node.memAllocatable, node.memAllocatable)+'</td></tr>';
             tooltip += '<tr><td>&nbsp;&nbsp;Usage</td><td>'+computeLoad(node.memUsage, node.memCapacity)+'</td></tr>';
             tooltip += '<tr><td>Pods Running</td><td>'+node.podsRunning.length+'</td></tr>';
-        
+
             tooltip += '</tbody></table>';
             return tooltip;
         }
@@ -374,8 +374,8 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                         resUsage = 'cpuUsage';
                         resCapacity = 'cpuCapacity';
                         resAllocatable = 'cpuAllocatable';
-                        break;               
-                    default:                        
+                        break;
+                    default:
                         $("#error-message").append('<li>unknown load type: '+ usageType+'</li>');
                         $("#error-message-container").show();
                         return;
@@ -515,7 +515,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                     $("#error-message").append('<li>download node data'+' ('+xhr.status+')</li>');
                     $("#error-message-container").show();
                 }
-            });            
+            });
         }
 
         function triggerRefreshUsageCharts(frontendDataDir)
@@ -559,7 +559,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                     $("#error-message").append('<li>download hourly memory usage'+' ('+xhr.status+')</li>');
                     $("#error-message-container").show();
                 }
-            });            
+            });
 
             $.ajax({
                 type: "GET",
@@ -596,7 +596,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                     $("#error-message").append('<li>download daily memory usage'+' ('+xhr.status+')</li>');
                     $("#error-message-container").show();
                 }
-            });            
+            });
 
             $.ajax({
                 type: "GET",
@@ -614,8 +614,8 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                     $("#error-message").append('<li>download monthly cpu usage'+' ('+xhr.status+')</li>');
                     $("#error-message-container").show();
                 }
-            });       
-            
+            });
+
             $.ajax({
                 type: "GET",
                 url: frontendDataDir+'/memory_usage_period_31968000.json',
@@ -632,7 +632,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                     $("#error-message").append('<li>download monthly memory usage'+' ('+xhr.status+')</li>');
                     $("#error-message-container").show();
                 }
-            });                   
+            });
 
             // update nodes usage
             updateNodeUsage(frontendDataDir);

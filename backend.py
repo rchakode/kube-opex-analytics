@@ -1,4 +1,4 @@
-""" 
+"""
 # File: backend.py                                                                       #
 # Author: Rodrigue Chakode <rodrigue.chakode @ gmail dot com>                            #
 #                                                                                        #
@@ -13,7 +13,7 @@
 # Unless required by applicable law or agreed to in writing, software distributed        #
 # under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR            #
 # CONDITIONS OF ANY KIND, either express or implied. See the License for the             #
-# specific language governing permissions and limitations under the License.             # 
+# specific language governing permissions and limitations under the License.             #
 """
 
 import argparse
@@ -39,6 +39,7 @@ logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S
 
 # load dynamic configuration settings
 KOA_K8S_API_ENDPOINT = os.getenv('KOA_K8S_API_ENDPOINT', 'http://127.0.0.1:8001')
+KOA_K8S_API_VERIFY_SLL = os.getenv('KOA_K8S_API_VERIFY_SLL', True)
 KOA_DEFAULT_DB_LOCATION = ('%s/.kube-opex-analytics/db') % os.getenv('HOME', '/tmp')
 KOA_DB_LOCATION = os.getenv('KOA_DB_LOCATION', KOA_DEFAULT_DB_LOCATION)
 KOA_POLLING_INTERVAL_SEC = int(os.getenv('KOA_POLLING_INTERVAL_SEC', '300'))
@@ -49,7 +50,7 @@ try:
     KOA_BILING_HOURLY_RATE = float(os.getenv('KOA_BILING_HOURLY_RATE'))
 except:
     KOA_BILING_HOURLY_RATE = 0
-  
+
 # fixed configuration settings
 STATIC_CONTENT_LOCATION = '/static'
 FRONTEND_DATA_LOCATION = '.%s/data' % (STATIC_CONTENT_LOCATION)
@@ -308,7 +309,7 @@ class K8sUsage:
         # exit if not valid data
         if data is None:
             return
-        # process likely valid data  
+        # process likely valid data
         data_json = json.loads(data)
         for _, item in enumerate(data_json['items']):
             podName = '%s.%s' % (item['metadata']['name'], item['metadata']['namespace'])
@@ -318,36 +319,36 @@ class K8sUsage:
                 pod.memUsage = 0.0
                 for _, container in enumerate(item['containers']):
                     pod.cpuUsage += self.decode_cpu_capacity(container['usage']['cpu'])
-                    pod.memUsage += self.decode_memory_capacity(container['usage']['memory'])  
+                    pod.memUsage += self.decode_memory_capacity(container['usage']['memory'])
                 self.pods[pod.name] = pod
 
 
-    def consolidate_ns_usage(self): 
-        self.cpuUsedByPods = 0.0 
-        self.memUsedByPods = 0.0 
+    def consolidate_ns_usage(self):
+        self.cpuUsedByPods = 0.0
+        self.memUsedByPods = 0.0
         for pod in self.pods.values():
             if hasattr(pod, 'cpuUsage') and hasattr(pod, 'memUsage'):
                 self.cpuUsedByPods += pod.cpuUsage
                 self.nsResUsage[pod.namespace].cpuUsage += pod.cpuUsage
-                self.nsResUsage[pod.namespace].memUsage += pod.memUsage 
+                self.nsResUsage[pod.namespace].memUsage += pod.memUsage
                 self.memUsedByPods += pod.memUsage
                 self.nodes[pod.nodeName].podsRunning.append(pod)
         self.cpuCapacity += 0.0
-        self.memCapacity += 0.0  
+        self.memCapacity += 0.0
         for node in self.nodes.values():
             if hasattr(node, 'cpuCapacity') and hasattr(node, 'memCapacity'):
                 self.cpuCapacity += node.cpuCapacity
-                self.memCapacity += node.memCapacity  
+                self.memCapacity += node.memCapacity
         self.cpuAllocatable += 0.0
-        self.memAllocatable += 0.0  
+        self.memAllocatable += 0.0
         for node in self.nodes.values():
             if hasattr(node, 'cpuAllocatable') and hasattr(node, 'memAllocatable'):
                 self.cpuAllocatable += node.cpuAllocatable
-                self.memAllocatable += node.memAllocatable                         
+                self.memAllocatable += node.memAllocatable
 
-    def dump_nodes(self):     
+    def dump_nodes(self):
         with open(str('%s/nodes.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
-            fd.write(json.dumps(self.nodes, cls=JSONMarshaller))                    
+            fd.write(json.dumps(self.nodes, cls=JSONMarshaller))
 
 def compute_usage_percent_ratio(value, total):
     return round((100.0*value) / total, 1)
@@ -366,10 +367,10 @@ class RrdPeriod(enum.IntEnum):
 
 class ResUsageType(enum.IntEnum):
     CPU = 0
-    MEMORY = 1  
-    CONSOLIDATED = 2   
-    CUMULATED_COST = 3   
-    
+    MEMORY = 1
+    CONSOLIDATED = 2
+    CUMULATED_COST = 3
+
 class Rrd:
     def __init__(self, db_files_location=None, dbname=None):
         create_directory_if_not_exists(db_files_location)
@@ -395,19 +396,19 @@ class Rrd:
                 str('DS:estimated_cost:GAUGE:%d:U:U' % xfs),
                 "RRA:AVERAGE:0.5:1:4032",
                 "RRA:AVERAGE:0.5:12:8880")
-    
+
     def add_value(self, probe_ts, cpu_usage, mem_usage, consolidated_usage, estimated_cost):
         rrdtool.update(self.rrd_location, '%s:%s:%s:%s:%s'%(
-            probe_ts, 
-            round(cpu_usage, 1), 
-            round(mem_usage, 1), 
-            round(consolidated_usage, 1), 
+            probe_ts,
+            round(cpu_usage, 1),
+            round(mem_usage, 1),
+            round(consolidated_usage, 1),
             round(estimated_cost, 1)))
 
     def dump_trends_data(self, period, step_in):
         end_ts_in = int(int(calendar.timegm(time.gmtime()) * step_in) / step_in)
         start_ts_in  = int(end_ts_in - int(period))
-        result = rrdtool.fetch(self.rrd_location, 'AVERAGE', '-r', str(step_in), '-s', str(start_ts_in), '-e', str(end_ts_in)) 
+        result = rrdtool.fetch(self.rrd_location, 'AVERAGE', '-r', str(step_in), '-s', str(start_ts_in), '-e', str(end_ts_in))
         res_usage = collections.defaultdict(list)
         sum_res_usage = collections.defaultdict(lambda:0.0)
         cumulated_cost = 0.0
@@ -424,8 +425,8 @@ class Rrd:
                     cumulated_cost += round(100*float(cdp[3]))/100
                     datetime_utc_json = time.strftime('%Y-%m-%dT%H:%M:%SZ', datetime_utc)
                     res_usage[ResUsageType.CPU].append('{"name":"%s","dateUTC":"%s","usage":%f}' % (self.dbname, datetime_utc_json, current_cpu_usage))
-                    res_usage[ResUsageType.MEMORY].append('{"name":"%s","dateUTC":"%s","usage":%f}' % (self.dbname, datetime_utc_json, current_mem_usage)) 
-                    res_usage[ResUsageType.CONSOLIDATED].append('{"name":"%s","dateUTC":"%s","usage":%s}' % (self.dbname, datetime_utc_json, current_consolidated_usage)) 
+                    res_usage[ResUsageType.MEMORY].append('{"name":"%s","dateUTC":"%s","usage":%f}' % (self.dbname, datetime_utc_json, current_mem_usage))
+                    res_usage[ResUsageType.CONSOLIDATED].append('{"name":"%s","dateUTC":"%s","usage":%s}' % (self.dbname, datetime_utc_json, current_consolidated_usage))
                     res_usage[ResUsageType.CUMULATED_COST].append('{"name":"%s", "dateUTC":"%s","usage":%s}' % (self.dbname, datetime_utc_json, cumulated_cost))
                     sum_res_usage[ResUsageType.CPU] += current_cpu_usage
                     sum_res_usage[ResUsageType.MEMORY] += current_mem_usage
@@ -436,9 +437,9 @@ class Rrd:
 
         if sum_res_usage[ResUsageType.CPU] > 0.0 and sum_res_usage[ResUsageType.CPU] > 0.0:
             return (','.join(res_usage[ResUsageType.CPU]),
-            ','.join(res_usage[ResUsageType.MEMORY]), 
-            ','.join(res_usage[ResUsageType.CONSOLIDATED]), 
-            ','.join(res_usage[ResUsageType.CUMULATED_COST]))            
+            ','.join(res_usage[ResUsageType.MEMORY]),
+            ','.join(res_usage[ResUsageType.CONSOLIDATED]),
+            ','.join(res_usage[ResUsageType.CUMULATED_COST]))
         return '', '', '', ''
 
 
@@ -446,10 +447,10 @@ class Rrd:
         end_ts_in = int(int(calendar.timegm(time.gmtime()) * step_in) / step_in)
         start_ts_in  = int(end_ts_in - int(period))
         result = rrdtool.fetch(self.rrd_location, 'AVERAGE', '-r', str(step_in), '-s', str(start_ts_in), '-e', str(end_ts_in))
-        periodic_cpu_usage = collections.defaultdict(lambda:0.0)      
-        periodic_mem_usage = collections.defaultdict(lambda:0.0)      
+        periodic_cpu_usage = collections.defaultdict(lambda:0.0)
+        periodic_mem_usage = collections.defaultdict(lambda:0.0)
         periodic_consolidated_usage = collections.defaultdict(lambda:0.0)
-        valid_rows = collections.defaultdict(lambda:0.0) 
+        valid_rows = collections.defaultdict(lambda:0.0)
         start_ts_out, _, step = result[0]
         current_ts = start_ts_out
         for _, cdp in enumerate( result[2] ):
@@ -470,28 +471,28 @@ class Rrd:
         return periodic_cpu_usage, periodic_mem_usage, periodic_consolidated_usage, valid_rows
 
     @staticmethod
-    def dump_trend_analytics(dbfiles):       
-        res_usage = collections.defaultdict(list)  
+    def dump_trend_analytics(dbfiles):
+        res_usage = collections.defaultdict(list)
         for _, dbfile in enumerate(dbfiles):
             dbfile_splitted=os.path.splitext(dbfile)
             if len(dbfile_splitted) == 2 and dbfile_splitted[1] == '.rrd':
                 rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname=dbfile_splitted[0])
-                analytics = rrd.dump_trends_data(period=RrdPeriod.PERIOD_7_DAYS_SEC, step_in=3600)  
+                analytics = rrd.dump_trends_data(period=RrdPeriod.PERIOD_7_DAYS_SEC, step_in=3600)
                 for usage_type in range(4):
                     if analytics[usage_type]:
                         res_usage[usage_type].append(analytics[usage_type])
         with open(str('%s/cpu_usage_trends.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
-            fd.write('['+','.join(res_usage[0])+']')  
+            fd.write('['+','.join(res_usage[0])+']')
         with open(str('%s/memory_usage_trends.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
-            fd.write('['+','.join(res_usage[1])+']')                  
+            fd.write('['+','.join(res_usage[1])+']')
         with open(str('%s/consolidated_usage_trends.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
-            fd.write('['+','.join(res_usage[2])+']')   
+            fd.write('['+','.join(res_usage[2])+']')
         with open(str('%s/estimated_usage_trends.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
-            fd.write('['+','.join(res_usage[3])+']')  
+            fd.write('['+','.join(res_usage[3])+']')
 
     @staticmethod
-    def dump_histogram_analytics(dbfiles, period):   
-        res_usage = collections.defaultdict(list) 
+    def dump_histogram_analytics(dbfiles, period):
+        res_usage = collections.defaultdict(list)
         for _, dbfile in enumerate(dbfiles):
             dbfile_splitted=os.path.splitext(dbfile)
             if len(dbfile_splitted) == 2 and dbfile_splitted[1] == '.rrd':
@@ -499,19 +500,19 @@ class Rrd:
                 rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname=dbname)
                 analytics = rrd.dump_histogram_data(period=period, step_in=3600)
                 # valid_rows = analytics[3]
-                for usage_type in range(3):  
+                for usage_type in range(3):
                     for date_key, value in analytics[usage_type].items():
                         if value > 0.0:
-                            # res_usage[usage_type].append('{"stack":"%s","usage":%f,"date":"%s"}' % (dbname, value/valid_rows[date_key], date_key))   
-                            res_usage[usage_type].append('{"stack":"%s","usage":%f,"date":"%s"}' % (dbname, value, date_key))  
-                    
+                            # res_usage[usage_type].append('{"stack":"%s","usage":%f,"date":"%s"}' % (dbname, value/valid_rows[date_key], date_key))
+                            res_usage[usage_type].append('{"stack":"%s","usage":%f,"date":"%s"}' % (dbname, value, date_key))
+
         # write exported data to files
         with open(str('%s/cpu_usage_period_%d.json' % (FRONTEND_DATA_LOCATION, period)), 'w') as fd:
-            fd.write('['+','.join(res_usage[0])+']')  
+            fd.write('['+','.join(res_usage[0])+']')
         with open(str('%s/memory_usage_period_%d.json' % (FRONTEND_DATA_LOCATION, period)), 'w') as fd:
-            fd.write('['+','.join(res_usage[1])+']')                  
+            fd.write('['+','.join(res_usage[1])+']')
         with open(str('%s/consolidated_usage_period_%d.json' % (FRONTEND_DATA_LOCATION, period)), 'w') as fd:
-            fd.write('['+','.join(res_usage[2])+']')   
+            fd.write('['+','.join(res_usage[2])+']')
 
 
 
@@ -520,15 +521,15 @@ def pull_k8s(api_context):
     api_endpoint = '%s%s' % (KOA_K8S_API_ENDPOINT, api_context)
 
     try:
-        http_req = requests.get(api_endpoint)
+        http_req = requests.get(api_endpoint, verify=KOA_K8S_API_VERIFY_SLL)
         if http_req.status_code == 200:
             data = http_req.text
         else:
             print_error("%s [ERROR] '%s' returned error (%s)" % (time.strftime("%Y-%M-%d %H:%M:%S"), api_endpoint, http_req.text))
     except requests.exceptions.RequestException as ex:
-        print_error("%s [ERROR] HTTP exception requesting '%s' (%s)" % (time.strftime("%Y-%M-%d %H:%M:%S"), api_endpoint, ex)) 
-    except: 
-        print_error("%s [ERROR] exception requesting '%s'" % (time.strftime("%Y-%M-%d %H:%M:%S"), api_endpoint))   
+        print_error("%s [ERROR] HTTP exception requesting '%s' (%s)" % (time.strftime("%Y-%M-%d %H:%M:%S"), api_endpoint, ex))
+    except:
+        print_error("%s [ERROR] exception requesting '%s'" % (time.strftime("%Y-%M-%d %H:%M:%S"), api_endpoint))
 
     return data
 
@@ -560,7 +561,7 @@ def create_metrics_puller():
                 estimated_cost =  consolidated_usage * (KOA_POLLING_INTERVAL_SEC * KOA_BILING_HOURLY_RATE) / 36
                 rrd.add_value(probe_ts, cpu_usage=cpu_usage, mem_usage=mem_usage, consolidated_usage=consolidated_usage, estimated_cost=estimated_cost)
         time.sleep(int(KOA_POLLING_INTERVAL_SEC))
-       
+
 
 def dump_analytics():
     export_interval = round(1.5 * KOA_POLLING_INTERVAL_SEC)
