@@ -3,12 +3,12 @@ Are you impatient and do first want to see Kubernetes Opex Analytics in action b
 
 * [Take a look at the online demo](http://kube-opex-analytics.realopinsight.com:5483)
 
-The demo is live over an actual small Kubernetes cluster running in GKE. 
+The demo is live over an actual small Kubernetes cluster running in GKE.
 
-It should display charts as documented later in this document. Each chart enables a tooltip activable with mouse hover action. 
+It should display charts as documented later in this document. Each chart enables a tooltip activable with mouse hover action.
 
 ## What is Kubernetes Opex Analytics
-Kubernetes Opex Analytics provides short-, mid- and long-term resource usage dashboards over Kubernetes clusters so to allow organizations to understand how their Kubernetes operating costs are spending by their different projects. The final **goal being to help them make cost allocatoion and capacity planning decisions** with factual analytics. 
+Kubernetes Opex Analytics provides short-, mid- and long-term resource usage dashboards over Kubernetes clusters so to allow organizations to understand how their Kubernetes operating costs are spending by their different projects. The final **goal being to help them make cost allocatoion and capacity planning decisions** with factual analytics.
 
 To meet this goal, Kubernetes Opex Analytics collects CPU and memory usage metrics from Kubernetes's metrics APIs, processes and consolidates them over time to produce resource usage analytics on the basis of namespaces and with different time aggregation perspectives that cover up to a year. These perspectives also show a special usage item labelled _non-allocatable_ highlighting the **share of non-allocatable capacity** for both CPU and memory.
 
@@ -70,15 +70,15 @@ In this command:
  * We provide a local path `/var/lib/kube-opex-analytics` as data volume for the container. That's where Kubernetes Opex Analytics will store its internal analytics data. You can change the local path to another location, but you MUST take care to adapt the `KOA_DB_LOCATION` environment variable accordingly.
  * The environment variable `KOA_DB_LOCATION` points to the path to use by Kubernetes Opex Analytics to store its internal data. You can remark that this directory belongs to the data volume atached to the container.
  * The environment variable `KOA_K8S_API_ENDPOINT` set the address of the Kubernetes API endpoint.
- 
+
  You can then access the web interface at `http://127.0.0.1:5483/`.
- 
+
  > Due to the time needed to have sufficient data to consolidate, you may need to wait almost a hour to have all charts filled. This is a normal operations of Kubernetes Opex Analytics.
 
 ## What's Next
 Kubernetes Opex Analytics is a currently at a early stage but is already useful and ready to use. We encourage feedback and will make our best to be proactive to handle any troubles you may encounter when using it.
 
-Meanwhile we already have some ideas of improvments for next releases https://github.com/rchakode/kube-opex-analytics/issues. 
+Meanwhile we already have some ideas of improvments for next releases https://github.com/rchakode/kube-opex-analytics/issues.
 
 Other ideas are welcomed, please open an issue to submit your idea if you have any one.
 
@@ -92,4 +92,4 @@ The tool includes and is bound to third-party libraries provided with their owns
 ## Contributions
 Contributions are accepted subject that the code and documentation be released under the terms of Apache License 2.0.
 
-To contribute bug patches or new features, you can use the Github Pull Request model. 
+To contribute bug patches or new features, you can use the Github Pull Request model.

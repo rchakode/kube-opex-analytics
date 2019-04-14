@@ -18,17 +18,18 @@ COPY requirements.txt \
     NOTICE \
     $APP_HOME/
 
-RUN mkdir -p $APP_HOME/static/images
+RUN mkdir -p $APP_HOME/static/images /data
 COPY kube-opex-analytics.png $APP_HOME/static/images/
 COPY favicon.ico $APP_HOME/static/images/
 
 WORKDIR $APP_HOME
-    
+
 RUN pip3 install -r requirements.txt
 
 RUN useradd $RUNTIME_USER && \
     usermod $RUNTIME_USER -d $APP_HOME && \
-    chown -R $RUNTIME_USER:$RUNTIME_USER $APP_HOME
+    chown -R $RUNTIME_USER:$RUNTIME_USER $APP_HOME \
+    chown -R $RUNTIME_USER:$RUNTIME_USER /data
 
 # USER $RUNTIME_USER
 
