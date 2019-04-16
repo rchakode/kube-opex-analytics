@@ -7,23 +7,22 @@ envs:
   KOA_K8S_API_ENDPOINT: https://kubernetes.default
   KOA_K8S_API_VERIFY_SLL: false
 
-persistData: false
+dataVolume:
+  persist: false
+  capacity: 8Gi
 
 replicaCount: 1
 
 image:
-  repository: rchakode/kube-opex-analytics:latest
-  tag: latest
+  repository: rchakode/kube-opex-analytics
   pullPolicy: Always
 
 nameOverride: ""
 fullnameOverride: ""
 
 metadata:
-  labels: {}
-    #mylabel: myvalue
-  annotations: {}
-    #myannotation: myvalue
+  labels:
+    app: kube-opex-analytics
 
 service:
   type: ClusterIP
@@ -32,26 +31,24 @@ service:
 
 ingress:
   enabled: false
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: chart-example.local
+    - host: kube-opex-analytics.local
       paths: []
-
-  tls: []
-  #  - secretName: chart-example-tls
+# uncomment the following lines and ajust the values to enable TLS
+  # tls: 
+  #  - secretName: kube-opex-analytics-tls
   #    hosts:
-  #      - chart-example.local
+  #      - kube-opex-analytics.local
 
 resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+# No resource requests not limits is specified by default.
+# We leave this as a conscious choice for the user, as this increases chances charts run 
+# on environments with little resources, such as Minikube. 
+# If you do want to specify resources, uncomment the following lines, adjust them as necessary, 
+# and remove the curly braces after 'resources:'.
   # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
+  #   cpu: 256m
+  #   memory: 512Mi
   # requests:
   #   cpu: 100m
   #   memory: 128Mi

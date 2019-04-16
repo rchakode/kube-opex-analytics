@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-{{- if .Values.persistData }}
+{{- if .Values.dataVolume.persist }}
 kind: StatefulSet
 {{- else }}
 kind: Deployment
@@ -11,7 +11,7 @@ metadata:
     {{- include "kube-opex-analytics.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
-{{- if .Values.persistData }}
+{{- if .Values.dataVolume.persist }}
   serviceName: {{ include "kube-opex-analytics.fullname" . }}
 {{- end }}
   selector:
@@ -27,13 +27,13 @@ spec:
       restartPolicy: Always
       containers:
         - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.repository }}:{{ .Chart.Version }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- if .Values.envs }}
           env:
           {{- range $key, $val := .Values.envs }}
-            - name: {{ $key }}
-              value: {{ $val }}
+            - name: {{ $key | quote }}
+              value: {{ $val | quote }}
           {{- end }}
           {{- end }}
           ports:
@@ -50,7 +50,7 @@ spec:
               port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-{{- if .Values.persistData }}
+{{- if .Values.dataVolume.persist }}
           volumeMounts:
             - mountPath: /data/
               name: data-vol
@@ -63,7 +63,7 @@ spec:
       storageClassName: standard-disk
       resources:
         requests:
-          storage: 8Gi
+          storage: {{ .Values.dataVolume.capacity }}
 {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

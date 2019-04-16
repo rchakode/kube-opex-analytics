@@ -84,7 +84,7 @@ helm upgrade --install kube-opex-analytics --namespace=kube-opex-analytics helm/
 
 if you don't, you can use helm to render the Kubernetes manifests and apply them with kubectl:
 ```
-helm template helm/kube-opex-analytics/ | kubectl apply -f -
+helm template --name kube-opex-analytics helm/kube-opex-analytics/ | kubectl apply -f -
 ```
 check the [values.yaml](./helm/kube-opex-analytics/values.yaml) file for the available configuration options
 
