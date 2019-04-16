@@ -19,8 +19,8 @@ COPY requirements.txt \
     $APP_HOME/
 
 RUN mkdir -p $APP_HOME/static/images
-COPY kube-opex-analytics.png $APP_HOME/static/images/
-COPY favicon.ico $APP_HOME/static/images/
+COPY static/images/kube-opex-analytics.png $APP_HOME/static/images/
+COPY static/images/favicon.ico $APP_HOME/static/images/
 
 WORKDIR $APP_HOME
     
