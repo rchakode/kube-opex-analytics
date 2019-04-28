@@ -16,5 +16,12 @@
 # CONDITIONS OF ANY KIND, either express or implied. See the License for the             #
 # specific language governing permissions and limitations under the License.             #
 
+# LC_ALL='C.UTF-8' LANG='C.UTF-8' \
+#     python3 -u ./backend.py
+
 LC_ALL='C.UTF-8' LANG='C.UTF-8' \
-    python3 -u ./backend.py
+    uwsgi \
+    --http-socket :5483 \
+    --enable-threads \
+    --wsgi-file backend.py \
+    --callable wsgi_dispatcher

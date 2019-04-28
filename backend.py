@@ -30,42 +30,69 @@ import calendar
 import sys
 import collections
 import enum
+import werkzeug.wsgi
+import prometheus_client
 
 # set version
-KOA_VERSION='0.1.0'
+KOA_VERSION='0.2.0'
 
-# set logger settings
-logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+# define logger
+def get_logger():
+    logger = logging.getLogger('kube-opex-analytics')
+    logger.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    return logger
 
-# load dynamic configuration settings
+# get a logger
+logger = get_logger()
+
+def get_config_hourly_billing_rate():
+    try:
+        hourly_billing_rate = float(os.getenv('KOA_BILLING_HOURLY_RATE'))
+        if hourly_billing_rate < 0.0:
+            logger.warning('negative KOA_BILLING_HOURLY_RATE reset to 0.0 (%f)' % hourly_billing_rate)
+            hourly_billing_rate = 0.0
+    except:
+        hourly_billing_rate = 0.0
+    return hourly_billing_rate
+
+
+# load configuration from environment
 KOA_K8S_API_ENDPOINT = os.getenv('KOA_K8S_API_ENDPOINT', 'http://127.0.0.1:8001')
-KOA_K8S_API_VERIFY_SLL = str_to_bool(os.getenv('KOA_K8S_API_VERIFY_SLL', 'true'))
+KOA_K8S_API_VERIFY_SLL = (lambda v: v.lower() in ("yes", "true"))(os.getenv('KOA_K8S_API_VERIFY_SLL', 'true'))
 KOA_DEFAULT_DB_LOCATION = ('%s/.kube-opex-analytics/db') % os.getenv('HOME', '/tmp')
 KOA_DB_LOCATION = os.getenv('KOA_DB_LOCATION', KOA_DEFAULT_DB_LOCATION)
 KOA_POLLING_INTERVAL_SEC = int(os.getenv('KOA_POLLING_INTERVAL_SEC', '300'))
 KOA_BILLING_CURRENCY_SYMBOL = os.getenv('KOA_BILLING_CURRENCY_SYMBOL', '$')
+KOA_BILLING_HOURLY_RATE=get_config_hourly_billing_rate()
 
-KOA_BILING_HOURLY_RATE=0
-try:
-    KOA_BILING_HOURLY_RATE = float(os.getenv('KOA_BILING_HOURLY_RATE'))
-except:
-    KOA_BILING_HOURLY_RATE = 0
+
+PROMETHEUS_HOURLY_USAGE_EXPORTER = prometheus_client.Gauge('koa_namespace_last_hourly_usage', 
+                                                    'Last hourly resource usage per namespace', 
+                                                    ['namespace', 'usage_type'])   
+PROMETHEUS_PERIODIC_USAGE_EXPORTER = prometheus_client.Gauge('koa_namespace_periodic_usage', 
+                                                    'Periodic resource usage per namespace', 
+                                                    ['analytics_interval', 'namespace', 'resource', 'date'])                                                                                                             
 
 # fixed configuration settings
 STATIC_CONTENT_LOCATION = '/static'
 FRONTEND_DATA_LOCATION = '.%s/data' % (STATIC_CONTENT_LOCATION)
 
+# create Flask application
 app = flask.Flask(__name__, static_url_path=STATIC_CONTENT_LOCATION, template_folder='.')
 
-def str_to_bool(v):
-  return v.lower() in ("yes", "true", "t", "1")
-
-def print_error(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
+# Add prometheus wsgi middleware to route /metrics requests
+wsgi_dispatcher = werkzeug.wsgi.DispatcherMiddleware(app, {
+    '/metrics': prometheus_client.make_wsgi_app()
+})
 
 @app.route('/favicon.ico')
 def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'static'), 'images/favicon.ico', mimetype='image/vnd.microsoft.icon')
+    return flask.send_from_directory(os.path.join(app.root_path, 'static'), 'images/favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 @app.after_request
 def add_header(r):
@@ -156,7 +183,6 @@ class JSONMarshaller(json.JSONEncoder):
                 'memUsage': obj.memUsage
             }
         return json.JSONEncoder.default(self, obj)
-
 
 
 class K8sUsage:
@@ -364,15 +390,17 @@ def create_directory_if_not_exists(path):
             raise
 
 class RrdPeriod(enum.IntEnum):
-    PERIOD_7_DAYS_SEC = 604800
+    PERIOD_1_HOUR_SEC  = 3600
+    PERIOD_7_DAYS_SEC  = 604800
     PERIOD_14_DAYS_SEC = 1209600
-    PERIOD_YEAR_SEC = 31968000
+    PERIOD_YEAR_SEC    = 31968000  
 
 class ResUsageType(enum.IntEnum):
-    CPU = 0
-    MEMORY = 1
-    CONSOLIDATED = 2
+    CPU            = 0
+    MEMORY         = 1
+    CONSOLIDATED   = 2
     CUMULATED_COST = 3
+
 
 class Rrd:
     def __init__(self, db_files_location=None, dbname=None):
@@ -382,7 +410,7 @@ class Rrd:
         self.create_rrd_file_if_not_exists()
 
     @staticmethod
-    def get_period_group_key(timeUTC, period):
+    def get_date_group(timeUTC, period):
         if period == RrdPeriod.PERIOD_YEAR_SEC:
             return time.strftime('%b %Y', timeUTC)
         return time.strftime('%b %d', timeUTC)
@@ -438,7 +466,10 @@ class Rrd:
                 except:
                     pass
 
-        if sum_res_usage[ResUsageType.CPU] > 0.0 and sum_res_usage[ResUsageType.CPU] > 0.0:
+        if sum_res_usage[ResUsageType.CPU] > 0.0 and sum_res_usage[ResUsageType.MEMORY] > 0.0:
+            PROMETHEUS_HOURLY_USAGE_EXPORTER.labels(self.dbname, ResUsageType.CPU.name).set(current_cpu_usage)
+            PROMETHEUS_HOURLY_USAGE_EXPORTER.labels(self.dbname, ResUsageType.MEMORY.name).set(current_mem_usage)
+            PROMETHEUS_HOURLY_USAGE_EXPORTER.labels(self.dbname, ResUsageType.CONSOLIDATED.name).set(current_consolidated_usage)
             return (','.join(res_usage[ResUsageType.CPU]),
             ','.join(res_usage[ResUsageType.MEMORY]),
             ','.join(res_usage[ResUsageType.CONSOLIDATED]),
@@ -461,7 +492,7 @@ class Rrd:
             if len(cdp) == 4:
                 try:
                     datetime_utc = time.gmtime(current_ts)
-                    date_group = self.get_period_group_key(datetime_utc, period)
+                    date_group = self.get_date_group(datetime_utc, period)
                     current_cpu_usage = round(100*float(cdp[0]))/100
                     current_mem_usage = round(100*float(cdp[1]))/100
                     current_consolidated_usage = round(100*float(cdp[2]))/100
@@ -479,11 +510,14 @@ class Rrd:
         for _, dbfile in enumerate(dbfiles):
             dbfile_splitted=os.path.splitext(dbfile)
             if len(dbfile_splitted) == 2 and dbfile_splitted[1] == '.rrd':
-                rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname=dbfile_splitted[0])
+                ns = dbfile_splitted[0]
+                rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname=ns)
                 analytics = rrd.dump_trends_data(period=RrdPeriod.PERIOD_7_DAYS_SEC, step_in=3600)
+                # analytics = rrd.dump_trends_data(period=RrdPeriod.PERIOD_14_DAYS_SEC, step_in=3600)
                 for usage_type in range(4):
                     if analytics[usage_type]:
                         res_usage[usage_type].append(analytics[usage_type])
+
         with open(str('%s/cpu_usage_trends.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
             fd.write('['+','.join(res_usage[0])+']')
         with open(str('%s/memory_usage_trends.json' % FRONTEND_DATA_LOCATION), 'w') as fd:
@@ -494,22 +528,20 @@ class Rrd:
             fd.write('['+','.join(res_usage[3])+']')
 
     @staticmethod
-    def dump_histogram_analytics(dbfiles, period):
+    def dump_histogram_analytics(dbfiles, period):    
         res_usage = collections.defaultdict(list)
         for _, dbfile in enumerate(dbfiles):
             dbfile_splitted=os.path.splitext(dbfile)
             if len(dbfile_splitted) == 2 and dbfile_splitted[1] == '.rrd':
-                dbname = dbfile_splitted[0]
-                rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname=dbname)
+                ns = dbfile_splitted[0]
+                rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname=ns)
                 analytics = rrd.dump_histogram_data(period=period, step_in=3600)
-                # valid_rows = analytics[3]
                 for usage_type in range(3):
-                    for date_key, value in analytics[usage_type].items():
+                    for date_group, value in analytics[usage_type].items():
                         if value > 0.0:
-                            # res_usage[usage_type].append('{"stack":"%s","usage":%f,"date":"%s"}' % (dbname, value/valid_rows[date_key], date_key))
-                            res_usage[usage_type].append('{"stack":"%s","usage":%f,"date":"%s"}' % (dbname, value, date_key))
+                            PROMETHEUS_PERIODIC_USAGE_EXPORTER.labels(RrdPeriod(period).name, ns, ResUsageType(usage_type).name, date_group).set(value)
+                            res_usage[usage_type].append('{"stack":"%s","usage":%f,"date":"%s"}' % (ns, value, date_group))
 
-        # write exported data to files
         with open(str('%s/cpu_usage_period_%d.json' % (FRONTEND_DATA_LOCATION, period)), 'w') as fd:
             fd.write('['+','.join(res_usage[0])+']')
         with open(str('%s/memory_usage_period_%d.json' % (FRONTEND_DATA_LOCATION, period)), 'w') as fd:
@@ -518,21 +550,19 @@ class Rrd:
             fd.write('['+','.join(res_usage[2])+']')
 
 
-
 def pull_k8s(api_context):
     data = None
     api_endpoint = '%s%s' % (KOA_K8S_API_ENDPOINT, api_context)
-
     try:
         http_req = requests.get(api_endpoint, verify=KOA_K8S_API_VERIFY_SLL)
         if http_req.status_code == 200:
             data = http_req.text
         else:
-            print_error("%s [ERROR] '%s' returned error (%s)" % (time.strftime("%Y-%M-%d %H:%M:%S"), api_endpoint, http_req.text))
+            logger.error("call to %s returned error (%s)" % (api_endpoint, http_req.text))
     except requests.exceptions.RequestException as ex:
-        print_error("%s [ERROR] HTTP exception requesting '%s' (%s)" % (time.strftime("%Y-%M-%d %H:%M:%S"), api_endpoint, ex))
+        logger.error("HTTP exception requesting %s (%s)" % (api_endpoint, ex))
     except:
-        print_error("%s [ERROR] exception requesting '%s'" % (time.strftime("%Y-%M-%d %H:%M:%S"), api_endpoint))
+        logger.error("unknown exception requesting %s" % api_endpoint)
 
     return data
 
@@ -547,21 +577,20 @@ def create_metrics_puller():
         k8s_usage.extract_pod_metrics( pull_k8s('/apis/metrics.k8s.io/v1beta1/pods') )
         k8s_usage.consolidate_ns_usage()
         k8s_usage.dump_nodes()
-        # calculate usage costs and update database
         if k8s_usage.cpuCapacity > 0.0 and k8s_usage.memCapacity > 0.0:
             probe_ts = calendar.timegm(time.gmtime())
             rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname='non-allocatable')
             cpu_usage = compute_usage_percent_ratio(k8s_usage.cpuCapacity - k8s_usage.cpuAllocatable, k8s_usage.cpuCapacity)
             mem_usage = compute_usage_percent_ratio(k8s_usage.memCapacity - k8s_usage.memAllocatable, k8s_usage.memCapacity)
             consolidated_usage = (cpu_usage + mem_usage) / 2.0
-            estimated_cost =  consolidated_usage * (KOA_POLLING_INTERVAL_SEC * KOA_BILING_HOURLY_RATE) / 36
+            estimated_cost =  consolidated_usage * (KOA_POLLING_INTERVAL_SEC * KOA_BILLING_HOURLY_RATE) / 36
             rrd.add_value(probe_ts, cpu_usage=cpu_usage, mem_usage=mem_usage, consolidated_usage=consolidated_usage, estimated_cost=estimated_cost)
             for ns, nsUsage in k8s_usage.nsResUsage.items():
                 rrd = Rrd(db_files_location=KOA_DB_LOCATION, dbname=ns)
                 cpu_usage = compute_usage_percent_ratio(nsUsage.cpuUsage, k8s_usage.cpuCapacity)
                 mem_usage = compute_usage_percent_ratio(nsUsage.memUsage, k8s_usage.memCapacity)
                 consolidated_usage = (cpu_usage + mem_usage) / 2
-                estimated_cost =  consolidated_usage * (KOA_POLLING_INTERVAL_SEC * KOA_BILING_HOURLY_RATE) / 36
+                estimated_cost =  consolidated_usage * (KOA_POLLING_INTERVAL_SEC * KOA_BILLING_HOURLY_RATE) / 36
                 rrd.add_value(probe_ts, cpu_usage=cpu_usage, mem_usage=mem_usage, consolidated_usage=consolidated_usage, estimated_cost=estimated_cost)
         time.sleep(int(KOA_POLLING_INTERVAL_SEC))
 
@@ -578,24 +607,18 @@ def dump_analytics():
         Rrd.dump_histogram_analytics(dbfiles=dbfiles, period=RrdPeriod.PERIOD_YEAR_SEC)
         time.sleep(export_interval)
 
+
+# parse CLI options
+parser = argparse.ArgumentParser(description='Kubernetes Opex Analytics Backend.')
+parser.add_argument('-v', '--version', action='version', version='%(prog)s '+KOA_VERSION)
+args = parser.parse_args()
+# create dump directory if not exist
+create_directory_if_not_exists(FRONTEND_DATA_LOCATION)
+# create workers
+th_puller = threading.Thread(target=create_metrics_puller)
+th_exporter = threading.Thread(target=dump_analytics)
+th_puller.start()
+th_exporter.start()
+
 if __name__ == '__main__':
-
-    # parse CLI options
-    parser = argparse.ArgumentParser(description='Kubernetes Opex Analytics Backend.')
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s '+KOA_VERSION)
-    args = parser.parse_args()
-
-    if KOA_BILING_HOURLY_RATE < 0.0:
-        logging.critical('invalid KOA_BILING_HOURLY_RATE: %f' % KOA_BILING_HOURLY_RATE)
-        sys.exit(1)
-
-    # create dump directory if not exist
-    create_directory_if_not_exists(FRONTEND_DATA_LOCATION)
-
-    # create workers
-    th_puller = threading.Thread(target=create_metrics_puller)
-    th_exporter = threading.Thread(target=dump_analytics)
-    th_puller.start()
-    th_exporter.start()
-
-    app.run(host='0.0.0.0', port=5483) # host=None, port=5483, debug=None
+    app.run(host='0.0.0.0', port=5483)
