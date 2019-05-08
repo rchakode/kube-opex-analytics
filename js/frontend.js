@@ -126,7 +126,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                     .height(400)
                     .marginRatio(2)
                     .markerSize(10)
-                    .numberFormat(',.2%');
+                    .numberFormat('');
 
                 if (KoaColorSchema) {
                     legendChart.colorSchema(KoaColorSchema);
@@ -162,8 +162,8 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                     .height(400)
                     .grid('full')
                     .xAxisFormat('custom')
-                    .xAxisCustomFormat('%Y/%m/%d')
-                    //.xTicks(2)
+                    .xAxisCustomFormat('%b %d %H:%M')
+                    .xTicks(2)
                     .yAxisLabel(yLabel)
                     .width(containerWidth)
                     .dateLabel('dateUTC')
@@ -438,8 +438,8 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 chartData.push({
                     "name": 'unused',
                     "id": 9999,
-                    "quantity": node[resCapacity] - (node[resCapacity] * sumLoad/100),
-                    "percentage": (100 - sumLoad)
+                    "quantity": node[resCapacity] * (1 - sumLoad/100),
+                    "percentage": (100.0 - sumLoad)
                 });
                 loadColors.push(computeLoadHeatMapColor(0));
                 dataset.data.set(nname, {'chartData': chartData, 'colorSchema': loadColors})
