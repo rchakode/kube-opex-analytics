@@ -38,7 +38,7 @@ You can see some screenshorts of the resulting analytics charts hereafter.
 Here we'll use a proxy connection to Kubernetes API
 
 ```
-$ kubetcl proxy
+$ kubectl proxy
 ```
 
 This will open a proxied API access at `http://127.0.0.1:8001`.
