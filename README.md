@@ -60,15 +60,22 @@ You can see some screenshorts of the resulting analytics charts hereafter.
 ## <a name="getting-started"></a>Getting Started
 
 ## <a name="get-kubernetes-api-endpoint"></a>Get Kubernetes API Endpoint
-If you're planning an installation inside a Kubernetes cluster, you can connect to the local cluster API endpoint at: `https://kubernetes.default`.
+Kubernetes Opex Analytics needs read-only access to the following APIs:
 
-Alternatively, if you're planning an installation outside a Kubernetes cluster you can use a proxied access to Kubernetes API as follows:
+* /apis/metrics.k8s.io/v1beta1
+* /api/v1
+
+You need to provide the base URL of the Kubernetes API when starting the program (see example below). 
+
+Typically if you're planning an installation inside a Kubernetes cluster, you can connect to the local cluster API endpoint at: `https://kubernetes.default`.
+
+Likewise if you're planning an installation outside a Kubernetes cluster you can use a proxied access to Kubernetes API as follows:
 
 ```
 $ kubectl proxy
 ```
 
-This will open a proxied API access at `http://127.0.0.1:8001`.
+This will open a proxied access to Kubernetes API at `http://127.0.0.1:8001`.
 
 ## <a name="start-koa-on-docker"></a>Starting Kubernetes Opex Analytics on Docker
 Kubernetes Opex Analytics is released as a Docker image. So you can quickly start an instance of the service by running the following command:
