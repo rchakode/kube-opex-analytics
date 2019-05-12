@@ -12,7 +12,7 @@ envs:
 
 dataVolume:
   persist: false
-  capacity: 8Gi
+  capacity: 4Gi
 
 replicaCount: 1
 

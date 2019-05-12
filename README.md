@@ -2,7 +2,7 @@
 * [What is Kubernetes Opex Analytics](#what-is-koa)
   * [Overview](#overview)
   * [Features](#features)
-  * [Cost Models](#cost-model)
+  * [Cost Models](#cost-models)
   * [Screenshots](#screenshorts)
 * [Getting Started](#getting-started)
   * [Get Kubernetes API Endpoint](#get-kubernetes-api-endpoint)
@@ -30,13 +30,14 @@ Its current features cover the following analytics. Each chart enables a tooltip
 * **Last Nodes' Occupation by Pods** providing for each node the share of resources used by active pods on the node.
 
 
-## <a name="cost-model"></a>Cost Models
-This is related to issue #7: by setting an estimated hourly cost for your Kubernetes cluster it's now possible to use actual costs instead of just sum of usage as value for periodic usage (daily and monthly). The daily usage is still the actual resource usage by each namespace. 
+## <a name="cost-models"></a>Cost Models
+Kubernetes Opex Analytics supports the following cost allocation models that can be set through the variable `KOA_COST_MODEL` when starting the container:
 
-You enable this capability, you have to set the following variables when launching Kubernetes Opex Analytics: 
-  * `KOA_COST_MODEL`:  sets the model of cost allocation to use. Possible values are: `CUMALITIVE_RATIO` (default) indicates to compute cost allocation as cumulative resource usage of each period of time; `CHARGE_BACK`  calculates cost allocation given a cluster hourly rate; `RATIO` indicates to compute cost allocation as a normalized percentage of resource usage during the period of time. 
-  * `KOA_BILLING_HOURLY_RATE`: sets a floating number corresponding to the estimated hourly cost of your Kubernetes cluster. For example if your cluster costs $5,000 a month (i.e. ~30 * 24 hours), its estimated hourly cost would be set to $6.95 = 5000/(30 * 24).
-  * `KOA_BILLING_CURRENCY_SYMBOL` (optional, default is `$`): sets the currency to annotate usage costs on charts. 
+* `CUMALITIVE_RATIO`: (default value) compute cost as cumulative resource usage for each period of time (daily, monthly).
+* `RATIO`: compute cost as a normalized percentage of cumulative resource usage during each period of time. 
+* `CHARGE_BACK`: compute cost based on given cluster hourly rate, and the cumulative resource usage during each period of time.
+
+Refer to the [Configuration](#config-variables) section to learn how to configure cost model. 
 
 ## <a name="screenshorts"></a>Screenshorts
 You can see some screenshorts of the resulting analytics charts hereafter.
@@ -111,13 +112,12 @@ helm template --name kube-opex-analytics helm/kube-opex-analytics/ | kubectl app
 Check the [values.yaml](./helm/kube-opex-analytics/values.yaml) file for the available configuration options.
 
 ## <a name="config-variables"></a>Configuration Variables
-Kubernetes Opex Analytics supports the following cost allocation models that can be set through the variable `KOA_COST_MODEL` when starting the container:
-
-* `CUMALITIVE_RATIO`: (default value) compute cost as cumulative resource usage for each period of time (daily, monthly).
-* `RATIO`: compute cost as a normalized percentage of cumulative resource usage during each period of time. 
-* `CHARGE_BACK`: compute cost based on given cluster hourly rate, and the cumulative resource usage during each period of time.
-
-Refer to the [Configuration](#config-variables) section to learn how to configure cost model. 
+Kubernetes Opex Analytics supports the following environment variables when starting up:
+* `KOA_DB_LOCATION` sets the path to use to store internal data. Typically when you consider to set a volume to store those data, you should also take care to set this path to belong to the mounting point.
+* `KOA_K8S_API_ENDPOINT` sets the endpoint to the Kubernetes API.
+* `KOA_COST_MODEL` (version >= `0.2.0`): sets the model of cost allocation to use. Possible values are: `CUMALITIVE_RATIO` (default) indicates to compute cost as cumulative resource usage for each period of time (daily, monthly); `CHARGE_BACK` calculates cost based on a given cluster hourly rate (see `KOA_BILLING_HOURLY_RATE`); `RATIO` indicates to compute cost as a normalized percentage of resource usage during each period of time. 
+* `KOA_BILLING_HOURLY_RATE` (required if cost model `CHARGE_BACK`): defines a positive floating number corresponding to an estimated hourly rate for the Kubernetes cluster. For example if your cluster cost is $5,000$ dollars a month (i.e. ~$30*24 hours$), its estimated hourly cost would be $6.95 = 5000/(30*24)$.
+* `KOA_BILLING_CURRENCY_SYMBOL` (optional, default is `$`): sets a currency string to use to annotate costs on charts. 
 
 # <a name="license-copyrights"></a>License & Copyrights
 This tool (code and documentation) is licensed under the terms of Apache License 2.0. Read the `LICENSE` file for more details on the license terms.
