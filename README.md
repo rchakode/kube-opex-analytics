@@ -62,7 +62,6 @@ You can see some screenshorts of the resulting analytics charts hereafter.
 ## <a name="get-kubernetes-api-endpoint"></a>Get Kubernetes API Endpoint
 If you're planning an installation inside a Kubernetes cluster, you can connect to the local cluster API endpoint at: `https://kubernetes.default`.
 
-
 Alternatively, if you're planning an installation outside a Kubernetes cluster you can use a proxied access to Kubernetes API as follows:
 
 ```
@@ -91,7 +90,9 @@ In this command:
  * The environment variable `KOA_K8S_API_ENDPOINT` set the address of the Kubernetes API endpoint.
 
 ### <a name="access-gui-docker"></a>Access GUI & Watch Analytics
- Once the container started you can open access the Kubernetes Opex Analytics's web interface at `http://<DOCKER_HOST>:5483/`. Where `<DOCKER_HOST>` should be replaced by the IP address or the hostmane of the Docker server. E.g. If you're running Docker on your local machine, the address will be available at: `http://127.0.0.1:5483/`
+ Once the container started you can open access the Kubernetes Opex Analytics's web interface at `http://<DOCKER_HOST>:5483/`. Where `<DOCKER_HOST>` should be replaced by the IP address or the hostmane of the Docker server. 
+ 
+For instance, if you're running Docker on your local machine the interface will be available at: `http://127.0.0.1:5483/`
 
  > Due to the time needed to have sufficient data to consolidate, you may need to wait almost a hour to have all charts filled. This is a normal operations of Kubernetes Opex Analytics.
 
