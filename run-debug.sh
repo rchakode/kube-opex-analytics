@@ -20,8 +20,9 @@ if [ "$KOA_K8S_AUTH_TOKEN" != "" ]; then
     export KOA_K8S_AUTH_TOKEN
     export KOA_ENABLE_DEBUG=true
     export KOA_K8S_API_VERIFY_SSL=false
-    export KOA_BILLING_HOURLY_RATE=7.95
+    export KOA_BILLING_HOURLY_RATE=9.92
     export KOA_BILLING_CURRENCY_SYMBOL='$'
+    export KOA_COST_MODEL='CHARGE_BACK'
     fuser -k 5483/tcp || true
     ./entrypoint.sh
 else

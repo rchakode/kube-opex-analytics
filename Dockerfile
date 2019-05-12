@@ -5,7 +5,7 @@ ARG APP_HOME="/koa"
 
 ADD css $APP_HOME/css
 ADD js $APP_HOME/js
-ADD static $APP_HOME/static
+ADD static/images $APP_HOME/static/images
 
 COPY requirements.txt \
     entrypoint.sh \
