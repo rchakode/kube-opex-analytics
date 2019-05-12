@@ -6,6 +6,9 @@ envs:
   KOA_DB_LOCATION: /data/db
   KOA_K8S_API_ENDPOINT: https://kubernetes.default
   KOA_K8S_API_VERIFY_SSL: false
+  KOA_COST_MODEL: RATIO
+  KOA_BILLING_HOURLY_RATE: 0.0
+  KOA_BILLING_CURRENCY_SYMBOL: $
 
 dataVolume:
   persist: false
