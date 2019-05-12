@@ -6,7 +6,7 @@
   * [Get Kubernetes API Endpoint](#get-kubernetes-api-endpoint)
   * [Start Kubernetes Opex Analytics on Docker](#start-koa-on-docker)
   * [Start Kubernetes Opex Analytics on Kubernetes](#start-koa-on-k8s)
-  * [Configuration Variables](#config-variales)
+  * [Configuration Variables](#config-variables)
 * [License and Copyrights](#license-copyrights)
 * [Contributions](#contributions)
 
