@@ -7,8 +7,8 @@
   * [Start Kubernetes Opex Analytics on Docker](#start-koa-on-docker)
   * [Start Kubernetes Opex Analytics on Kubernetes](#start-koa-on-k8s)
   * [Configuration Variables](#config-variables)
-* [License and Copyrights](#license-copyrights)
-* [Contributions](#contributions)
+* [License & Copyrights](#license-copyrights)
+* [Support & Contributions](#contributions)
 
 
 # <a name="what-is-koa"></a>What is Kubernetes Opex Analytics
@@ -111,7 +111,7 @@ This tool (code and documentation) is licensed under the terms of Apache License
 
 The tool includes and is bound to third-party libraries provided with their owns licenses and copyrights. Read the `NOTICE` file for additional information.
 
-# <a name="contributions"></a>Contributions
+# <a name="contributions"></a>Support & Contributions
 Kubernetes Opex Analytics is a currently at a early stage but is already useful and ready to use. We encourage feedback and will make our best to be proactive to handle any troubles you may encounter when using it.
 
 Meanwhile we already have some ideas of improvments for next releases https://github.com/rchakode/kube-opex-analytics/issues.
