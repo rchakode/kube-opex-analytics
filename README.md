@@ -33,7 +33,7 @@ Its current features cover the following analytics. Each chart enables a tooltip
 ## <a name="cost-models"></a>Cost Models
 Kubernetes Opex Analytics supports the following cost allocation models that can be set through the variable `KOA_COST_MODEL` when starting the container:
 
-* `CUMALITIVE_RATIO`: (default value) compute cost as cumulative resource usage for each period of time (daily, monthly).
+* `CUMULATIVE_RATIO`: (default value) compute cost as cumulative resource usage for each period of time (daily, monthly).
 * `RATIO`: compute cost as a normalized percentage of cumulative resource usage during each period of time. 
 * `CHARGE_BACK`: compute cost based on given cluster hourly rate, and the cumulative resource usage during each period of time.
 
