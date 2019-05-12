@@ -60,7 +60,7 @@ You can see some screenshorts of the resulting analytics charts hereafter.
 ## <a name="getting-started"></a>Getting Started
 
 ## <a name="get-kubernetes-api-endpoint"></a>Get Kubernetes API Endpoint
-Kubernetes Opex Analytics needs read-only access to the following APIs:
+Kubernetes Opex Analytics needs read-only access to the following Kubernetes APIs:
 
 * /apis/metrics.k8s.io/v1beta1
 * /api/v1
