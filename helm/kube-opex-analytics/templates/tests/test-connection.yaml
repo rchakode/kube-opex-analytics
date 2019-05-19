@@ -13,6 +13,10 @@ spec:
   containers:
     - name: wget
       image: busybox
-      command: ['wget']
-      args:  ['{{ include "kube-opex-analytics.fullname" . }}:{{ .Values.service.port }}']
+      command: ["/bin/sh", "-c"]
+      args:
+        - echo 'waiting 60s';
+          sleep 60;
+          wget '{{ include "kube-opex-analytics.fullname" . }}:{{ .Values.service.port }}';
+          echo done;   
   restartPolicy: Never
