@@ -34,6 +34,13 @@ import werkzeug.wsgi
 import prometheus_client
 import pprint
 
+def create_directory_if_not_exists(path):
+    try:
+        os.makedirs(path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+
 # configuration object
 class Config:
     version = '0.2.1'
@@ -51,7 +58,6 @@ class Config:
     enable_debug = (lambda v: v.lower() in ("yes", "true"))(os.getenv('KOA_ENABLE_DEBUG', 'false'))
     k8s_debug_auth_token = os.getenv('KOA_K8S_AUTH_TOKEN', 'DEBUG_TOKEN_NOT_FOUND')
 
-        
     def __init__(self):
         try:
             with open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'r') as rbac_token_file:
@@ -63,6 +69,20 @@ class Config:
             self.billing_hourly_rate = float(os.getenv('KOA_BILLING_HOURLY_RATE'))
         except:
             self.billing_hourly_rate = -1.0
+
+        create_directory_if_not_exists(self.frontend_data_location)
+        with open(str('%s/backend.json' % self.frontend_data_location), 'w') as fd:
+            if self.cost_model == 'CHARGE_BACK':
+                cost_model_label = 'Charge Back'
+                cost_model_unit = self.billing_currency
+            elif self.cost_model == 'RATIO':
+                cost_model_label = 'Normalized Ratio'
+                cost_model_unit = '%'
+            else:
+                cost_model_label = 'Cumulative Ratio'
+                cost_model_unit = '%'
+            fd.write('{"cost_model":"%s", "currency":"%s"}' % (cost_model_label, cost_model_unit))        
+
 
 # configure logger
 def configure_logger(debug_enabled):
@@ -393,13 +413,6 @@ class K8sUsage:
 def compute_usage_percent_ratio(value, total):
     return round((100.0*value) / total, KOA_CONFIG.db_round_decimals)
 
-def create_directory_if_not_exists(path):
-    try:
-        os.makedirs(path)
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
-
 class RrdPeriod(enum.IntEnum):
     PERIOD_5_MINS_SEC  = 300
     PERIOD_1_HOUR_SEC  = 3600
@@ -652,9 +665,6 @@ args = parser.parse_args()
 if KOA_CONFIG.cost_model == 'CHARGE_BACK' and KOA_CONFIG.billing_hourly_rate <= 0.0:
     KOA_LOGGER.fatal('invalid billing hourly rate for CHARGE_BACK cost allocation')
     sys.exit(1)
-
-# preparing environment
-create_directory_if_not_exists(KOA_CONFIG.frontend_data_location)
 
 th_puller = threading.Thread(target=create_metrics_puller)
 th_exporter = threading.Thread(target=dump_analytics)

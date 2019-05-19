@@ -490,7 +490,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             $.ajax({
                 type: "GET",
                 url: frontendDataDir+'/nodes.json',
-                dataType: "json",
+                dataType: 'json',
                 success: function(data) {
                     let dataset = buildNodesLoadDataSet(data, currentUsageType, 'donut');
                     let dynHtml = '';
@@ -518,23 +518,42 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             });
         }
 
+        function loadBackendConfig(frontendDataDir)
+        {
+            $("#cost-model").text('');
+            $.ajax({
+                type: "GET",
+                url: frontendDataDir+'/backend.json',
+                dataType: 'json',
+                success: function(backend_config) {
+                    $("#cost-model").text(backend_config.cost_model+' ('+backend_config.currency+')');
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    $("#cost-model").text('Ratio (%)');
+                    console.log('failed loading backend config (',xhr.status, ' error)')
+                }
+            });
+        }        
+
         function triggerRefreshUsageCharts(frontendDataDir)
         {
             console.log(Date(), 'updating usage...')
             $("#error-message-container").hide();
             $("#error-message").html('')
 
+            loadBackendConfig(frontendDataDir);
+
             $.ajax({
                 type: "GET",
                 url: frontendDataDir+'/cpu_usage_trends.json',
-                dataType: "json",
+                dataType: 'json',
                 success: function(data) {
                     updateStackedAreaChart(
                         {"data": data},
                         cpuUsageTrendsChart,
                         'js-usage-cpu-trends',
-                        'CPU Usage (%)',
-                        'Hourly CPU Usage (%)');
+                        'CPU Usage',
+                        'Hourly CPU Usage');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
                     $("#error-message").append('<li>download hourly cpu usage'+' ('+xhr.status+')</li>');
@@ -546,14 +565,14 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             $.ajax({
                 type: "GET",
                 url: frontendDataDir+'/memory_usage_trends.json',
-                dataType: "json",
+                dataType: 'json',
                 success: function(data) {
                     updateStackedAreaChart(
                         {"data": data},
                         memoryUsageTrendsChart,
                         'js-usage-memory-trends',
-                        'Memory Usage (%)',
-                        'Hourly Memory Usage (%)');
+                        'Memory Usage',
+                        'Hourly Memory Usage');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
                     $("#error-message").append('<li>download hourly memory usage'+' ('+xhr.status+')</li>');
@@ -564,14 +583,14 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             $.ajax({
                 type: "GET",
                 url: frontendDataDir+'/cpu_usage_period_1209600.json',
-                dataType: "json",
+                dataType: 'json',
                 success: function(data) {
                     updateStackedBarChart(
                         {"data": data},
                         dailyCpuUsageChart,
                         'js-daily-cpu-usage',
-                        'Cumulative CPU Usage (%)',
-                        'Daily CPU Usage (%)');
+                        'Cumulative CPU Usage',
+                        'Daily CPU Usage');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
                     $("#error-message").append('<li>download daily cpu usage'+' ('+xhr.status+')</li>');
@@ -583,14 +602,14 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             $.ajax({
                 type: "GET",
                 url: frontendDataDir+'/memory_usage_period_1209600.json',
-                dataType: "json",
+                dataType: 'json',
                 success: function(data) {
                     updateStackedBarChart(
                         {"data": data},
                         dailyMemoryUsageChart,
                         'js-daily-memory-usage',
-                        'Cumulative Memory Usage (%)',
-                        'Daily Memory Usage (%)');
+                        'Cumulative Memory Usage',
+                        'Daily Memory Usage');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
                     $("#error-message").append('<li>download daily memory usage'+' ('+xhr.status+')</li>');
@@ -601,14 +620,14 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             $.ajax({
                 type: "GET",
                 url: frontendDataDir+'/cpu_usage_period_31968000.json',
-                dataType: "json",
+                dataType: 'json',
                 success: function(data) {
                     updateStackedBarChart(
                          {"data": data},
                          monthlyCpuUsageChart,
                         'js-montly-cpu-usage',
-                        'Cumulative CPU Usage (%)',
-                        'Monthly CPU Usage (%)');
+                        'Cumulative CPU Usage',
+                        'Monthly CPU Usage');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
                     $("#error-message").append('<li>download monthly cpu usage'+' ('+xhr.status+')</li>');
@@ -619,14 +638,14 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             $.ajax({
                 type: "GET",
                 url: frontendDataDir+'/memory_usage_period_31968000.json',
-                dataType: "json",
+                dataType: 'json',
                 success: function(data) {
                     updateStackedBarChart(
                          {"data": data},
                          monthlyMemoryUsageChart,
                         'js-montly-memory-usage',
-                        'Cumulative Memory Usage (%)',
-                        'Monthly Memory Usage (%)');
+                        'Cumulative Memory Usage',
+                        'Monthly Memory Usage');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
                     $("#error-message").append('<li>download monthly memory usage'+' ('+xhr.status+')</li>');
