@@ -36,21 +36,29 @@ import pprint
 
 # configuration object
 class Config:
-    version = '0.2.0'
+    version = '0.2.1'
     db_round_decimals = 6
     db_non_allocatable = 'non-allocatable'
     db_billing_hourly_rate = '.billing-hourly-rate'
     static_content_location = '/static'
     frontend_data_location = '.%s/data' % (static_content_location)
-    enable_debug = (lambda v: v.lower() in ("yes", "true"))(os.getenv('KOA_ENABLE_DEBUG', 'false'))
     k8s_api_endpoint = os.getenv('KOA_K8S_API_ENDPOINT', 'http://127.0.0.1:8001')
     k8s_verify_ssl = (lambda v: v.lower() in ("yes", "true"))(os.getenv('KOA_K8S_API_VERIFY_SSL', 'true'))
-    k8s_auth_token = os.getenv('KOA_K8S_AUTH_TOKEN', 'INVALID_TOKEN')
     db_location = os.getenv('KOA_DB_LOCATION', ('%s/.kube-opex-analytics/db') % os.getenv('HOME', '/tmp'))
     polling_interval_sec = int(os.getenv('KOA_POLLING_INTERVAL_SEC', '300'))
     cost_model = os.getenv('KOA_COST_MODEL', 'CUMULATIVE_RATIO')
     billing_currency = os.getenv('KOA_BILLING_CURRENCY_SYMBOL', '$')
+    enable_debug = (lambda v: v.lower() in ("yes", "true"))(os.getenv('KOA_ENABLE_DEBUG', 'false'))
+    k8s_debug_auth_token = os.getenv('KOA_K8S_AUTH_TOKEN', 'DEBUG_TOKEN_NOT_FOUND')
+
+        
     def __init__(self):
+        try:
+            with open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'r') as rbac_token_file:
+                self.k8s_rbac_auth_token = rbac_token_file.read()
+        except:
+            self.k8s_rbac_auth_token = 'RBAC_AUTH_TOKEN_NOT_FOUND'
+
         try:
             self.billing_hourly_rate = float(os.getenv('KOA_BILLING_HOURLY_RATE'))
         except:
@@ -571,8 +579,12 @@ def pull_k8s(api_context):
     data = None
     api_endpoint = '%s%s' % (KOA_CONFIG.k8s_api_endpoint, api_context)
     headers = {}
+
     if KOA_CONFIG.enable_debug:
-        headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_auth_token)
+        headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_debug_auth_token)
+    else:
+        headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_rbac_auth_token)
+
     try:
         http_req = requests.get(api_endpoint, verify=KOA_CONFIG.k8s_verify_ssl, headers=headers)
         if http_req.status_code == 200:
