@@ -43,7 +43,7 @@ def create_directory_if_not_exists(path):
 
 # configuration object
 class Config:
-    version = '0.2.1'
+    version = '0.3.0'
     db_round_decimals = 6
     db_non_allocatable = 'non-allocatable'
     db_billing_hourly_rate = '.billing-hourly-rate'
@@ -105,13 +105,30 @@ KOA_CONFIG = Config()
 # init logger
 KOA_LOGGER = configure_logger(KOA_CONFIG.enable_debug)
 
+class RrdPeriod(enum.IntEnum):
+    PERIOD_5_MINS_SEC  = 300
+    PERIOD_1_HOUR_SEC  = 3600
+    PERIOD_1_DAY_SEC   = 86400
+    PERIOD_7_DAYS_SEC  = 604800
+    PERIOD_14_DAYS_SEC = 1209600
+    PERIOD_YEAR_SEC    = 31968000 
+
 # initialize Prometheus exporter
-PROMETHEUS_HOURLY_USAGE_EXPORTER = prometheus_client.Gauge('koa_namespace_last_hourly_usage', 
-                                                    'Last hourly resource usage per namespace', 
-                                                    ['namespace', 'usage_type'])   
-PROMETHEUS_PERIODIC_USAGE_EXPORTER = prometheus_client.Gauge('koa_namespace_periodic_usage', 
-                                                    'Periodic resource usage per namespace', 
-                                                    ['analytics_interval', 'namespace', 'resource'])                                                                                                             
+PROMETHEUS_HOURLY_USAGE_EXPORTER = prometheus_client.Gauge('koa_namespace_hourly_usage', 
+                                                    'Current hourly resource usage per namespace', 
+                                                    ['namespace', 'resource'])   
+PROMETHEUS_PERIODIC_USAGE_EXPORTERS = {
+    RrdPeriod.PERIOD_14_DAYS_SEC: prometheus_client.Gauge('koa_namespace_daily_usage', 
+                                                    'Current daily resource usage per namespace', 
+                                                    ['namespace', 'resource']),
+    RrdPeriod.PERIOD_YEAR_SEC: prometheus_client.Gauge('koa_namespace_monthly_usage', 
+                                                    'Current monthly resource usage per namespace', 
+                                                    ['namespace', 'resource'])
+}
+# prometheus_client.Gauge('koa_namespace_periodic_usage', 
+#                                                     'Periodic resource usage per namespace', 
+#                                                     ['analytics_interval', 'namespace', 'resource'])              
+                                                                                                                                                                                                      
 
 # create Flask application
 app = flask.Flask(__name__, static_url_path=KOA_CONFIG.static_content_location, template_folder='.')
@@ -343,20 +360,23 @@ class K8sUsage:
             pod.name = '%s.%s' % (item['metadata']['name'], pod.namespace)
             pod.id = item['metadata']['uid']
             pod.phase = item['status']['phase']
-            pod.state = 'PodNotScheduled'
-            for _, cond in enumerate(item['status']['conditions']):
-                if cond['type'] == 'Ready' and cond['status'] == 'True':
-                    pod.state = 'Ready'
-                    break
-                if cond['type'] == 'ContainersReady' and cond['status'] == 'True':
-                    pod.state = "ContainersReady"
-                    break
-                if cond['type'] == 'PodScheduled' and cond['status'] == 'True':
-                    pod.state = "PodScheduled"
-                    break
-                if cond['type'] == 'Initialized' and cond['status'] == 'True':
-                    pod.state = "Initialized"
-                    break
+            if not 'conditions' in  item['status']:
+                KOA_LOGGER.debug('[puller] pod %s is %s'%(pod.name, pod.phase))
+            else:
+                pod.state = 'PodNotScheduled'
+                for _, cond in enumerate(item['status']['conditions']):
+                    if cond['type'] == 'Ready' and cond['status'] == 'True':
+                        pod.state = 'Ready'
+                        break
+                    if cond['type'] == 'ContainersReady' and cond['status'] == 'True':
+                        pod.state = "ContainersReady"
+                        break
+                    if cond['type'] == 'PodScheduled' and cond['status'] == 'True':
+                        pod.state = "PodScheduled"
+                        break
+                    if cond['type'] == 'Initialized' and cond['status'] == 'True':
+                        pod.state = "Initialized"
+                        break                
 
             if pod.state != 'PodNotScheduled':
                 pod.nodeName = item['spec']['nodeName']
@@ -411,15 +431,7 @@ class K8sUsage:
             fd.write(json.dumps(self.nodes, cls=JSONMarshaller))
 
 def compute_usage_percent_ratio(value, total):
-    return round((100.0*value) / total, KOA_CONFIG.db_round_decimals)
-
-class RrdPeriod(enum.IntEnum):
-    PERIOD_5_MINS_SEC  = 300
-    PERIOD_1_HOUR_SEC  = 3600
-    PERIOD_1_DAY_SEC   = 86400
-    PERIOD_7_DAYS_SEC  = 604800
-    PERIOD_14_DAYS_SEC = 1209600
-    PERIOD_YEAR_SEC    = 31968000  
+    return round((100.0*value) / total, KOA_CONFIG.db_round_decimals) 
 
 class ResUsageType(enum.IntEnum):
     CPU                 = 0
@@ -465,35 +477,38 @@ class Rrd:
 
 
     def dump_trend_data(self, period, step_in=None):
+        now_epoch_utc = calendar.timegm(time.gmtime())
         if step_in is not None:
             step = int(step_in)
         else: 
             step = int(RrdPeriod.PERIOD_1_HOUR_SEC)
-        rrd_end_ts = int(int(calendar.timegm(time.gmtime()) * step) / step)
-        rrd_start_ts  = int(rrd_end_ts - int(period))
-        result = rrdtool.fetch(self.rrd_location, 'AVERAGE', '-r', str(step), '-s', str(rrd_start_ts), '-e', str(rrd_end_ts))
+
+        rrd_end_ts_in = int(int(calendar.timegm(time.gmtime()) * step) / step)
+        rrd_start_ts_in  = int(rrd_end_ts_in - int(period))
+        rrd_result = rrdtool.fetch(self.rrd_location, 'AVERAGE', '-r', str(step), '-s', str(rrd_start_ts_in), '-e', str(rrd_end_ts_in))
+        rrd_start_ts_out, _, step = rrd_result[0]
+        rrd_current_ts = rrd_start_ts_out
         res_usage = collections.defaultdict(list)
         sum_res_usage = collections.defaultdict(lambda:0.0)
-        start_ts_out, _, step = result[0]
-        current_ts = start_ts_out
-        for _, cdp in enumerate( result[2] ):
-            current_ts += step
+        for _, cdp in enumerate( rrd_result[2] ):
+            rrd_current_ts += step
             if len(cdp) == 2:
                 try:
-                    datetime_utc = time.gmtime(current_ts)
+                    rrd_cdp_gmtime = time.gmtime(rrd_current_ts)
                     current_cpu_usage = round(100*float(cdp[0]), KOA_CONFIG.db_round_decimals)/100
                     current_mem_usage = round(100*float(cdp[1]), KOA_CONFIG.db_round_decimals)/100
-                    datetime_utc_json = time.strftime('%Y-%m-%dT%H:%M:%SZ', datetime_utc)
+                    datetime_utc_json = time.strftime('%Y-%m-%dT%H:%M:%SZ', rrd_cdp_gmtime)
                     res_usage[ResUsageType.CPU].append('{"name":"%s","dateUTC":"%s","usage":%f}' % (self.dbname, datetime_utc_json, current_cpu_usage))
                     res_usage[ResUsageType.MEMORY].append('{"name":"%s","dateUTC":"%s","usage":%f}' % (self.dbname, datetime_utc_json, current_mem_usage))
                     sum_res_usage[ResUsageType.CPU] += current_cpu_usage
                     sum_res_usage[ResUsageType.MEMORY] += current_mem_usage
+                    if calendar.timegm(rrd_cdp_gmtime) == int(int(now_epoch_utc / RrdPeriod.PERIOD_1_HOUR_SEC) * RrdPeriod.PERIOD_1_HOUR_SEC):
+                        PROMETHEUS_HOURLY_USAGE_EXPORTER.labels(self.dbname, ResUsageType.CPU.name).set(current_cpu_usage)
+                        PROMETHEUS_HOURLY_USAGE_EXPORTER.labels(self.dbname, ResUsageType.MEMORY.name).set(current_mem_usage)                    
                 except:
                     pass
 
         if sum_res_usage[ResUsageType.CPU] > 0.0 and sum_res_usage[ResUsageType.MEMORY] > 0.0:
-            PROMETHEUS_HOURLY_USAGE_EXPORTER.labels(self.dbname, ResUsageType.CPU.name).set(current_cpu_usage)
-            PROMETHEUS_HOURLY_USAGE_EXPORTER.labels(self.dbname, ResUsageType.MEMORY.name).set(current_mem_usage)
             return (','.join(res_usage[ResUsageType.CPU]), ','.join(res_usage[ResUsageType.MEMORY]))
         else:
             if step_in is None:
@@ -506,20 +521,20 @@ class Rrd:
             step = int(step_in)
         else: 
             step = int(RrdPeriod.PERIOD_1_HOUR_SEC)
+
         rrd_end_ts = int(int(calendar.timegm(time.gmtime()) * step) / step)
         rrd_start_ts  = int(rrd_end_ts - int(period))
-        result = rrdtool.fetch(self.rrd_location, 'AVERAGE', '-r', str(step), '-s', str(rrd_start_ts), '-e', str(rrd_end_ts))
+        rrd_result = rrdtool.fetch(self.rrd_location, 'AVERAGE', '-r', str(step), '-s', str(rrd_start_ts), '-e', str(rrd_end_ts))
+        rrd_start_ts_out, _, step = rrd_result[0]
+        rrd_current_ts = rrd_start_ts_out
         periodic_cpu_usage = collections.defaultdict(lambda:0.0)
         periodic_mem_usage = collections.defaultdict(lambda:0.0)
-        start_ts_out, _, step = result[0]
-        current_ts = start_ts_out
-
-        for _, cdp in enumerate( result[2] ):
-            current_ts += step
+        for _, cdp in enumerate( rrd_result[2] ):
+            rrd_current_ts += step
             if len(cdp) == 2:
                 try:
-                    datetime_utc = time.gmtime(current_ts)
-                    date_group = self.get_date_group(datetime_utc, period)
+                    rrd_cdp_gmtime = time.gmtime(rrd_current_ts)
+                    date_group = self.get_date_group(rrd_cdp_gmtime, period)
                     current_cpu_usage = round(100*float(cdp[0]), KOA_CONFIG.db_round_decimals)/100
                     current_mem_usage = round(100*float(cdp[1]), KOA_CONFIG.db_round_decimals)/100
                     periodic_cpu_usage[date_group] += current_cpu_usage
@@ -547,7 +562,8 @@ class Rrd:
             fd.write('['+','.join(res_usage[1])+']')
 
     @staticmethod
-    def dump_histogram_analytics(dbfiles, period):    
+    def dump_histogram_analytics(dbfiles, period):
+        now_gmtime = time.gmtime()
         usage_export = collections.defaultdict(list)
         usage_per_type_date = {}
         sum_usage_per_type_date = {}
@@ -578,9 +594,9 @@ class Rrd:
                             usage_cost = round(100 * usage_ratio, KOA_CONFIG.db_round_decimals)
                             if KOA_CONFIG.cost_model == 'CHARGE_BACK':
                                 usage_cost = round(usage_ratio * usage_per_type_date[res][date_key][KOA_CONFIG.db_billing_hourly_rate], KOA_CONFIG.db_round_decimals)     
-                        # print(KOA_CONFIG.cost_model, res, date_key, db,  usage_value, usage_cost, sum_usage_per_type_date[res][date_key], usage_per_type_date[res][date_key][KOA_CONFIG.db_billing_hourly_rate])
                         usage_export[res].append('{"stack":"%s","usage":%f,"date":"%s"}' % (db, usage_cost, date_key))
-                        PROMETHEUS_PERIODIC_USAGE_EXPORTER.labels(RrdPeriod(period).name, db, ResUsageType(res).name).set(usage_cost)
+                        if Rrd.get_date_group(now_gmtime, period) == date_key:
+                            PROMETHEUS_PERIODIC_USAGE_EXPORTERS[period].labels(db, ResUsageType(res).name).set(usage_cost)
 
         with open(str('%s/cpu_usage_period_%d.json' % (KOA_CONFIG.frontend_data_location, period)), 'w') as fd:
             fd.write('['+','.join(usage_export[0])+']')
