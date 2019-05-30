@@ -361,7 +361,7 @@ class K8sUsage:
             pod.id = item['metadata']['uid']
             pod.phase = item['status']['phase']
             if not 'conditions' in  item['status']:
-                KOA_LOGGER.debug('[puller] pod %s is %s'%(pod.name, pod.phase))
+                KOA_LOGGER.debug('[puller] phase of pod %s in namespace %s is %s'%(pod.name, pod.namespace, pod.phase))
             else:
                 pod.state = 'PodNotScheduled'
                 for _, cond in enumerate(item['status']['conditions']):
