@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-2
+spec:
+  containers:
+  - image: busybox
+    command: ["/bin/sh","-c"]
+    args: ["COUNT=$(awk -v min=20 -v max=30 'BEGIN{srand(); print int(min+rand()*(max-min+1))}') && DELAY=$(awk -v min=1 -v max=3 'BEGIN{srand(); print int(min+rand()*(max-min+1))}') && while [ true ]; do dd if=/dev/zero of=/dev/null bs=50M count=$COUNT; sleep $DELAY; done"]
+    imagePullPolicy: IfNotPresent
+    name: busybox
+  restartPolicy: Always
