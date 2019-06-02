@@ -159,8 +159,7 @@ This Grafana dashboard displayed the following analytics for both CPU and memory
 * Current day's ongoing resource usage.
 * Current month's ongoing resource usage.
 
-> 
-  As you can notice those analytics are less rich than compared against the ones enabled by the built-in Kubernetes Opex Analytics dashboard. In particular the daily and the monthly usage for the different namespaces are not stacked, neither than there are not analytics for past days and months. These limitations are inherent to how Grafana handles timeseries and bar charts. It's not easy (actually not possible?), to build advanced analytics than the ones enabled by natively by Kubernetes Opex Analytics. 
+> As you can notice those analytics are less rich than compared against the ones enabled by the built-in Kubernetes Opex Analytics dashboard. In particular the daily and the monthly usage for the different namespaces are not stacked, neither than there are not analytics for past days and months. These limitations are inherent to how Grafana handles timeseries and bar charts. It's not easy (actually not possible?), to build advanced analytics than the ones enabled by natively by Kubernetes Opex Analytics. 
     
   That said, if you have some advanced expertises on Grafana and think you are able to design such an equivalent dashboard, we'll be happy if you can share it with the community. That'll be really appreciated. More generally, if for your specific needs you were given to create other dashboards that you think can be useful for the community, please make a pull request and we'll be happy to share it. 
 
