@@ -157,7 +157,7 @@ We provide an integrated Grafana dashboard for the Prometheus exporter. You can 
 
 ![](./screenshots/kube-opex-analytics-grafana.png)
 
-This Grafana dashboard displayed the following analytics for both CPU and memory resources:
+The dashboard shows the following analytics for both CPU and memory resources:
 * Hourly resource usage over time.
 * Current day's ongoing resource usage.
 * Current month's ongoing resource usage.
