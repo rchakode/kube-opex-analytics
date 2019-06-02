@@ -6,9 +6,11 @@
   * [Screenshots](#screenshorts)
 * [Getting Started](#getting-started)
   * [Get Kubernetes API Endpoint](#get-kubernetes-api-endpoint)
+  * [Configuration Variables](#config-variables)
   * [Starting Kubernetes Opex Analytics on Docker](#start-koa-on-docker)
   * [Starting Kubernetes Opex Analytics on Kubernetes](#start-koa-on-k8s)
-  * [Configuration Variables](#config-variables)
+  * [Prometheus Exporter](#prometheus-exporter)
+  * [Grafana Dashboard](#grafana-dashboard)
 * [License & Copyrights](#license-copyrights)
 * [Support & Contributions](#contributions)
 
@@ -77,6 +79,15 @@ $ kubectl proxy
 
 This will open a proxied access to Kubernetes API at `http://127.0.0.1:8001`.
 
+## <a name="config-variables"></a>Configuration Variables
+As shown on examples later on, Kubernetes Opex Analytics supports the following environment variables when starting it up:
+* `KOA_DB_LOCATION` sets the path to use to store internal data. Typically when you consider to set a volume to store those data, you should also take care to set this path to belong to the mounting point.
+* `KOA_K8S_API_ENDPOINT` sets the endpoint to the Kubernetes API.
+* `KOA_COST_MODEL` (version >= `0.2.0`): sets the model of cost allocation to use. Possible values are: _CUMULATIVE_RATIO_ (default) indicates to compute cost as cumulative resource usage for each period of time (daily, monthly); _CHARGE_BACK_ calculates cost based on a given cluster hourly rate (see `KOA_BILLING_HOURLY_RATE`); _RATIO_ indicates to compute cost as a normalized percentage of resource usage during each period of time. 
+* `KOA_BILLING_HOURLY_RATE` (required if cost model _CHARGE_BACK_): defines a positive floating number corresponding to an estimated hourly rate for the Kubernetes cluster. For example if your cluster cost is $5,000 dollars a month (i.e. ~30*24 hours), its estimated hourly cost would be 6.95 = 5000/(30*24).
+* `KOA_BILLING_CURRENCY_SYMBOL` (optional, default is `$`): sets a currency string to use to annotate costs on charts. 
+
+
 ## <a name="start-koa-on-docker"></a>Starting Kubernetes Opex Analytics on Docker
 Kubernetes Opex Analytics is released as a Docker image. So you can quickly start an instance of the service by running the following command:
 
@@ -117,15 +128,44 @@ if you don't, you can use helm to render the Kubernetes manifests and apply them
 helm template --name kube-opex-analytics helm/kube-opex-analytics/ | kubectl apply -f -
 ```
 
-Check the [values.yaml](./helm/kube-opex-analytics/values.yaml) file for the available configuration options.
+Check the [values.yaml](./helm/kube-opex-analytics/values.yaml) file to modify configuration options according to your needs.
 
-## <a name="config-variables"></a>Configuration Variables
-Kubernetes Opex Analytics supports the following environment variables when starting up:
-* `KOA_DB_LOCATION` sets the path to use to store internal data. Typically when you consider to set a volume to store those data, you should also take care to set this path to belong to the mounting point.
-* `KOA_K8S_API_ENDPOINT` sets the endpoint to the Kubernetes API.
-* `KOA_COST_MODEL` (version >= `0.2.0`): sets the model of cost allocation to use. Possible values are: _CUMULATIVE_RATIO_ (default) indicates to compute cost as cumulative resource usage for each period of time (daily, monthly); _CHARGE_BACK_ calculates cost based on a given cluster hourly rate (see `KOA_BILLING_HOURLY_RATE`); _RATIO_ indicates to compute cost as a normalized percentage of resource usage during each period of time. 
-* `KOA_BILLING_HOURLY_RATE` (required if cost model _CHARGE_BACK_): defines a positive floating number corresponding to an estimated hourly rate for the Kubernetes cluster. For example if your cluster cost is $5,000 dollars a month (i.e. ~30*24 hours), its estimated hourly cost would be 6.95 = 5000/(30*24).
-* `KOA_BILLING_CURRENCY_SYMBOL` (optional, default is `$`): sets a currency string to use to annotate costs on charts. 
+## <a name="prometheus-exporter"></a>Prometheus Exporter
+Starting from version `0.3.0`, Kubernetes Opex Analytics enables a Prometheus exporter through the endpoint `/metrics`. 
+
+### <a name="prometheus-exposed-metrics"></a>Exposed Metrics
+The exporter exposes the following analytics metrics:
+
+* `koa_namespace_hourly_usage` exposes for each namespace its hourly resource usage for both CPU and memory.
+* `koa_namespace_daily_usage` exposes for each namespace and for the ongoing day, current resource usage for both CPU and memory. 
+* `koa_namespace_monthly_usage` exposes for each namespace and for the ongoing month, current resource usage for both CPU and memory. 
+
+### <a name="prometheus-scrapping-config"></a>Scrapping Configuration
+The Prometheus scrapping job can be configured as below (adapt the target URL if needed). A scrapping interval less than 5 minutes (i.e. `300s`) is useless as Kubernetes Opex Analytics would not generate any new metrics in the meantime. 
+
+```
+scrape_configs:
+  - job_name: 'kube-opex-analytics'
+    scrape_interval: 300s
+    static_configs:
+      - targets: ['kube-opex-analytics:5483']  
+```
+
+## <a name="grafana-dashboard"></a>Grafana Dashboard
+We provide an integrated Grafana dashboard for the Prometheus exporter. You can [download it here](https://grafana.com/dashboards/10282) and import it to your Grafana installation. The dashboard assumes that your Prometheus data source is defined through a variable named `KOA_DS_PROMETHEUS`. Make sure to create that variable and bind it to your Prometheus source.
+
+This Grafana dashboard displayed the following analytics for both CPU and memory resources:
+* Hourly resource usage over time.
+* Current day's ongoing resource usage.
+* Current month's ongoing resource usage.
+
+> 
+  As you can notice those analytics are less rich than compared against the ones enabled by the built-in Kubernetes Opex Analytics dashboard. In particular the daily and the monthly usage for the different namespaces are not stacked, neither than there are not analytics for past days and months. These limitations are inherent to how Grafana handles timeseries and bar charts. It's not easy (actually not possible?), to build advanced analytics than the ones enabled by natively by Kubernetes Opex Analytics. 
+    
+  That said, if you have some advanced expertises on Grafana and think you are able to design such an equivalent dashboard, we'll be happy if you can share it with the community. That'll be really appreciated. More generally, if for your specific needs you were given to create other dashboards that you think can be useful for the community, please make a pull request and we'll be happy to share it. 
+
+
+![](./screenshots/kube-opex-analytics-grafana.png)
 
 # <a name="license-copyrights"></a>License & Copyrights
 This tool (code and documentation) is licensed under the terms of Apache License 2.0. Read the `LICENSE` file for more details on the license terms.

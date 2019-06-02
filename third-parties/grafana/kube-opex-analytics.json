@@ -1,4 +1,25 @@
 {
+  "__inputs": [],
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "6.2.1"
+    },
+    {
+      "type": "panel",
+      "id": "graph",
+      "name": "Graph",
+      "version": ""
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -15,7 +36,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 1,
+  "id": null,
+  "iteration": 1559464401566,
   "links": [],
   "panels": [
     {
@@ -24,7 +46,7 @@
       "cacheTimeout": null,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "$KOA_DS_PROMETHEUS",
       "fill": 1,
       "gridPos": {
         "h": 9,
@@ -112,7 +134,7 @@
       "cacheTimeout": null,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "$KOA_DS_PROMETHEUS",
       "fill": 1,
       "gridPos": {
         "h": 9,
@@ -200,7 +222,7 @@
       "cacheTimeout": null,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "$KOA_DS_PROMETHEUS",
       "fill": 1,
       "gridPos": {
         "h": 9,
@@ -292,7 +314,7 @@
       "cacheTimeout": null,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "$KOA_DS_PROMETHEUS",
       "fill": 1,
       "gridPos": {
         "h": 9,
@@ -384,7 +406,7 @@
       "cacheTimeout": null,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "$KOA_DS_PROMETHEUS",
       "fill": 1,
       "gridPos": {
         "h": 9,
@@ -476,7 +498,7 @@
       "cacheTimeout": null,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "Prometheus",
+      "datasource": "$KOA_DS_PROMETHEUS",
       "fill": 1,
       "gridPos": {
         "h": 9,
@@ -567,7 +589,25 @@
   "style": "dark",
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "text": "Prometheus",
+          "value": "Prometheus"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": null,
+        "multi": false,
+        "name": "KOA_DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      }
+    ]
   },
   "time": {
     "from": "now-7d",
@@ -601,5 +641,5 @@
   "timezone": "",
   "title": "kube-opex-analytics",
   "uid": "mO-3kMGWk",
-  "version": 10
+  "version": 14
 }
