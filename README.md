@@ -134,11 +134,11 @@ Check the [values.yaml](./helm/kube-opex-analytics/values.yaml) file to modify c
 Starting from version `0.3.0`, Kubernetes Opex Analytics enables a Prometheus exporter through the endpoint `/metrics`. 
 
 ### <a name="prometheus-exposed-metrics"></a>Exposed Metrics
-The exporter exposes the following analytics metrics:
+The exporter exposes the following metrics:
 
-* `koa_namespace_hourly_usage` exposes for each namespace its hourly resource usage for both CPU and memory.
-* `koa_namespace_daily_usage` exposes for each namespace and for the ongoing day, current resource usage for both CPU and memory. 
-* `koa_namespace_monthly_usage` exposes for each namespace and for the ongoing month, current resource usage for both CPU and memory. 
+* `koa_namespace_hourly_usage` exposes for each namespace its current hourly resource usage for both CPU and memory.
+* `koa_namespace_daily_usage` exposes for each namespace and for the ongoing day, its current resource usage for both CPU and memory. 
+* `koa_namespace_monthly_usage` exposes for each namespace and for the ongoing month, its current resource usage for both CPU and memory. 
 
 ### <a name="prometheus-scrapping-config"></a>Scrapping Configuration
 The Prometheus scrapping job can be configured as below (adapt the target URL if needed). A scrapping interval less than 5 minutes (i.e. `300s`) is useless as Kubernetes Opex Analytics would not generate any new metrics in the meantime. 
