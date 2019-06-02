@@ -152,10 +152,10 @@ scrape_configs:
 ```
 
 ## <a name="grafana-dashboard"></a>Grafana Dashboard
-We provide an integrated Grafana dashboard for the Prometheus exporter. You can [download it here](https://grafana.com/dashboards/10282) and import it to your Grafana installation. The dashboard assumes that your Prometheus data source is defined through a variable named `KOA_DS_PROMETHEUS`. Make sure to create that variable and bind it to your Prometheus source.
-
 
 ![](./screenshots/kube-opex-analytics-grafana.png)
+
+We provide an integrated Grafana dashboard for the Prometheus exporter. You can [download it here](https://grafana.com/dashboards/10282) and import it to your Grafana installation. The dashboard assumes that your Prometheus data source is defined through a variable named `KOA_DS_PROMETHEUS`. Make sure to create that variable and bind it to your Prometheus source.
 
 The dashboard shows the following analytics for both CPU and memory resources:
 * Hourly resource usage over time.
