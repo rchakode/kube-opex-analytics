@@ -5,7 +5,7 @@
   * [Cost Models](#cost-models)
   * [Screenshots](#screenshorts)
 * [Getting Started](#getting-started)
-  * [Get Kubernetes API Endpoint](#get-kubernetes-api-endpoint)
+  * [Kubernetes API Access](#kubernetes-api-access)
   * [Configuration Variables](#config-variables)
   * [Starting Kubernetes Opex Analytics on Docker](#start-koa-on-docker)
   * [Starting Kubernetes Opex Analytics on Kubernetes](#start-koa-on-k8s)
@@ -61,8 +61,8 @@ You can see some screenshorts of the resulting analytics charts hereafter.
 
 ## <a name="getting-started"></a>Getting Started
 
-## <a name="get-kubernetes-api-endpoint"></a>Get Kubernetes API Endpoint
-Kubernetes Opex Analytics needs read-only access to the following Kubernetes APIs:
+## <a name="kubernetes-api-access"></a>Kubernetes API Access
+Kubernetes Opex Analytics needs read-only access to the following Kubernetes APIs. 
 
 * /apis/metrics.k8s.io/v1beta1
 * /api/v1
@@ -114,8 +114,8 @@ For instance, if you're running Docker on your local machine the interface will 
 
  > Due to the time needed to have sufficient data to consolidate, you may need to wait almost a hour to have all charts filled. This is a normal operations of Kubernetes Opex Analytics.
 
-## <a name="start-koa-on-k8s"></a>Starting Kubernetes Opex Analytics on a Kubernetes cluster
 
+## <a name="start-koa-on-k8s"></a>Starting Kubernetes Opex Analytics on a Kubernetes cluster
 You can use the helm chart in the [helm](./helm/) folder to deploy Kubernetes Opex Analytics in Kubernetes, if you have tiller deployed in your cluster you can use:
 
 ```
