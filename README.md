@@ -155,12 +155,12 @@ scrape_configs:
 
 ![](./screenshots/kube-opex-analytics-grafana.png)
 
-We provide an integrated Grafana dashboard for the Prometheus exporter. You can [download it here](https://grafana.com/dashboards/10282) and import it to your Grafana installation. The dashboard assumes that your Prometheus data source is defined through a variable named `KOA_DS_PROMETHEUS`. Make sure to create that variable and bind it to your Prometheus source.
-
-The dashboard shows the following analytics for both CPU and memory resources:
+This is an integrated Grafana dashboard for the Prometheus exporter; it shows the following analytics for both CPU and memory resources:
 * Hourly resource usage over time.
 * Current day's ongoing resource usage.
 * Current month's ongoing resource usage.
+
+You can [download it here](https://grafana.com/dashboards/10282) and import it to your Grafana installation. The dashboard assumes that your Prometheus data source is defined through a variable named `KOA_DS_PROMETHEUS`. Make sure to create that variable and bind it to your Prometheus source.
 
 > As you can notice those analytics are less rich than compared against the ones enabled by the built-in Kubernetes Opex Analytics dashboard. In particular the daily and the monthly usage for the different namespaces are not stacked, neither than there are not analytics for past days and months. These limitations are inherent to how Grafana handles timeseries and bar charts. It's not easy (actually not possible?), to build advanced analytics than the ones enabled by natively by Kubernetes Opex Analytics. 
 
