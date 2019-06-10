@@ -30,6 +30,7 @@ Its current features cover the following analytics. Each chart enables a tooltip
 * **Two-weeks Daily CPU and Memory Usage** per namespace as cumulative cost based on hourly usage for each namespace, during each day of the last 14 ones. 
 * **One-year Monthly CPU and Memory Usage** per namespace as cumulative cost based on daily usage for each namespace, during each month of the last 12 ones.
 * **Last Nodes' Occupation by Pods** providing for each node the share of resources used by active pods on the node.
+* **Native Dashboard**, **Prometheus Exporter** and **Grafana Dashboard**: Kubernetes Opex Analytics comes with a built-in dashboard displaying analytics charts for its consolidated metrics. Additionnaly it enables a Prometheus Exporter that exposes those metrics to external world, as well as an integrated Grafana Dashboard that works out of the box with the metrics scraped from the Prometheus Exporter. 
 
 
 ## <a name="cost-models"></a>Cost Models
