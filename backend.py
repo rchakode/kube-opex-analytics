@@ -1,20 +1,12 @@
-"""
-# File: backend.py                                                                       #
-# Author: Rodrigue Chakode <rodrigue.chakode @ gmail dot com>                            #
-#                                                                                        #
-# Copyright © 2019 Rodrigue Chakode and contributors.                                    #
-#                                                                                        #
-# This file is part of Kubernetes Opex Analytics software.                               #
-#                                                                                        #
-# Kubernetes Opex Analytics is licensed under the Apache License 2.0 (the "License");    #
-# you may not use this file except in compliance with the License. You may obtain        #
-# a copy of the License at: http://www.apache.org/licenses/LICENSE-2.0                   #
-#                                                                                        #
-# Unless required by applicable law or agreed to in writing, software distributed        #
-# under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR            #
-# CONDITIONS OF ANY KIND, either express or implied. See the License for the             #
-# specific language governing permissions and limitations under the License.             #
-"""
+#!/usr/bin/env python
+__author__ = "Rodrigue Chakode"
+__copyright__ = "Copyright 2019 Rodrigue Chakode and contributors"
+__credits__ = ["Rodrigue Chakode and contributors"]
+__license__ = "Apache"
+__version__ = "2.0"
+__maintainer__ = "Rodrigue Chakode"
+__email__ = "Rodrigue Chakode <rodrigue.chakode @ gmail dot com"
+__status__ = "Production"
 
 import argparse
 import flask
@@ -32,7 +24,6 @@ import collections
 import enum
 import werkzeug.wsgi
 import prometheus_client
-import pprint
 
 def create_directory_if_not_exists(path):
     try:
@@ -280,6 +271,8 @@ class K8sUsage:
         cap_value = cap_input[0:data_length - 1]
         if cap_unit == 'n':
             return 1e-9 * int(cap_value)
+        if cap_unit == 'u':
+            return 1e-6 * int(cap_value)
         if cap_unit == 'm':
             return 1e-3 * int(cap_value)
         return int(cap_input)
@@ -672,11 +665,6 @@ def dump_analytics():
         Rrd.dump_histogram_analytics(dbfiles=dbfiles, period=RrdPeriod.PERIOD_YEAR_SEC)
         time.sleep(export_interval)
 
-# parsing args
-parser = argparse.ArgumentParser(description='Kubernetes Opex Analytics Backend.')
-parser.add_argument('-v', '--version', action='version', version='%(prog)s '+KOA_CONFIG.version)
-args = parser.parse_args()
-
 # validating configs
 if KOA_CONFIG.cost_model == 'CHARGE_BACK' and KOA_CONFIG.billing_hourly_rate <= 0.0:
     KOA_LOGGER.fatal('invalid billing hourly rate for CHARGE_BACK cost allocation')
@@ -688,4 +676,8 @@ th_puller.start()
 th_exporter.start()
 
 if __name__ == '__main__':
+    # parsing args
+    parser = argparse.ArgumentParser(description='Kubernetes Opex Analytics Backend.')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s '+KOA_CONFIG.version)
+    args = parser.parse_args()
     app.run(host='0.0.0.0', port=5483)
