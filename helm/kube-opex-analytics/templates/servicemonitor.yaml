@@ -1,0 +1,20 @@
+{{- if .Values.prometheusOperator.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "kube-opex-analytics.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kube-opex-analytics.labels" . | nindent 4 }}
+    {{- include "kube-opex-analytics.prometheusLabels" . | nindent 4 }}
+spec:
+  endpoints:
+  - path: /metrics
+    port: http
+  namespaceSelector:
+    matchNames:
+    - {{ .Release.Namespace }}
+  selector:
+    matchLabels:
+        app: {{ include "kube-opex-analytics.fullname" . }}
+{{- end}}

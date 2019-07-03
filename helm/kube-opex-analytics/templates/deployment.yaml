@@ -24,6 +24,7 @@ spec:
         app.kubernetes.io/name: {{ include "kube-opex-analytics.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
+      serviceAccountName: {{ include "kube-opex-analytics.fullname" . }}
       restartPolicy: Always
       containers:
         - name: {{ .Chart.Name }}
@@ -60,7 +61,6 @@ spec:
     spec:
       accessModes:
         - ReadWriteOnce
-      storageClassName: standard-disk
       resources:
         requests:
           storage: {{ .Values.dataVolume.capacity }}

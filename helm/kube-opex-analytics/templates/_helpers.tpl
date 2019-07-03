@@ -50,3 +50,11 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- define "imagePullSecret" }}
 {{- printf "{\"auths\": {\"%s\": {\"auth\": \"%s\"}}}" .Values.imageCredentials.registry (printf "%s:%s" .Values.imageCredentials.username .Values.imageCredentials.password | b64enc) | b64enc }}
 {{- end }}
+
+{{- define "kube-opex-analytics.prometheusLabels" -}}
+{{- if .Values.prometheusOperator.enabled }}
+  {{- range $key, $val := .Values.prometheusOperator.labels }}
+{{ $key -}}: {{ $val }}
+  {{- end}}
+{{- end }}
+{{- end -}}
