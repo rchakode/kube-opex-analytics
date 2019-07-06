@@ -1,7 +1,7 @@
 # Table of Contents
 * [What is Kubernetes Opex Analytics](#what-is-koa)
   * [Overview](#overview)
-  * [Features](#features)
+  * [Concepts](#concepts)
   * [Cost Models](#cost-models)
   * [Screenshots](#screenshorts)
 * [Getting Started](#getting-started)
@@ -23,7 +23,7 @@ Kubernetes Opex Analytics provides short-, mid- and long-term resource usage das
 To meet this goal, Kubernetes Opex Analytics collects CPU and memory usage metrics from Kubernetes's metrics APIs, processes and consolidates them over time to produce resource usage analytics on the basis of namespaces and with different time aggregation perspectives that cover up to a year. These perspectives also show a special usage item labelled _non-allocatable_ highlighting the **share of non-allocatable capacity** for both CPU and memory.
 
 
-## <a name="features"></a>Concepts & Features
+## <a name="concepts"></a>Concepts
 Kubernetes Opex Analytics enables the following core concepts and features:
 
 * **Namespace-focused:** Means that consolidated resource usage metrics consider individual namespaces as fundamental units for resource sharing. A special care is taken to also account and highlight non-allocatable resources .
