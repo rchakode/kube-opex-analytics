@@ -43,7 +43,7 @@ Kubernetes Opex Analytics supports the following cost allocation models that can
 Refer to the [Configuration](#config-variables) section to learn how to configure cost model. 
 
 ## <a name="screenshorts"></a>Screenshorts
-You can see some screenshorts of the resulting analytics charts hereafter.
+You can find below screenshorts of built-in charts.
 
 ### Last Week Hourly Resource Usage Trends
 
