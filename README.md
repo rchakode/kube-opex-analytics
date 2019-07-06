@@ -23,14 +23,14 @@ Kubernetes Opex Analytics provides short-, mid- and long-term resource usage das
 To meet this goal, Kubernetes Opex Analytics collects CPU and memory usage metrics from Kubernetes's metrics APIs, processes and consolidates them over time to produce resource usage analytics on the basis of namespaces and with different time aggregation perspectives that cover up to a year. These perspectives also show a special usage item labelled _non-allocatable_ highlighting the **share of non-allocatable capacity** for both CPU and memory.
 
 
-## <a name="features"></a>Features
-Its current features cover the following analytics. Each chart enables a tooltip activable with mouse hover action.
+## <a name="features"></a>Concepts & Features
+Kubernetes Opex Analytics enables the following core concepts and features:
 
-* **One-week CPU and Memory Usage Trends** as consolidated hourly usage per namespace and globally for a cluster over the last 7 days.
-* **Two-weeks Daily CPU and Memory Usage** per namespace as cumulative cost based on hourly usage for each namespace, during each day of the last 14 ones. 
-* **One-year Monthly CPU and Memory Usage** per namespace as cumulative cost based on daily usage for each namespace, during each month of the last 12 ones.
-* **Last Nodes' Occupation by Pods** providing for each node the share of resources used by active pods on the node.
-* **Native Dashboard**, **Prometheus Exporter** and **Grafana Dashboard**: Kubernetes Opex Analytics comes with a built-in dashboard displaying analytics charts for its consolidated metrics. Additionnaly it enables a Prometheus Exporter that exposes those metrics to external world, as well as an integrated Grafana Dashboard that works out of the box with the metrics scraped from the Prometheus Exporter. 
+* **Namespace-focused:** Means that consolidated resource usage metrics consider individual namespaces as fundamental units for resource sharing. A special care is taken to also account and highlight non-allocatable resources .
+* **Hourly Usage & Trends:** Like on public clouds, resource use for each namespace is consolidated on a hourly-basic. This actually corresponds to the ratio (%) of resource used per namespace during each hour. It's the foundation for cost calculation and also allows to get over time trends about resources being consuming per namespace and also at the Kubernetes cluster scale.
+* **Daily and Monthly Usage Costs:** Provides for each period (daily/monthly), namespace, and resource type (CPU/memory), consolidated cost computed given one of the following ways: (i) accumulated hourly usage over the period; (ii) actual costs computed based on resource usage and a given hourly billing rate; (iii) normalized ratio of usage per namespace compared against the global cluster usage.
+* **Occupation of Nodes by Namespaced Pods:** Highlights for each node the share of resources used by active pods labelled by their namespace.
+* **Efficient Visualization:** For metrics generated, Kubernetes Opex Analytics provides dashboards with relevant charts covering as well the last couple of hours than the last 12 months (i.e. year). For this there are **built-in charts**, a **Prometheus Exporter** along with **Grafana Dashboard** that all work out of the box. 
 
 
 ## <a name="cost-models"></a>Cost Models
@@ -117,19 +117,31 @@ For instance, if you're running Docker on your local machine the interface will 
 
 
 ## <a name="start-koa-on-k8s"></a>Starting Kubernetes Opex Analytics on a Kubernetes cluster
-You can use the helm chart in the [helm](./helm/) folder to deploy Kubernetes Opex Analytics in Kubernetes, if you have tiller deployed in your cluster you can use:
+There is a [Helm chart](./helm/) to ease the deployment on Kubernetes, either by using `Helm Tiller` or `kubectl`.
+
+In both cases check the [values.yaml](./helm/kube-opex-analytics/values.yaml) file to modify the configuration options according to your needs (e.g. to enable persistent volume for data storage, Prometheus ServiceMonitor...).
+
+In the next commands the deployment is done in the namespace `kube-opex-analytics`, which should be first created. You change that to any other namespace of your choice.
+
+Using `Helm Tiller`:
 
 ```
-helm upgrade --install kube-opex-analytics --namespace=kube-opex-analytics helm/kube-opex-analytics/
+$ helm upgrade \
+  --namespace kube-opex-analytics \
+  --install kube-opex-analytics \
+  helm/kube-opex-analytics/
 ```
 
-if you don't, you can use helm to render the Kubernetes manifests and apply them with kubectl:
+Using `kubectl`:
 
 ```
-helm template --name kube-opex-analytics helm/kube-opex-analytics/ | kubectl apply -f -
+$ helm template \
+  --namespace kube-opex-analytics \
+  --name kube-opex-analytics \
+  helm/kube-opex-analytics/ | kubectl apply -f -
 ```
 
-Check the [values.yaml](./helm/kube-opex-analytics/values.yaml) file to modify configuration options according to your needs.
+> This will also deploy an HTTP service named `kube-opex-analytics` on port `80` in the selected namespace. This service enables access to the built-in dashboard of kubernetes Opex Analytics.
 
 ## <a name="prometheus-exporter"></a>Prometheus Exporter
 Starting from version `0.3.0`, Kubernetes Opex Analytics enables a Prometheus exporter through the endpoint `/metrics`. 
@@ -140,7 +152,8 @@ The exporter exposes the following metrics:
 * `koa_namespace_daily_usage` exposes for each namespace and for the ongoing day, its current resource usage for both CPU and memory. 
 * `koa_namespace_monthly_usage` exposes for each namespace and for the ongoing month, its current resource usage for both CPU and memory. 
 
-The Prometheus scraping job can be configured like below (adapt the target URL if needed). A scraping interval less than 5 minutes (i.e. `300s`) is useless as Kubernetes Opex Analytics would not generate any new metrics in the meantime. 
+The Prometheus scraping job can be configured like below (adapt the target URL if needed). A scraping interval less than 5 minutes (i.e. `300s`) is useless as Kubernetes Opex Analytics would not generate any new metrics in the meantime.
+
 
 ```
 scrape_configs:
@@ -149,6 +162,8 @@ scrape_configs:
     static_configs:
       - targets: ['kube-opex-analytics:5483']  
 ```
+
+> If you've enabled the `prometheusOperator option` during the deployment (see Helm [values.yaml](./helm/kube-opex-analytics/values.yaml) file), you have nothing to do as the scraping should be automatically configured by the deployed `Prometheus ServiceMonitor`.
 
 ## <a name="grafana-dashboard"></a>Grafana Dashboard
 
