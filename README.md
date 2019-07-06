@@ -163,7 +163,7 @@ scrape_configs:
       - targets: ['kube-opex-analytics:5483']  
 ```
 
-> If you've enabled the `prometheusOperator option` during the deployment (see Helm [values.yaml](./helm/kube-opex-analytics/values.yaml) file), you have nothing to do as the scraping should be automatically configured by the deployed `Prometheus ServiceMonitor`.
+> When the option `prometheusOperator` is enabled during the deployment (see Helm [values.yaml](./helm/kube-opex-analytics/values.yaml) file), you have nothing to do as the scraping should be automatically configured by the deployed `Prometheus ServiceMonitor`.
 
 ## <a name="grafana-dashboard"></a>Grafana Dashboard
 
