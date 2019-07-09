@@ -1,6 +1,6 @@
 # Table of Contents
 * [What is Kubernetes Opex Analytics](#what-is-koa)
-  * [Overview](#overview)
+  * [Overview](#goals)
   * [Concepts](#concepts)
   * [Cost Models](#cost-models)
   * [Screenshots](#screenshorts)
@@ -17,7 +17,7 @@
 
 # <a name="what-is-koa"></a>What is Kubernetes Opex Analytics
 
-## <a name="overview"></a>Overview
+## <a name="goals"></a>Goals
 Kubernetes Opex Analytics provides short-, mid- and long-term resource usage dashboards over Kubernetes clusters so to allow organizations to understand how their Kubernetes operating costs are spending by their different projects. The final **goal being to help them make cost allocatoion and capacity planning decisions** with factual analytics.
 
 To meet this goal, Kubernetes Opex Analytics collects CPU and memory usage metrics from Kubernetes's metrics APIs, processes and consolidates them over time to produce resource usage analytics on the basis of namespaces and with different time aggregation perspectives that cover up to a year. These perspectives also show a special usage item labelled _non-allocatable_ highlighting the **share of non-allocatable capacity** for both CPU and memory.
