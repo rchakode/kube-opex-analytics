@@ -1,6 +1,6 @@
 # Table of Contents
 * [What is Kubernetes Opex Analytics](#what-is-koa)
-  * [Overview](#goals)
+  * [Goals](#goals)
   * [Concepts](#concepts)
   * [Cost Models](#cost-models)
   * [Screenshots](#screenshorts)
