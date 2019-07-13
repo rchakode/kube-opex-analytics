@@ -93,7 +93,7 @@ As shown on examples later on, Kubernetes Opex Analytics supports the following 
 * `KOA_BILLING_CURRENCY_SYMBOL` (optional, default is `$`): sets a currency string to use to annotate costs on charts. 
 
 
-## <a name="start-koa-on-docker"></a>Starting Kubernetes Opex Analytics on Docker
+## <a name="start-koa-on-docker"></a>Deployment on Docker
 Kubernetes Opex Analytics is released as a Docker image. So you can quickly start an instance of the service by running the following command:
 
 ```
@@ -119,8 +119,7 @@ For instance, if you're running Docker on your local machine the interface will 
 
  > Due to the time needed to have sufficient data to consolidate, you may need to wait almost a hour to have all charts filled. This is a normal operations of Kubernetes Opex Analytics.
 
-
-## <a name="start-koa-on-k8s"></a>Starting Kubernetes Opex Analytics on a Kubernetes cluster
+## <a name="start-koa-on-k8s"></a>Deployment on a Kubernetes cluster
 There is a [Helm chart](./helm/) to ease the deployment on Kubernetes, either by using `Helm Tiller` or `kubectl`.
 
 In both cases check the [values.yaml](./helm/kube-opex-analytics/values.yaml) file to modify the configuration options according to your needs (e.g. to enable persistent volume for data storage, Prometheus ServiceMonitor...).
