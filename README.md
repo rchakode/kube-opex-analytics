@@ -60,6 +60,10 @@ You can find below screenshorts of built-in charts.
 ### Last Nodes' Occupation by Pods
 ![](./screenshots/sample-last-nodes-occupation-by-pods.png)
 
+### Grafana Dashboard (works with Prometheus Exporter) 
+
+![](./screenshots/kube-opex-analytics-grafana.png)
+
 ## <a name="getting-started"></a>Getting Started
 
 ## <a name="kubernetes-api-access"></a>Kubernetes API Access
@@ -166,8 +170,6 @@ scrape_configs:
 > When the option `prometheusOperator` is enabled during the deployment (see Helm [values.yaml](./helm/kube-opex-analytics/values.yaml) file), you have nothing to do as the scraping should be automatically configured by the deployed `Prometheus ServiceMonitor`.
 
 ## <a name="grafana-dashboard"></a>Grafana Dashboard
-
-![](./screenshots/kube-opex-analytics-grafana.png)
 
 This is an integrated Grafana dashboard for the Prometheus exporter; it shows the following analytics for both CPU and memory resources:
 * Hourly resource usage over time.
