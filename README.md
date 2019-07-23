@@ -1,3 +1,6 @@
+![](https://img.shields.io/github/license/rchakode/kube-opex-analytics.svg)
+![](https://img.shields.io/docker/pulls/rchakode/kube-opex-analytics.svg)
+
 # Table of Contents
 * [What is Kubernetes Opex Analytics](#what-is-koa)
   * [Goals](#goals)
