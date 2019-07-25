@@ -191,12 +191,12 @@ This tool (code and documentation) is licensed under the terms of Apache License
 The tool includes and is bound to third-party libraries provided with their owns licenses and copyrights. Read the `NOTICE` file for additional information.
 
 # <a name="contributions"></a>Support & Contributions
-Kubernetes Opex Analytics is a currently at a early stage but is already useful and ready to use. We encourage feedback and will make our best to be proactive to handle any troubles you may encounter when using it.
+We encourage feedback and will make our best to be proactive to handle any troubles you may encounter when using this tool.
 
-Meanwhile we already have some ideas of improvments for next releases https://github.com/rchakode/kube-opex-analytics/issues.
+Here is the link to submit issues: https://github.com/rchakode/kube-opex-analytics/issues.
 
-Other ideas are welcomed, please open an issue to submit your idea if you have any one.
+New ideas are welcomed, please open an issue to submit your idea if you have any one.
 
-Contributions are accepted subject that the code and documentation be released under the terms of Apache License 2.0.
+Contributions are accepted subject that the code and documentation be released under the terms of Apache 2.0 License.
 
 To contribute bug patches or new features, you can use the Github Pull Request model.
