@@ -17,7 +17,6 @@
 * [License & Copyrights](#license-copyrights)
 * [Support & Contributions](#contributions)
 
-
 # <a name="what-is-koa"></a>What is Kubernetes Opex Analytics
 
 ## <a name="goals"></a>Goals
@@ -191,7 +190,7 @@ This tool (code and documentation) is licensed under the terms of Apache License
 The tool includes and is bound to third-party libraries provided with their owns licenses and copyrights. Read the `NOTICE` file for additional information.
 
 # <a name="contributions"></a>Support & Contributions
-We encourage feedback and will make our best to be proactive to handle any troubles you may encounter when using this tool.
+We encourage feedback and always make our best to handle any troubles you may encounter when using this tool.
 
 Here is the link to submit issues: https://github.com/rchakode/kube-opex-analytics/issues.
 
