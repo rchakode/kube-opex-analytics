@@ -87,7 +87,7 @@ $ kubectl proxy
 This will open a proxied access to Kubernetes API at `http://127.0.0.1:8001`.
 
 ## <a name="config-variables"></a>Configuration Variables
-As shown on examples later on, Kubernetes Opex Analytics supports the following environment variables when starting it up:
+Kubernetes Opex Analytics supports the following environment variables when it starts:
 * `KOA_DB_LOCATION` sets the path to use to store internal data. Typically when you consider to set a volume to store those data, you should also take care to set this path to belong to the mounting point.
 * `KOA_K8S_API_ENDPOINT` sets the endpoint to the Kubernetes API.
 * `KOA_COST_MODEL` (version >= `0.2.0`): sets the model of cost allocation to use. Possible values are: _CUMULATIVE_RATIO_ (default) indicates to compute cost as cumulative resource usage for each period of time (daily, monthly); _CHARGE_BACK_ calculates cost based on a given cluster hourly rate (see `KOA_BILLING_HOURLY_RATE`); _RATIO_ indicates to compute cost as a normalized percentage of resource usage during each period of time. 
