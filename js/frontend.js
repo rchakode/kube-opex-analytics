@@ -145,8 +145,8 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
 
                 dataset.data.sort(
                     function(data1, data2) {
-                        let ts1 = Date.parse(data1.dateUTC+' GMT')
-                        let ts2 = Date.parse(data2.dateUTC+' GMT')
+                        let ts1 = Date.parse(data1.dateUTC)
+                        let ts2 = Date.parse(data2.dateUTC)
                         if (ts1 < ts2)
                             return -1;
                         if (ts1 > ts2)
