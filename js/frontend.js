@@ -518,6 +518,51 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             });
         }
 
+        function exportJSON(data) {
+            return new Blob(
+                [JSON.stringify(data)],
+                {type: 'application/json'})
+        }
+
+        function exportCSV(data) {
+            data = JSON.parse(JSON.stringify(data));
+            let csv = '';
+
+            if (data.length > 0) {
+                // header
+                const keys = Object.keys(data[0]);
+                const row = keys.reduce((acc, p) => acc + (!acc ? '' : ',') + p, '');
+
+                csv += row + '\n';
+
+                // content
+                data.map(item => keys.reduce((acc, p) => acc + (!acc ? '' : ',') + item[p], ''))
+                    .forEach(row => csv += row + '\n')
+            }
+
+            return new Blob(
+                [csv],
+                {type: 'text/csv;charset=utf-8'})
+        }
+
+        function installExporter(targetDivId, filename, exporterFunc) {
+            $(`#${targetDivId}`)
+                .unbind( 'click' )
+                .attr('href', '#')
+                .click(function() {
+                    if(this.href.endsWith('#')) {
+                        let blob = exporterFunc();
+                        let url = window.URL.createObjectURL(blob);
+
+                        this.href = url;
+                        this.target = '_blank';
+                        this.download = filename
+                    }
+                })
+                .parent()
+                .removeClass('disabled')
+        }
+
         function loadBackendConfig(frontendDataDir)
         {
             $("#cost-model").text('');
@@ -548,6 +593,9 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 url: frontendDataDir+'/cpu_usage_trends.json',
                 dataType: 'json',
                 success: function(data) {
+                    installExporter( 'usage-cpu-trends-json', 'cpu_usage_trends.json', () => exportJSON(data));
+                    installExporter( 'usage-cpu-trends-csv', 'cpu_usage_trends.csv', () => exportCSV(data));
+
                     updateStackedAreaChart(
                         {"data": data},
                         cpuUsageTrendsChart,
@@ -567,6 +615,9 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 url: frontendDataDir+'/memory_usage_trends.json',
                 dataType: 'json',
                 success: function(data) {
+                    installExporter( 'usage-memory-trends-json', 'memory_usage_trends.json', () => exportJSON(data));
+                    installExporter( 'usage-memory-trends-csv', 'memory_usage_trends.csv', () => exportCSV(data));
+
                     updateStackedAreaChart(
                         {"data": data},
                         memoryUsageTrendsChart,
@@ -585,6 +636,9 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 url: frontendDataDir+'/cpu_usage_period_1209600.json',
                 dataType: 'json',
                 success: function(data) {
+                    installExporter( 'daily-cpu-usage-json', 'cpu_usage_period_14d.json', () => exportJSON(data));
+                    installExporter( 'daily-cpu-usage-csv', 'cpu_usage_period_14d.csv', () => exportCSV(data));
+
                     updateStackedBarChart(
                         {"data": data},
                         dailyCpuUsageChart,
@@ -604,6 +658,9 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 url: frontendDataDir+'/memory_usage_period_1209600.json',
                 dataType: 'json',
                 success: function(data) {
+                    installExporter( 'daily-memory-usage-json', 'memory_usage_period_14d.json', () => exportJSON(data));
+                    installExporter( 'daily-memory-usage-csv', 'memory_usage_period_14d.csv', () => exportCSV(data));
+
                     updateStackedBarChart(
                         {"data": data},
                         dailyMemoryUsageChart,
@@ -622,10 +679,13 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 url: frontendDataDir+'/cpu_usage_period_31968000.json',
                 dataType: 'json',
                 success: function(data) {
+                    installExporter( 'monthly-cpu-usage-json', 'cpu_usage_period_12m.json', () => exportJSON(data));
+                    installExporter( 'monthly-cpu-usage-csv', 'cpu_usage_period_12m.csv', () => exportCSV(data));
+
                     updateStackedBarChart(
                          {"data": data},
                          monthlyCpuUsageChart,
-                        'js-montly-cpu-usage',
+                        'js-monthly-cpu-usage',
                         'Cumulative CPU Usage',
                         'Monthly CPU Usage');
                 },
@@ -640,10 +700,13 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 url: frontendDataDir+'/memory_usage_period_31968000.json',
                 dataType: 'json',
                 success: function(data) {
+                    installExporter( 'monthly-memory-usage-json', 'memory_usage_period_12m.json', () => exportJSON(data));
+                    installExporter( 'monthly-memory-usage-csv', 'memory_usage_period_12m.csv', () => exportCSV(data));
+
                     updateStackedBarChart(
                          {"data": data},
                          monthlyMemoryUsageChart,
-                        'js-montly-memory-usage',
+                        'js-monthly-memory-usage',
                         'Cumulative Memory Usage',
                         'Monthly Memory Usage');
                 },
