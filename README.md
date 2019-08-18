@@ -1,3 +1,4 @@
+![](https://github.com/rchakode/kube-opex-analytics/blob/master/kube-opex-analytics.png)
 ![](https://img.shields.io/github/license/rchakode/kube-opex-analytics.svg?label=License)
 ![](https://img.shields.io/docker/pulls/rchakode/kube-opex-analytics.svg?label=Docker%20Pulls)
 
