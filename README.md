@@ -15,6 +15,7 @@
   * [Deployment on Kubernetes Cluster](#start-koa-on-k8s)
   * [Prometheus Exporter](#prometheus-exporter)
   * [Grafana Dashboard](#grafana-dashboard)
+  * [Export Datasets](#export-datasets)
 * [License & Copyrights](#license-copyrights)
 * [Support & Contributions](#contributions)
 
@@ -184,6 +185,20 @@ You can [download it here](https://grafana.com/dashboards/10282) and import it t
 As you can notice those analytics are less rich than compared against the ones enabled by the built-in Kubernetes Opex Analytics dashboard. In particular the daily and the monthly usage for the different namespaces are not stacked, neither than there are not analytics for past days and months. These limitations are inherent to how Grafana handles timeseries and bar charts. It's not easy (actually not possible?), to build advanced analytics than the ones enabled by natively by Kubernetes Opex Analytics. 
 
 So if you have some expertises on Grafana and be able to design such an equivalent dashboard, we'll be happy if you can share it with the community. That'll be really appreciated. More generally, if for your specific needs you were given to create other dashboards that you think can be useful for the community, please make a pull request and we'll be happy to share it. 
+
+
+## <a name="export-datasets"></a>Export Datasets
+The datasets used to generated hourly, daily and monthly analytics charts can be exported in JSON and CSV formats. 
+
+The exportation process involves the following steps:
+
+* Get access to the Kubernetes Opex Analytics's built-in interface.
+* Go to the chart that you want to export dataset.
+* Click on the `tricolon` icon near the chart title, and select the format of export (CSV or JSON).
+  ![](./screenshots/kube-opex-analytics-grafana.png)
+
+* Choose a destination filename.
+* You're done, you can now use the dataset to generate other custom analytics according to your specific needs.
 
 # <a name="license-copyrights"></a>License & Copyrights
 This tool (code and documentation) is licensed under the terms of Apache License 2.0. Read the `LICENSE` file for more details on the license terms.
