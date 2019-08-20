@@ -19,6 +19,7 @@ import os
 import sys
 import threading
 import time
+from urllib.parse import urlparse
 
 import flask
 
@@ -631,11 +632,12 @@ def pull_k8s(api_context):
     data = None
     api_endpoint = '%s%s' % (KOA_CONFIG.k8s_api_endpoint, api_context)
     headers = {}
-
-    if KOA_CONFIG.enable_debug:
-        headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_debug_auth_token)
-    else:
-        headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_rbac_auth_token)
+    endpoint_info = urlparse(KOA_CONFIG.k8s_api_endpoint)
+    if endpoint_info.hostname != '127.0.0.1' and endpoint_info.hostname != 'localhost':
+        if KOA_CONFIG.enable_debug:
+            headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_debug_auth_token)
+        else:
+            headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_rbac_auth_token)
 
     try:
         http_req = requests.get(api_endpoint, verify=KOA_CONFIG.k8s_verify_ssl, headers=headers)
