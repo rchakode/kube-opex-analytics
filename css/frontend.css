@@ -10,3 +10,11 @@
 .chart-container {
     min-height: 400px;
 }
+
+.btn.menu-export {
+    border: 0;
+}
+
+.tricolon:after {
+    content: '⁝';
+}

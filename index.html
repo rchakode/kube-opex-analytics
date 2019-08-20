@@ -86,32 +86,123 @@
     </div>
     <div class="row chart-container">
         <div class="col-md-6">
-            <legend>Hourly CPU Usage per Namespace - 7 Days</legend>
+            <div class="row">
+                <div class="col-md-11">
+                    <legend>Hourly CPU Usage per Namespace - 7 Days</legend>
+                </div>
+                <div class="col-md-1">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span class="tricolon"></span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li class="disabled"><a id="usage-cpu-trends-json"  class="dropdown-item" href="#">Export JSON</a></li>
+                            <li class="disabled"><a id="usage-cpu-trends-csv"  class="dropdown-item" href="#">Export CSV</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <div class="js-usage-cpu-trends card--chart"></div>
         </div>
         <div class="col-md-6">
-            <legend>Hourly Memory Usage per Namespace - 7 Days</legend>
+            <div class="row">
+                <div class="col-md-11">
+                    <legend>Hourly Memory Usage per Namespace - 7 Days</legend>
+                </div>
+                <div class="col-md-1">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span class="tricolon"></span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-right">
+                            <li class="disabled"><a id="usage-memory-trends-json"  class="dropdown-item" href="#">Export JSON</a></li>
+                            <li class="disabled"><a id="usage-memory-trends-csv"  class="dropdown-item" href="#">Export CSV</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
             <div class="js-usage-memory-trends card--chart"></div>
         </div>
     </div>
     <div class="row chart-container">
         <div class="col-md-6">
-            <legend>Daily Cumulative CPU Usage per Namespace - 14 Days</legend>
+            <div class="row">
+                <div class="col-md-11">
+                    <legend>Daily Cumulative CPU Usage per Namespace - 14 Days</legend>
+                </div>
+                <div class="col-md-1">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span class="tricolon"></span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li class="disabled"><a id="daily-cpu-usage-json"  class="dropdown-item" href="#">Export JSON</a></li>
+                            <li class="disabled"><a id="daily-cpu-usage-csv"  class="dropdown-item" href="#">Export CSV</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
             <div class="js-daily-cpu-usage"></div>
         </div>
         <div class="col-md-6">
-            <legend>Daily Cumulative Memory Usage per Namespace - 14 Days</legend>
+            <div class="row">
+                <div class="col-md-11">
+                    <legend>Daily Cumulative Memory Usage per Namespace - 14 Days</legend>
+                </div>
+                <div class="col-md-1">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span class="tricolon"></span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-right">
+                            <li class="disabled"><a id="daily-memory-usage-json"  class="dropdown-item" href="#">Export JSON</a></li>
+                            <li class="disabled"><a id="daily-memory-usage-csv"  class="dropdown-item" href="#">Export CSV</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
             <div class="js-daily-memory-usage"></div>
         </div>
     </div>
     <div class="row chart-container">
         <div class="col-md-6">
-            <legend>Monthly Cumulative CPU Usage per Namespace - 12 Months</legend>
-            <div class="js-montly-cpu-usage"></div>
+            <div class="row">
+                <div class="col-md-11">
+                    <legend>Monthly Cumulative CPU Usage per Namespace - 12 Months</legend>
+                </div>
+                <div class="col-md-1">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span class="tricolon"></span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li class="disabled"><a id="monthly-cpu-usage-json"  class="dropdown-item" href="#">Export JSON</a></li>
+                            <li class="disabled"><a id="monthly-cpu-usage-csv"  class="dropdown-item" href="#">Export CSV</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="js-monthly-cpu-usage"></div>
         </div>
         <div class="col-md-6">
-            <legend>Monthly Cumulative Memory Usage per Namespace - 12 Months</legend>
-            <div class="js-montly-memory-usage"></div>
+            <div class="row">
+                <div class="col-md-11">
+                    <legend>Monthly Cumulative Memory Usage per Namespace - 12 Months</legend>
+                </div>
+                <div class="col-md-1">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span class="tricolon"></span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-right">
+                            <li class="disabled"><a id="monthly-memory-usage-json"  class="dropdown-item" href="#">Export JSON</a></li>
+                            <li class="disabled"><a id="monthly-memory-usage-csv"  class="dropdown-item" href="#">Export CSV</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="js-monthly-memory-usage"></div>
         </div>
     </div>
     <div class="row chart-container">
