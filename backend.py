@@ -58,11 +58,7 @@ class Config:
     k8s_debug_auth_token = os.getenv('KOA_K8S_AUTH_TOKEN', 'DEBUG_TOKEN_NOT_FOUND')
 
     def __init__(self):
-        try:
-            with open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'r') as rbac_token_file:
-                self.k8s_rbac_auth_token = rbac_token_file.read()
-        except:
-            self.k8s_rbac_auth_token = 'RBAC_AUTH_TOKEN_NOT_FOUND'
+        self.load_rbac_auth_token()
 
         try:
             self.billing_hourly_rate = float(os.getenv('KOA_BILLING_HOURLY_RATE'))
@@ -82,7 +78,12 @@ class Config:
                 cost_model_unit = '%'
             fd.write('{"cost_model":"%s", "currency":"%s"}' % (cost_model_label, cost_model_unit))
 
-        # configure logger
+    def load_rbac_auth_token(self):
+        try:
+            with open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'r') as rbac_token_file:
+                self.k8s_rbac_auth_token = rbac_token_file.read()
+        except:
+            self.k8s_rbac_auth_token = 'RBAC_FAILED_LOADING_TOKEN_FILE'
 
 
 def configure_logger(debug_enabled):
@@ -130,11 +131,6 @@ PROMETHEUS_PERIODIC_USAGE_EXPORTERS = {
                                                        'Current monthly resource usage per namespace',
                                                        ['namespace', 'resource'])
 }
-
-# prometheus_client.Gauge('koa_namespace_periodic_usage',
-#                                                     'Periodic resource usage per namespace',
-#                                                     ['analytics_interval', 'namespace', 'resource'])
-
 
 # create Flask application
 app = flask.Flask(__name__, static_url_path=KOA_CONFIG.static_content_location, template_folder='.')
@@ -657,6 +653,7 @@ def create_metrics_puller():
     while True:
         k8s_usage = K8sUsage()
         KOA_LOGGER.debug('{puller] collecting new metrics')
+        KOA_CONFIG.load_rbac_auth_token()
         k8s_usage.extract_namespaces_and_initialize_usage(pull_k8s('/api/v1/namespaces'))
         k8s_usage.extract_nodes(pull_k8s('/api/v1/nodes'))
         k8s_usage.extract_node_metrics(pull_k8s('/apis/metrics.k8s.io/v1beta1/nodes'))
