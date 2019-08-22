@@ -42,7 +42,7 @@ def create_directory_if_not_exists(path):
 
 # configuration object
 class Config:
-    version = '0.4.0'
+    version = '0.4.1'
     db_round_decimals = 6
     db_non_allocatable = 'non-allocatable'
     db_billing_hourly_rate = '.billing-hourly-rate'
@@ -164,6 +164,10 @@ def send_js(path):
 @app.route('/css/<path:path>')
 def send_css(path):
     return flask.send_from_directory('css', path)
+
+@app.route('/dataset/<path:path>')
+def download_dataset(path):
+    return flask.send_from_directory('static/data', path)    
 
 
 @app.route('/')
