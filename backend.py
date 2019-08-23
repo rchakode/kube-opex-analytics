@@ -19,7 +19,7 @@ import os
 import sys
 import threading
 import time
-from urllib.parse import urlparse
+import urllib
 
 import flask
 
@@ -40,7 +40,6 @@ def create_directory_if_not_exists(path):
             raise
 
 
-# configuration object
 class Config:
     version = '0.4.1'
     db_round_decimals = 6
@@ -165,9 +164,10 @@ def send_js(path):
 def send_css(path):
     return flask.send_from_directory('css', path)
 
+
 @app.route('/dataset/<path:path>')
 def download_dataset(path):
-    return flask.send_from_directory('static/data', path)    
+    return flask.send_from_directory('static/data', path)
 
 
 @app.route('/')
@@ -263,25 +263,40 @@ class K8sUsage:
         data_length = len(cap_input)
         cap_unit = ''
         cap_value = ''
-        if cap_input.endswith("i"):
+        if cap_input.endswith(("Ki", "Mi", "Gi", "Ti", "Pi", "Ei")):
             cap_unit = cap_input[data_length - 2:]
             cap_value = cap_input[0:data_length - 2]
+        elif cap_input.endswith(("K", "M", "G", "T", "P", "E")):
+            cap_unit = cap_input[data_length - 1:]
+            cap_value = cap_input[0:data_length - 1]
         else:
             cap_value = cap_input
 
         if cap_unit == '':
             return int(cap_value)
         if cap_unit == 'Ki':
+            return 1024 * int(cap_value)
+        if cap_unit == 'K':
             return 1e3 * int(cap_value)
         if cap_unit == 'Mi':
+            return 1048576 * int(cap_value)
+        if cap_unit == 'M':
             return 1e6 * int(cap_value)
         if cap_unit == 'Gi':
+            return 1073741824 * int(cap_value)
+        if cap_unit == 'G':
             return 1e9 * int(cap_value)
         if cap_unit == 'Ti':
+            return 1099511627776 * int(cap_value)
+        if cap_unit == 'T':
             return 1e12 * int(cap_value)
         if cap_unit == 'Pi':
+            return 1125899906842624 * int(cap_value)
+        if cap_unit == 'P':
             return 1e15 * int(cap_value)
         if cap_unit == 'Ei':
+            return 1152921504606847000 * int(cap_value)
+        if cap_unit == 'E':
             return 1e18 * int(cap_value)
 
         return 0
@@ -632,7 +647,7 @@ def pull_k8s(api_context):
     data = None
     api_endpoint = '%s%s' % (KOA_CONFIG.k8s_api_endpoint, api_context)
     headers = {}
-    endpoint_info = urlparse(KOA_CONFIG.k8s_api_endpoint)
+    endpoint_info = urllib.parse.urlparse(KOA_CONFIG.k8s_api_endpoint)
     if endpoint_info.hostname != '127.0.0.1' and endpoint_info.hostname != 'localhost':
         if KOA_CONFIG.enable_debug:
             headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_debug_auth_token)
