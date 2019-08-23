@@ -263,57 +263,58 @@ class K8sUsage:
         data_length = len(cap_input)
         cap_unit = ''
         cap_value = ''
-        cap_input_lower = cap_input.lower()
-        if cap_input_lower.endswith(("ki", "mi", "gi", "ti", "pi", "ei")):
-            cap_unit = cap_input_lower[data_length - 2:]
-            cap_value = cap_input_lower[0:data_length - 2]
-        elif cap_input_lower.endswith(("k", "m", "g", "t", "p", "e")):
-            cap_unit = cap_input_lower[data_length - 1:]
-            cap_value = cap_input_lower[0:data_length - 1]
+        if cap_input.endswith(("Ki", "Mi", "Gi", "Ti", "Pi", "Ei")):
+            cap_unit = cap_input[data_length - 2:]
+            cap_value = cap_input[0:data_length - 2]
+        elif cap_input.endswith(("n", "u", "m", "K", "M", "G", "T", "P", "E")):
+            cap_unit = cap_input[data_length - 1:]
+            cap_value = cap_input[0:data_length - 1]
         else:
-            cap_value = cap_input_lower
+            cap_value = cap_input
 
-        if cap_unit == '':
-            return int(cap_value)
-        if cap_unit == 'ki':
-            return 1024 * int(cap_value)
-        if cap_unit == 'k':
-            return 1e3 * int(cap_value)
-        if cap_unit == 'mi':
-            return 1048576 * int(cap_value)
-        if cap_unit == 'm':
-            return 1e6 * int(cap_value)
-        if cap_unit == 'gi':
-            return 1073741824 * int(cap_value)
-        if cap_unit == 'g':
-            return 1e9 * int(cap_value)
-        if cap_unit == 'ti':
-            return 1099511627776 * int(cap_value)
-        if cap_unit == 't':
-            return 1e12 * int(cap_value)
-        if cap_unit == 'pi':
-            return 1125899906842624 * int(cap_value)
-        if cap_unit == 'p':
-            return 1e15 * int(cap_value)
-        if cap_unit == 'ei':
-            return 1152921504606847000 * int(cap_value)
-        if cap_unit == 'e':
-            return 1e18 * int(cap_value)
-
-        return 0
-
-    def decode_cpu_capacity(self, cap_input):
-        data_length = len(cap_input)
-        cap_input_lower = cap_input.lower()
-        cap_unit = cap_input_lower[data_length - 1:]
-        cap_value = cap_input_lower[0:data_length - 1]
         if cap_unit == 'n':
             return 1e-9 * int(cap_value)
         if cap_unit == 'u':
             return 1e-6 * int(cap_value)
         if cap_unit == 'm':
             return 1e-3 * int(cap_value)
-        return int(cap_input_lower)
+        if cap_unit == 'Ki':
+            return 1024 * int(cap_value)
+        if cap_unit == 'K':
+            return 1e3 * int(cap_value)
+        if cap_unit == 'Mi':
+            return 1048576 * int(cap_value)
+        if cap_unit == 'M':
+            return 1e6 * int(cap_value)
+        if cap_unit == 'Gi':
+            return 1073741824 * int(cap_value)
+        if cap_unit == 'G':
+            return 1e9 * int(cap_value)
+        if cap_unit == 'Ti':
+            return 1099511627776 * int(cap_value)
+        if cap_unit == 'T':
+            return 1e12 * int(cap_value)
+        if cap_unit == 'Pi':
+            return 1125899906842624 * int(cap_value)
+        if cap_unit == 'P':
+            return 1e15 * int(cap_value)
+        if cap_unit == 'Ei':
+            return 1152921504606847000 * int(cap_value)
+        if cap_unit == 'E':
+            return 1e18 * int(cap_value)
+        return int(cap_value)
+
+    def decode_cpu_capacity(self, cap_input):
+        data_length = len(cap_input)
+        cap_unit = cap_input[data_length - 1:]
+        cap_value = cap_input[0:data_length - 1]
+        if cap_unit == 'n':
+            return 1e-9 * int(cap_value)
+        if cap_unit == 'u':
+            return 1e-6 * int(cap_value)
+        if cap_unit == 'm':
+            return 1e-3 * int(cap_value)
+        return int(cap_input)
 
     def extract_namespaces_and_initialize_usage(self, data):
         # exit if not valid data

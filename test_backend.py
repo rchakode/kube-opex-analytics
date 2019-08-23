@@ -45,9 +45,6 @@ class TestDecodeK8sMetrics(object):
         # M = 1e6
         assert round(backend.K8sUsage().decode_memory_capacity('1M'), 6) == 1e6
         assert round(backend.K8sUsage().decode_memory_capacity('875M'), 6) == 875 * 1e6
-        # m = 1e6
-        assert round(backend.K8sUsage().decode_memory_capacity('1m'), 6) == 1e6
-        assert round(backend.K8sUsage().decode_memory_capacity('875m'), 6) == 875 * 1e6
 
     def test_decode_memory_capacity_Gi(self):
         # Gi = 1073741824 = 1024 * 1024 * 1024
@@ -56,9 +53,12 @@ class TestDecodeK8sMetrics(object):
         # G = 1e9
         assert round(backend.K8sUsage().decode_memory_capacity('1G'), 9) == 1e9
         assert round(backend.K8sUsage().decode_memory_capacity('875G'), 9) == 875 * 1e9
-        # g = 1e9
-        assert round(backend.K8sUsage().decode_memory_capacity('1g'), 9) == 1e9
-        assert round(backend.K8sUsage().decode_memory_capacity('875g'), 9) == 875 * 1e9
+
+    def test_decode_memory_capacity_n_u_m(self):
+        # m = 1e-3
+        assert round(backend.K8sUsage().decode_memory_capacity('14162554060800m'), 1) == 14162554060.8
+        assert backend.K8sUsage().decode_memory_capacity('1u') == 1e-6
+        assert round(backend.K8sUsage().decode_memory_capacity('875m'), 3) == 875 * 1e-3
 
     def test_decode_memory_capacity_Pi(self):
         # Pi = 1125899906842624 = 1024 * 1024 * 1024 * 1024 * 1024
