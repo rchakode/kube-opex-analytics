@@ -194,7 +194,7 @@ The exportation process involves the following steps:
 
 * Get access to the Kubernetes Opex Analytics's built-in interface.
 * Go to the chart that you want to export dataset.
-* Click on the `tricolon` icon near the chart title, and select the desired format for export (CSV or JSON).
+* Click on the `tricolon` icon near the chart title, and select the desired format for export.
   ![](./screenshots/dataset-export-options.png)
 
 * Choose a destination filename.
