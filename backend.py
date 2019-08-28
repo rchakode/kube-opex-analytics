@@ -727,14 +727,11 @@ if KOA_CONFIG.cost_model == 'CHARGE_BACK' and KOA_CONFIG.billing_hourly_rate <= 
     KOA_LOGGER.fatal('invalid billing hourly rate for CHARGE_BACK cost allocation')
     sys.exit(1)
 
-th_puller = threading.Thread(target=create_metrics_puller)
-th_exporter = threading.Thread(target=dump_analytics)
-th_puller.start()
-th_exporter.start()
-
-if __name__ == '__main__':
-    # parsing args
+if __name__.startswith('uwsgi_file_'):
     parser = argparse.ArgumentParser(description='Kubernetes Opex Analytics Backend.')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + KOA_CONFIG.version)
     args = parser.parse_args()
-    app.run(host='0.0.0.0', port=5483)
+    th_puller = threading.Thread(target=create_metrics_puller)
+    th_exporter = threading.Thread(target=dump_analytics)
+    th_puller.start()
+    th_exporter.start()
