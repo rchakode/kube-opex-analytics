@@ -1,6 +1,8 @@
 ![](https://github.com/rchakode/kube-opex-analytics/blob/master/kube-opex-analytics.png)
 ![](https://img.shields.io/github/license/rchakode/kube-opex-analytics.svg?label=License)
 ![](https://img.shields.io/docker/pulls/rchakode/kube-opex-analytics.svg?label=Docker%20Pulls)
+[![Actions Status](https://github.com/rchakode/kube-opex-analytics/workflows/Python%20package/badge.svg)](https://github.com/rchakode/kube-opex-analytics/actions)
+
 
 # Table of Contents
 * [What is Kubernetes Opex Analytics](#what-is-koa)
