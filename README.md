@@ -1,8 +1,8 @@
 ![](https://github.com/rchakode/kube-opex-analytics/blob/master/kube-opex-analytics.png)
 
 ![](https://img.shields.io/github/license/rchakode/kube-opex-analytics.svg?label=License)
+[![Actions Status](https://github.com/rchakode/kube-opex-analytics/workflows/Build/badge.svg)](https://github.com/rchakode/kube-opex-analytics/actions)
 ![](https://img.shields.io/docker/pulls/rchakode/kube-opex-analytics.svg?label=Docker%20Pulls)
-[![Actions Status](https://github.com/rchakode/kube-opex-analytics/workflows/Lint%20and%20Tests/badge.svg)](https://github.com/rchakode/kube-opex-analytics/actions)
 
 
 # Table of Contents
