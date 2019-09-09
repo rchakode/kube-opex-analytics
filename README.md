@@ -25,13 +25,14 @@
 # <a name="what-is-koa"></a>What is Kubernetes Opex Analytics
 
 ## <a name="goals"></a>Goals
-Kubernetes Opex Analytics provides short-, mid- and long-term resource usage dashboards over Kubernetes clusters so to allow organizations to understand how their Kubernetes operating costs are spending by their different projects. The final **goal being to help organizations make cost allocation and capacity planning decisions** with factual analytics.
+Kubernetes Opex Analytics is meant to allow organizations to track the resources being consumed by their Kubernetes clusters to prevent overpaying.
+Other words, Kubernetes Opex Analytics actually provides as well, short-, mid-, than long-term resource usage dashboards so to help organizations understand how their different projects are spending their Kubernetes resources. The final **goal being to help organizations make cost allocation and capacity planning decisions** with factual analytics.
 
 To meet this goal, Kubernetes Opex Analytics collects CPU and memory usage metrics from Kubernetes's metrics APIs, processes and consolidates them over time to produce resource usage analytics on the basis of namespaces and with different time aggregation perspectives that cover up to a year. These perspectives also show a special usage item labelled _non-allocatable_ highlighting the **share of non-allocatable capacity** for both CPU and memory.
 
 
 ## <a name="concepts"></a>Concepts
-Kubernetes Opex Analytics enables the following core concepts and features:
+Kubernetes Opex Analytics enables cost allocation and capacity planning analytics based on the following core concepts and features:
 
 * **Namespace-focused:** Means that consolidated resource usage metrics consider individual namespaces as fundamental units for resource sharing. A special care is taken to also account and highlight non-allocatable resources .
 * **Hourly Usage & Trends:** Like on public clouds, resource use for each namespace is consolidated on a hourly-basic. This actually corresponds to the ratio (%) of resource used per namespace during each hour. It's the foundation for cost calculation and also allows to get over time trends about resources being consuming per namespace and also at the Kubernetes cluster scale.
