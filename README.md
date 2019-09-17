@@ -26,7 +26,7 @@
 
 ## <a name="goals"></a>Goals
 Kubernetes Opex Analytics is meant to allow organizations to track the resources being consumed by their Kubernetes clusters to prevent overpaying.
-In other words, Kubernetes Opex Analytics actually provides short-, mid-, than long-term resource usage dashboards so to help organizations understand how their different projects are spending their Kubernetes resources. The final **goal being to help organizations make cost allocation and capacity planning decisions** with factual analytics.
+Actually, Kubernetes Opex Analytics provides short-, mid-, as well as long-term resource usage dashboards so to help you understand how your different projects are spending Kubernetes resources. The final **goal being to help organizations make cost allocation and capacity planning decisions** with factual analytics.
 
 To meet this goal, Kubernetes Opex Analytics collects CPU and memory usage metrics from Kubernetes's metrics APIs, processes and consolidates them over time to produce resource usage analytics on the basis of namespaces and with different time aggregation perspectives that cover up to a year. These perspectives also show a special usage item labelled _non-allocatable_ highlighting the **share of non-allocatable capacity** for both CPU and memory.
 
