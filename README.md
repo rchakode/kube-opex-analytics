@@ -11,13 +11,13 @@
   * [Concepts](#concepts)
   * [Cost Models](#cost-models)
   * [Screenshots](#screenshorts)
+  * [Grafana Dashboard](#grafana-dashboard)
 * [Getting Started](#getting-started)
   * [Kubernetes API Access](#kubernetes-api-access)
   * [Configuration Variables](#config-variables)
   * [Deployment on Docker](#start-koa-on-docker)
   * [Deployment on Kubernetes Cluster](#start-koa-on-k8s)
   * [Prometheus Exporter](#prometheus-exporter)
-  * [Grafana Dashboard](#grafana-dashboard)
   * [Export Datasets](#export-datasets)
 * [License & Copyrights](#license-copyrights)
 * [Support & Contributions](#contributions)
@@ -25,20 +25,19 @@
 # <a name="what-is-koa"></a>What is Kubernetes Opex Analytics
 
 ## <a name="goals"></a>Goals
-Kubernetes Opex Analytics is meant to allow organizations to track the resources being consumed by their Kubernetes clusters to prevent overpaying.
-Actually, Kubernetes Opex Analytics provides short-, mid-, as well as long-term resource usage dashboards so to help you understand how your different projects are spending Kubernetes resources. The final **goal being to help organizations make cost allocation and capacity planning decisions** with factual analytics.
+Kubernetes Opex Analytics is meant to allow organizations to track the resources being consumed by their Kubernetes clusters to prevent overpaying. To do so Kubernetes Opex Analytics actually provides short-, mid-, as well as long-term resource usage reports showing how amount of resources your different projects are spending over time. The final **goal being to help organizations make cost allocation and capacity planning decisions** with factual analytics.
 
-To meet this goal, Kubernetes Opex Analytics collects CPU and memory usage metrics from Kubernetes's metrics APIs, processes and consolidates them over time to produce resource usage analytics on the basis of namespaces and with different time aggregation perspectives that cover up to a year. These perspectives also show a special usage item labelled _non-allocatable_ highlighting the **share of non-allocatable capacity** for both CPU and memory.
+To meet this goal, Kubernetes Opex Analytics periodically collects CPU and memory usage metrics from Kubernetes's APIs, processes and consolidates them over various time-aggregation perspectives (hourly, daily, monthly) to produce resource usage reports covering up to a year. The reports focus on namespace level, while a special care is taken to also account and highlight **shares of non-allocatable capacities**.
 
 
 ## <a name="concepts"></a>Concepts
-Kubernetes Opex Analytics enables cost allocation and capacity planning analytics based on the following core concepts and features:
+Kubernetes Opex Analytics enables cost allocation and capacity planning analytics based on the following core features:
 
 * **Namespace-focused:** Means that consolidated resource usage metrics consider individual namespaces as fundamental units for resource sharing. A special care is taken to also account and highlight non-allocatable resources .
 * **Hourly Usage & Trends:** Like on public clouds, resource use for each namespace is consolidated on a hourly-basic. This actually corresponds to the ratio (%) of resource used per namespace during each hour. It's the foundation for cost calculation and also allows to get over time trends about resources being consuming per namespace and also at the Kubernetes cluster scale.
 * **Daily and Monthly Usage Costs:** Provides for each period (daily/monthly), namespace, and resource type (CPU/memory), consolidated cost computed given one of the following ways: (i) accumulated hourly usage over the period; (ii) actual costs computed based on resource usage and a given hourly billing rate; (iii) normalized ratio of usage per namespace compared against the global cluster usage.
 * **Occupation of Nodes by Namespaced Pods:** Highlights for each node the share of resources used by active pods labelled by their namespace.
-* **Efficient Visualization:** For metrics generated, Kubernetes Opex Analytics provides dashboards with relevant charts covering as well the last couple of hours than the last 12 months (i.e. year). For this there are **built-in charts**, a **Prometheus Exporter** along with **Grafana Dashboard** that all work out of the box. 
+* **Efficient Visualization:** For metrics generated, Kubernetes Opex Analytics provides dashboards with relevant charts covering as well the last couple of hours than the last 12 months (i.e. year). For this there are **built-in charts**, a **Prometheus Exporter** along with **Grafana Dashboard** that all work out of the box.
 
 
 ## <a name="cost-models"></a>Cost Models
@@ -68,14 +67,26 @@ You can find below screenshorts of built-in charts.
 ### Last Nodes' Occupation by Pods
 ![](./screenshots/sample-last-nodes-occupation-by-pods.png)
 
-### Grafana Dashboard (works with Prometheus Exporter) 
+### <a name="grafana-dashboard"></a> Grafana Dashboard
+You can either build your own dashboard or use our [official one](https://grafana.com/dashboards/10282).
+
+Our official Grafana dashboard looks as below and is designed to work out-of-the box with the Kubernetes Opex Analytics's [Prometheus exporter](#prometheus-exporter). It requires to set a Grafana varianle named `KOA_DS_PROMETHEUS`, which shall point to your Prometheus server data source.
+
+The dashboard currently provides the following reports:
+
+* Hourly resource usage over time.
+* Current day's ongoing resource usage.
+* Current month's ongoing resource usage.
+
+> You should notice those reports are less rich compared against the ones enabled by the built-in Kubernetes Opex Analytics dashboard. In particular, the daily and the monthly usage for the different namespaces are not stacked, neither than there are not analytics for past days and months. These limitations are inherent to how Grafana handles timeseries and bar charts.
 
 ![](./screenshots/kube-opex-analytics-grafana.png)
+
 
 ## <a name="getting-started"></a>Getting Started
 
 ## <a name="kubernetes-api-access"></a>Kubernetes API Access
-Kubernetes Opex Analytics needs read-only access to the following Kubernetes APIs. 
+Kubernetes Opex Analytics needs read-only access to the following Kubernetes APIs.
 
 * /apis/metrics.k8s.io/v1beta1
 * /api/v1
@@ -178,24 +189,10 @@ scrape_configs:
   - job_name: 'kube-opex-analytics'
     scrape_interval: 300s
     static_configs:
-      - targets: ['kube-opex-analytics:5483']  
+      - targets: ['kube-opex-analytics:5483']
 ```
 
 > When the option `prometheusOperator` is enabled during the deployment (see Helm [values.yaml](./helm/kube-opex-analytics/values.yaml) file), you have nothing to do as the scraping should be automatically configured by the deployed `Prometheus ServiceMonitor`.
-
-## <a name="grafana-dashboard"></a>Grafana Dashboard
-
-This is an integrated Grafana dashboard for the Prometheus exporter; it shows the following analytics for both CPU and memory resources:
-* Hourly resource usage over time.
-* Current day's ongoing resource usage.
-* Current month's ongoing resource usage.
-
-You can [download it here](https://grafana.com/dashboards/10282) and import it to your Grafana installation. The dashboard assumes that your Prometheus data source is defined through a variable named `KOA_DS_PROMETHEUS`. Make sure to create that variable and bind it to your Prometheus source.
-
-### Limitations of The Grafana Dashboard
-As you can notice those analytics are less rich than compared against the ones enabled by the built-in Kubernetes Opex Analytics dashboard. In particular the daily and the monthly usage for the different namespaces are not stacked, neither than there are not analytics for past days and months. These limitations are inherent to how Grafana handles timeseries and bar charts. It's not easy (actually not possible?), to build advanced analytics than the ones enabled by natively by Kubernetes Opex Analytics. 
-
-So if you have some expertises on Grafana and be able to design such an equivalent dashboard, we'll be happy if you can share it with the community. That'll be really appreciated. More generally, if for your specific needs you were given to create other dashboards that you think can be useful for the community, please make a pull request and we'll be happy to share it. 
 
 
 ## <a name="export-datasets"></a>Export Datasets
