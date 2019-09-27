@@ -24,6 +24,11 @@ spec:
         app.kubernetes.io/name: {{ include "kube-opex-analytics.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
+      {{- if .Values.securityContext.enabled }}
+      securityContext:
+        runAsUser: 830405
+        fsGroup: 830405
+      {{- end }}
       serviceAccountName: {{ include "kube-opex-analytics.fullname" . }}
       restartPolicy: Always
       containers:

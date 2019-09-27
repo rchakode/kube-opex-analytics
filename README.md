@@ -130,9 +130,16 @@ For instance, if you're running Docker on your local machine the interface will 
 ## <a name="start-koa-on-k8s"></a>Deployment on a Kubernetes cluster
 There is a [Helm chart](./helm/) to ease the deployment on Kubernetes, either by using `Helm Tiller` or `kubectl`.
 
-In both cases check the [values.yaml](./helm/kube-opex-analytics/values.yaml) file to modify the configuration options according to your needs (e.g. to enable persistent volume for data storage, Prometheus ServiceMonitor...).
+In both cases check the [values.yaml](./helm/kube-opex-analytics/values.yaml) file to modify the configuration options according to your needs (e.g. to enable persistent volume for data storage, Prometheus Operator/ServiceMonitor, security context, etc).
 
-In the next commands the deployment is done in the namespace `kube-opex-analytics`, which should be first created. You change that to any other namespace of your choice.
+> **Note on Security Context:**
+> By default Kubernetes Opex Analytics's pods configured to run containers in privileged mode, meaning that programs are executed as `root` within the containers.
+> On Kubernetes clusters with hardened security policies the execution of those pods will be likely prevented (see issue #8).
+> Starting from version 0.4.2, it's possible to run containers in unprivileged mode by setting the Helm configuration value `securityContext.enabled` to `true`.
+> The value is set by default to `false` to keep backward compatibility with former deployments.
+
+
+In the following deployment commands it's assumed that the target namespace `kube-opex-analytics` exists. If not yet the case create it first, or alternatively you can use any other namespace of your choice.
 
 Using `Helm Tiller`:
 
