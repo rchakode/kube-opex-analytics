@@ -22,8 +22,7 @@ RUN apt update && \
     apt install -y python3 librrd-dev libpython3-dev python3-pip && \
     rm -rf /var/lib/apt/lists/* && \
     pip3 install -r requirements.txt && \
-    groupadd $RUNTIME_USER_GID && \
-    useradd $RUNTIME_USER -u $RUNTIME_USER_UID -G $RUNTIME_USER_GID && \
+    useradd $RUNTIME_USER -u $RUNTIME_USER_UID && \
     usermod $RUNTIME_USER -d $APP_HOME && \
     chown -R $RUNTIME_USER:$RUNTIME_USER $APP_HOME && \
     mkdir /data && \
