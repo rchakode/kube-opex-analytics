@@ -19,8 +19,7 @@ prometheusOperator:
   labels:
 
 securityContext:
-  enabled: false
-
+  enabled: true
 
 replicaCount: 1
 

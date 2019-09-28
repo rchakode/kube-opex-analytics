@@ -144,7 +144,8 @@ There is a [Helm chart](./helm/) to ease the deployment on Kubernetes, either by
 In both cases check the [values.yaml](./helm/kube-opex-analytics/values.yaml) file to modify the configuration options according to your needs (e.g. to enable persistent volume for data storage, Prometheus Operator/ServiceMonitor, security context, etc).
 
 > **Note on Security Context:**
-> By default Kubernetes Opex Analytics's pods configured to run containers in privileged mode, meaning that programs are executed as `root` within the containers. On Kubernetes clusters with hardened security policies the execution of those pods will be likely prevented (see issue [#15](https://github.com/rchakode/kube-opex-analytics/issues/15)). Starting from version 0.4.2, it's possible to run containers in unprivileged mode by setting the Helm configuration value `securityContext.enabled` to `true`. The value is set by default to `false` to keep backward compatibility with former deployments.
+> Prior to version `0.4.2` Kubernetes Opex Analytics's pods were deployed in privileged mode, meaning that programs were executed as `root` within the containers. That was causing some warnings to be prompted during the startup (see issue #15), and even cause the execution of pods to be prevented on Kubernetes clusters with hardened security policies.
+> As of version `0.4.2` a Kubernetes Security Context has been introduced to configure pods in unprivileged mode by default. However for backward compatibility reasons it it's still possible to deploy pods in privileged mode by setting the Helm configuration value `securityContext.enabled` to `false`.
 
 
 In the following deployment commands it's assumed that the target namespace `kube-opex-analytics` exists. If not yet the case create it first, or alternatively you can use any other namespace of your choice.
