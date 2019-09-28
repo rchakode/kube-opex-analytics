@@ -24,4 +24,6 @@ LC_ALL='C.UTF-8' LANG='C.UTF-8' \
     --http-socket :5483 \
     --enable-threads \
     --wsgi-file backend.py \
-    --callable wsgi_dispatcher
+    --callable wsgi_dispatcher \
+    --master
+
