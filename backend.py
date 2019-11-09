@@ -23,6 +23,8 @@ import urllib
 
 import flask
 
+from flask_cors import CORS, cross_origin
+
 import prometheus_client
 
 import requests
@@ -141,6 +143,7 @@ PROMETHEUS_PERIODIC_USAGE_EXPORTERS = {
 
 # create Flask application
 app = flask.Flask(__name__, static_url_path=KOA_CONFIG.static_content_location, template_folder='.')
+cors = CORS(app, resources={r"/dataset/*": {"origins": "127.0.0.1"}})
 
 # Add prometheus wsgi middleware to route /metrics requests
 wsgi_dispatcher = werkzeug.wsgi.DispatcherMiddleware(app, {
@@ -174,6 +177,7 @@ def send_css(path):
 
 
 @app.route('/dataset/<path:path>')
+@cross_origin()
 def download_dataset(path):
     return flask.send_from_directory('static/data', path)
 
