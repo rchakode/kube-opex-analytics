@@ -49,6 +49,7 @@ class Config:
     frontend_data_location = '.%s/data' % (static_content_location)
     k8s_api_endpoint = os.getenv('KOA_K8S_API_ENDPOINT', 'http://127.0.0.1:8001')
     k8s_verify_ssl = (lambda v: v.lower() in ("yes", "true"))(os.getenv('KOA_K8S_API_VERIFY_SSL', 'true'))
+    k8s_ssl_cacert = os.getenv('KOA_K8S_CACERT', None)
     db_location = os.getenv('KOA_DB_LOCATION', ('%s/.kube-opex-analytics/db') % os.getenv('HOME', '/tmp'))
     polling_interval_sec = int(os.getenv('KOA_POLLING_INTERVAL_SEC', '300'))
     cost_model = os.getenv('KOA_COST_MODEL', 'CUMULATIVE_RATIO')
@@ -59,6 +60,7 @@ class Config:
     def __init__(self):
         self.load_rbac_auth_token()
 
+        # handle billing rate and cost model
         try:
             self.billing_hourly_rate = float(os.getenv('KOA_BILLING_HOURLY_RATE'))
         except:
@@ -76,6 +78,12 @@ class Config:
                 cost_model_label = 'Cumulative Ratio'
                 cost_model_unit = '%'
             fd.write('{"cost_model":"%s", "currency":"%s"}' % (cost_model_label, cost_model_unit))
+
+        # handle cacert file if applicable
+        if self.k8s_verify_ssl and self.k8s_ssl_cacert and os.path.exists(self.k8s_ssl_cacert):
+            self.koa_verify_ssl_option = self.k8s_ssl_cacert
+        else:
+            self.koa_verify_ssl_option = self.k8s_verify_ssl
 
     def load_rbac_auth_token(self):
         try:
@@ -643,13 +651,13 @@ def pull_k8s(api_context):
             headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_rbac_auth_token)
 
     try:
-        http_req = requests.get(api_endpoint, verify=KOA_CONFIG.k8s_verify_ssl, headers=headers)
+        http_req = requests.get(api_endpoint, verify=KOA_CONFIG.koa_verify_ssl_option, headers=headers)
         if http_req.status_code == 200:
             data = http_req.text
         else:
             KOA_LOGGER.error("call to %s returned error (%s)", api_endpoint, http_req.text)
-    except requests.exceptions.RequestException as ex:
-        KOA_LOGGER.error("HTTP exception requesting %s (%s)", api_endpoint, ex)
+    except Exception as ex:
+        KOA_LOGGER.error("Exception calling HTTP endpoint %s (%s)", api_endpoint, ex)
     except:
         KOA_LOGGER.error("unknown exception requesting %s", api_endpoint)
 
