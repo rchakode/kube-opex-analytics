@@ -33,7 +33,7 @@ spec:
       restartPolicy: Always
       containers:
         - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:v{{ .Chart.Version }}"
+          image: "{{ .Values.image.repository }}:{{ .Chart.Version }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- if .Values.envs }}
           env:

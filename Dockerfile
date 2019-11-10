@@ -26,5 +26,5 @@ COPY entrypoint.sh \
     $APP_HOME/
 
 WORKDIR $APP_HOME
-VOLUME ["/data"]
+# VOLUME ["/data"]
 ENTRYPOINT ["sh", "./entrypoint.sh"]

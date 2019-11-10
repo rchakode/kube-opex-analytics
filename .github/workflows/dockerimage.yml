@@ -8,14 +8,14 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v1
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag rchakode/kube-opex-analytics:$(git describe --tags `git rev-list --tags --max-count=1`)
-    - name: Login to Docker Hub
+    - name: Build and push Docker image
       env:
         DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
         DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      run: echo "$DOCKERHUB_PASSWORD" | docker login -u $DOCKERHUB_USERNAME --password-stdin
-    - name: Push image
       run: |
-        docker tag rchakode/kube-opex-analytics:$(git describe --tags `git rev-list --tags --max-count=1`) rchakode/kube-opex-analytics:latest
+        export GIT_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+        export IMAGE_TAG=$(echo $GIT_TAG | sed 's/v//')
+        docker build . --file Dockerfile --tag rchakode/kube-opex-analytics:$IMAGE_TAG
+        docker tag rchakode/kube-opex-analytics:$IMAGE_TAG rchakode/kube-opex-analytics:latest
         docker push rchakode/kube-opex-analytics
+        echo "$DOCKERHUB_PASSWORD" | docker login -u $DOCKERHUB_USERNAME --password-stdin
