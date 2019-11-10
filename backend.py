@@ -43,7 +43,7 @@ def create_directory_if_not_exists(path):
 
 
 class Config:
-    version = '0.4.2'
+    version = '0.4.3'
     db_round_decimals = 6
     db_non_allocatable = 'non-allocatable'
     db_billing_hourly_rate = '.billing-hourly-rate'
