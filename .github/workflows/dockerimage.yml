@@ -1,5 +1,5 @@
 name: Docker image
-on: [push]
+on: [tags]
 jobs:
   build:
     runs-on: ubuntu-18.04
