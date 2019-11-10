@@ -15,6 +15,7 @@ jobs:
         DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
         DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       run: echo "$DOCKERHUB_PASSWORD" | docker login -u $DOCKERHUB_USERNAME --password-stdin
-  - name: Push image
-      run: docker tag rchakode/kube-opex-analytics:$(git describe --tags `git rev-list --tags --max-count=1`) rchakode/kube-opex-analytics:latest
-      run: docker push rchakode/kube-opex-analytics
+    - name: Push image
+      run: |
+        docker tag rchakode/kube-opex-analytics:$(git describe --tags `git rev-list --tags --max-count=1`) rchakode/kube-opex-analytics:latest
+        docker push rchakode/kube-opex-analytics
