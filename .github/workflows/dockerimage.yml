@@ -6,7 +6,7 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - name: Publish to Registry
-      uses: elgohr/Publish-Docker-Github-Action@master
+      uses: elgohr/Publish-Docker-Github-Action@2.7
       with:
         name: rchakode/kube-opex-analytics
         username: ${{ secrets.DOCKERHUB_USERNAME }}
