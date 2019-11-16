@@ -33,6 +33,7 @@ import rrdtool
 
 import werkzeug.wsgi
 
+
 def create_directory_if_not_exists(path):
     try:
         os.makedirs(path)
