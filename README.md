@@ -122,7 +122,7 @@ $ docker run -d \
         -v /var/lib/kube-opex-analytics:/data \
         -e KOA_DB_LOCATION=/data/db \
         -e KOA_K8S_API_ENDPOINT=http://127.0.0.1:8001 \
-        -e KOA_ENABLE_PROMETHEUS_EXPORTER=false \
+        -e KOA_ENABLE_PROMETHEUS_EXPORTER=true \
         rchakode/kube-opex-analytics
 ```
 

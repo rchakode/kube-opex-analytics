@@ -12,7 +12,7 @@ envs:
   KOA_ENABLE_PROMETHEUS_EXPORTER: true
 
 dataVolume:
-  persist: false
+  persist: true
   capacity: 4Gi
 
 prometheusOperator:
