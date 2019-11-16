@@ -33,7 +33,6 @@ import rrdtool
 
 import werkzeug.wsgi
 
-
 def create_directory_if_not_exists(path):
     try:
         os.makedirs(path)
@@ -732,5 +731,6 @@ if __name__.startswith('uwsgi_file_') or __name__ == '__main__':
     th_exporter = threading.Thread(target=dump_analytics)
     th_puller.start()
     th_exporter.start()
+
     if __name__ == '__main__':
         app.run(host='0.0.0.0', port=5483)
