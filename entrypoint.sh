@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # File: entrypoint.sh                                                                    #
 # Author: Rodrigue Chakode <rodrigue.chakode @ gmail dot com>                            #
@@ -15,9 +15,8 @@
 # under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR            #
 # CONDITIONS OF ANY KIND, either express or implied. See the License for the             #
 # specific language governing permissions and limitations under the License.             #
-set -e
 
-if [ "$KOA_ENABLE_PROMETHEUS_EXPORTER" == "true" ]; then
+if [ "$KOA_ENABLE_PROMETHEUS_EXPORTER" = "true" ]; then
     LC_ALL='C.UTF-8' LANG='C.UTF-8' \
         uwsgi \
         --http-socket :5483 \
