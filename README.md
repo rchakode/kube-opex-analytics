@@ -110,6 +110,7 @@ Kubernetes Opex Analytics supports the following environment variables when it s
 * `KOA_COST_MODEL` (version >= `0.2.0`): sets the model of cost allocation to use. Possible values are: _CUMULATIVE_RATIO_ (default) indicates to compute cost as cumulative resource usage for each period of time (daily, monthly); _CHARGE_BACK_ calculates cost based on a given cluster hourly rate (see `KOA_BILLING_HOURLY_RATE`); _RATIO_ indicates to compute cost as a normalized percentage of resource usage during each period of time.
 * `KOA_BILLING_HOURLY_RATE` (required if cost model _CHARGE_BACK_): defines a positive floating number corresponding to an estimated hourly rate for the Kubernetes cluster. For example if your cluster cost is $5,000 dollars a month (i.e. ~30*24 hours), its estimated hourly cost would be 6.95 = 5000/(30*24).
 * `KOA_BILLING_CURRENCY_SYMBOL` (optional, default is `$`): sets a currency string to use to annotate costs on charts.
+* `KOA_ENABLE_PROMETHEUS_EXPORTER` shall be set to `true` to enable the Prometheus exporter, which is not enabled by default as of version `0.4.5`.
 
 
 ## <a name="start-koa-on-docker"></a>Deployment on Docker
@@ -133,8 +134,8 @@ In this command:
  * The environment variable `KOA_K8S_API_ENDPOINT` set the address of the Kubernetes API endpoint.
 
 ### <a name="access-gui-docker"></a>Access GUI & Watch Analytics
- Once the container started you can open access the Kubernetes Opex Analytics's web interface at `http://<DOCKER_HOST>:5483/`. Where `<DOCKER_HOST>` should be replaced by the IP address or the hostmane of the Docker server. 
- 
+ Once the container started you can open access the Kubernetes Opex Analytics's web interface at `http://<DOCKER_HOST>:5483/`. Where `<DOCKER_HOST>` should be replaced by the IP address or the hostmane of the Docker server.
+
 For instance, if you're running Docker on your local machine the interface will be available at: `http://127.0.0.1:5483/`
 
  > Due to the time needed to have sufficient data to consolidate, you may need to wait almost a hour to have all charts filled. This is a normal operations of Kubernetes Opex Analytics.
@@ -172,13 +173,13 @@ $ helm template \
 > This will also deploy an HTTP service named `kube-opex-analytics` on port `80` in the selected namespace. This service enables access to the built-in dashboard of kubernetes Opex Analytics.
 
 ## <a name="prometheus-exporter"></a>Prometheus Exporter
-Starting from version `0.3.0`, Kubernetes Opex Analytics enables a Prometheus exporter through the endpoint `/metrics`. 
+Starting from version `0.3.0`, Kubernetes Opex Analytics enables a Prometheus exporter through the endpoint `/metrics`.
 
 The exporter exposes the following metrics:
 
 * `koa_namespace_hourly_usage` exposes for each namespace its current hourly resource usage for both CPU and memory.
-* `koa_namespace_daily_usage` exposes for each namespace and for the ongoing day, its current resource usage for both CPU and memory. 
-* `koa_namespace_monthly_usage` exposes for each namespace and for the ongoing month, its current resource usage for both CPU and memory. 
+* `koa_namespace_daily_usage` exposes for each namespace and for the ongoing day, its current resource usage for both CPU and memory.
+* `koa_namespace_monthly_usage` exposes for each namespace and for the ongoing month, its current resource usage for both CPU and memory.
 
 The Prometheus scraping job can be configured like below (adapt the target URL if needed). A scraping interval less than 5 minutes (i.e. `300s`) is useless as Kubernetes Opex Analytics would not generate any new metrics in the meantime.
 
@@ -195,7 +196,7 @@ scrape_configs:
 
 
 ## <a name="export-datasets"></a>Export Datasets
-The datasets used to generated hourly, daily and monthly analytics charts can be exported in JSON and CSV formats. 
+The datasets used to generated hourly, daily and monthly analytics charts can be exported in JSON and CSV formats.
 
 The exportation process involves the following steps:
 
