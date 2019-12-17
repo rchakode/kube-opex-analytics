@@ -175,7 +175,7 @@ $ helm template \
 ## <a name="prometheus-exporter"></a>Prometheus Exporter
 Starting from version `0.3.0`, Kubernetes Opex Analytics enables a Prometheus exporter through the endpoint `/metrics`.
 
-As of version `0.4.6`, the exporter is not enabled by default. You need to set the environment variables `KOA_ENABLE_PROMETHEUS_EXPORTER` to `true` to enable it. If you're using the Helm chart, you can set the appropriate entry in the `values.yaml` file.
+As of version `0.4.6`, the exporter is not enabled by default. You need to set the environment variable `KOA_ENABLE_PROMETHEUS_EXPORTER` to `true` to enable it. If you're using the Helm chart, you can set the appropriate entry in the `values.yaml` file.
 
 The exporter exposes the following metrics:
 
