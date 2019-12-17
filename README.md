@@ -25,9 +25,9 @@
 # <a name="what-is-koa"></a>What is Kubernetes Opex Analytics
 
 ## <a name="goals"></a>Goals
-Kubernetes Opex Analytics is meant to allow organizations to track the resources being consumed by their Kubernetes clusters to prevent overpaying. To do so, Kubernetes Opex Analytics generates short-, mid- and long-term usage reports so give relevant insight on what amount of resources your different projects are spending over time. The final **goal being to help organizations make cost allocation and capacity planning decisions** with factual analytics.
+Kubernetes Opex Analytics is meant to allow organizations to track the resources being consumed by their Kubernetes clusters to prevent overpaying. To do so, Kubernetes Opex Analytics generates short-, mid- and long-term usage reports so give relevant insights on what amount of resources each project is spending over time. The final **goal being to help organizations make cost allocation and capacity planning decisions** with factual analytics.
 
-To meet this goal, Kubernetes Opex Analytics periodically collects CPU and memory usage metrics from Kubernetes's APIs, processes and consolidates them over various time-aggregation perspectives (hourly, daily, monthly) to produce resource usage reports covering up to a year. The reports focus on namespace level, while a special care is taken to also account and highlight **shares of non-allocatable capacities**.
+To meet this goal, Kubernetes Opex Analytics periodically collects CPU and memory usage metrics from Kubernetes's APIs, processes and consolidates them over various time-aggregation perspectives (hourly, daily, monthly), to produce resource usage reports covering up to a year. The reports focus on namespace level, while a special care is taken to also account and highlight **shares of non-allocatable capacities**.
 
 
 ## <a name="concepts"></a>Concepts
@@ -174,6 +174,8 @@ $ helm template \
 
 ## <a name="prometheus-exporter"></a>Prometheus Exporter
 Starting from version `0.3.0`, Kubernetes Opex Analytics enables a Prometheus exporter through the endpoint `/metrics`.
+
+As of version `0.4.6`, the exporter is not enabled by default. You need to set the environment variables `KOA_ENABLE_PROMETHEUS_EXPORTER` to `true` to enable it. If you're using the Helm chart, you can set the appropriate entry in the `values.yaml` file.
 
 The exporter exposes the following metrics:
 
