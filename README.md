@@ -27,7 +27,7 @@
 ## <a name="goals"></a>Goals
 Kubernetes Opex Analytics is meant to allow organizations to track the resources being consumed by their Kubernetes clusters to prevent overpaying. To do so, Kubernetes Opex Analytics generates short-, mid- and long-term usage reports so give relevant insights on what amount of resources each project is spending over time. The final **goal being to help organizations make cost allocation and capacity planning decisions** with factual analytics.
 
-To meet this goal, Kubernetes Opex Analytics periodically collects CPU and memory usage metrics from Kubernetes's APIs, processes and consolidates them over various time-aggregation perspectives (hourly, daily, monthly), to produce resource usage reports covering up to a year. The reports focus on namespace level, while a special care is taken to also account and highlight **shares of non-allocatable capacities**.
+To meet this goal, Kubernetes Opex Analytics periodically collects CPU and memory usage metrics from Kubernetes's APIs, processes and consolidates them over various time-aggregation perspectives (hourly, daily, monthly), to produce resource **usage reports covering up to a year**. The reports focus on namespace level, while a special care is taken to also account and highlight **shares of non-allocatable capacities**.
 
 
 ## <a name="concepts"></a>Concepts
@@ -146,8 +146,8 @@ There is a [Helm chart](./helm/) to ease the deployment on Kubernetes, either by
 In both cases check the [values.yaml](./helm/kube-opex-analytics/values.yaml) file to modify the configuration options according to your needs (e.g. to enable persistent volume for data storage, Prometheus Operator/ServiceMonitor, security context, etc).
 
 > **Note on Security Context:**
-> Prior to version `0.4.2` Kubernetes Opex Analytics's pods were deployed in privileged mode, meaning that programs were executed as `root` within the containers. That was causing some warnings to be prompted during the startup (see issue #15), and even cause the execution of pods to be prevented on Kubernetes clusters with hardened security policies.
-> As of version `0.4.2` a Kubernetes Security Context has been introduced to configure pods in unprivileged mode by default. However for backward compatibility reasons it it's still possible to deploy pods in privileged mode by setting the Helm configuration value `securityContext.enabled` to `false`.
+> Prior to version `0.4.2` Kubernetes Opex Analytics's pods were deployed in privileged mode, meaning that, the container program was executed as `root`. That was causing some warnings to be prompted during the startup (e.g. issue #15); even worse, on Kubernetes clusters with strong security policies, the execution of the container was prevented.
+> As of version `0.4.2` a Kubernetes Security Context has been introduced to configure the pod to be launched in unprivileged mode by default. However, for backward compatibility, it it's still possible to launch the pod in privileged mode by setting the Helm configuration value `securityContext.enabled` to `false`.
 
 
 In the following deployment commands it's assumed that the target namespace `kube-opex-analytics` exists. If not yet the case create it first, or alternatively you can use any other namespace of your choice.
