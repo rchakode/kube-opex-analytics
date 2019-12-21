@@ -95,7 +95,7 @@ You need to provide the base URL of the Kubernetes API when starting the program
 
 Typically if you're planning an installation inside a Kubernetes cluster, you can connect to the local cluster API endpoint at: `https://kubernetes.default`.
 
-Likewise if you're planning an installation outside a Kubernetes cluster you can use a proxied access to Kubernetes API as follows:
+Likewise, if you're planning an installation outside a Kubernetes cluster you can use a proxied access to Kubernetes API as follows:
 
 ```
 $ kubectl proxy
@@ -108,9 +108,9 @@ Kubernetes Opex Analytics supports the following environment variables when it s
 * `KOA_DB_LOCATION` sets the path to use to store internal data. Typically when you consider to set a volume to store those data, you should also take care to set this path to belong to the mounting point.
 * `KOA_K8S_API_ENDPOINT` sets the endpoint to the Kubernetes API.
 * `KOA_COST_MODEL` (version >= `0.2.0`): sets the model of cost allocation to use. Possible values are: _CUMULATIVE_RATIO_ (default) indicates to compute cost as cumulative resource usage for each period of time (daily, monthly); _CHARGE_BACK_ calculates cost based on a given cluster hourly rate (see `KOA_BILLING_HOURLY_RATE`); _RATIO_ indicates to compute cost as a normalized percentage of resource usage during each period of time.
-* `KOA_BILLING_HOURLY_RATE` (required if cost model _CHARGE_BACK_): defines a positive floating number corresponding to an estimated hourly rate for the Kubernetes cluster. For example if your cluster cost is $5,000 dollars a month (i.e. ~30*24 hours), its estimated hourly cost would be 6.95 = 5000/(30*24).
-* `KOA_BILLING_CURRENCY_SYMBOL` (optional, default is `$`): sets a currency string to use to annotate costs on charts.
-* `KOA_ENABLE_PROMETHEUS_EXPORTER` shall be set to `true` to enable the Prometheus exporter, which is not enabled by default as of version `0.4.5`.
+* `KOA_BILLING_HOURLY_RATE` (required if cost model is _CHARGE_BACK_): defines a positive floating number corresponding to an estimated hourly rate for the Kubernetes cluster. For example if your cluster cost is $5,000 dollars a month (i.e. `~30*24` hours), its estimated hourly cost would be `6.95 = 5000/(30*24)`.
+* `KOA_BILLING_CURRENCY_SYMBOL` (optional, default is '`$`'): sets a currency string to use to annotate costs on reports.
+* `KOA_ENABLE_PROMETHEUS_EXPORTER`: (boolean, default is `false`): set whether the Prometheus exporter will be enabled or not. Prior to version `0.4.5` the exporter was enabled by default.
 
 
 ## <a name="start-koa-on-docker"></a>Deployment on Docker
