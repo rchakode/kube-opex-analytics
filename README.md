@@ -110,7 +110,6 @@ Kubernetes Opex Analytics supports the following environment variables when it s
 * `KOA_COST_MODEL` (version >= `0.2.0`): sets the model of cost allocation to use. Possible values are: _CUMULATIVE_RATIO_ (default) indicates to compute cost as cumulative resource usage for each period of time (daily, monthly); _CHARGE_BACK_ calculates cost based on a given cluster hourly rate (see `KOA_BILLING_HOURLY_RATE`); _RATIO_ indicates to compute cost as a normalized percentage of resource usage during each period of time.
 * `KOA_BILLING_HOURLY_RATE` (required if cost model is _CHARGE_BACK_): defines a positive floating number corresponding to an estimated hourly rate for the Kubernetes cluster. For example if your cluster cost is $5,000 dollars a month (i.e. `~30*24` hours), its estimated hourly cost would be `6.95 = 5000/(30*24)`.
 * `KOA_BILLING_CURRENCY_SYMBOL` (optional, default is '`$`'): sets a currency string to use to annotate costs on reports.
-* `KOA_ENABLE_PROMETHEUS_EXPORTER`: (boolean, default is `false`): set whether the Prometheus exporter will be enabled or not. Prior to version `0.4.5` the exporter was enabled by default.
 
 
 ## <a name="start-koa-on-docker"></a>Deployment on Docker
@@ -123,7 +122,6 @@ $ docker run -d \
         -v /var/lib/kube-opex-analytics:/data \
         -e KOA_DB_LOCATION=/data/db \
         -e KOA_K8S_API_ENDPOINT=http://127.0.0.1:8001 \
-        -e KOA_ENABLE_PROMETHEUS_EXPORTER=true \
         rchakode/kube-opex-analytics
 ```
 
@@ -174,8 +172,6 @@ $ helm template \
 
 ## <a name="prometheus-exporter"></a>Prometheus Exporter
 Starting from version `0.3.0`, Kubernetes Opex Analytics enables a Prometheus exporter through the endpoint `/metrics`.
-
-As of version `0.4.6`, the exporter is not enabled by default. You need to set the environment variable `KOA_ENABLE_PROMETHEUS_EXPORTER` to `true` to enable it. If you're using the Helm chart, you can set the appropriate entry in the `values.yaml` file.
 
 The exporter exposes the following metrics:
 
