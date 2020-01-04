@@ -31,9 +31,9 @@ import requests
 
 import rrdtool
 
-import werkzeug.wsgi
-
 from waitress import serve as waitress_serve
+
+import werkzeug.wsgi
 
 
 def create_directory_if_not_exists(path):
@@ -734,7 +734,7 @@ if __name__ == '__main__':
     th_exporter = threading.Thread(target=dump_analytics)
     th_puller.start()
     th_exporter.start()
-    
+
     if not KOA_CONFIG.enable_debug:
         waitress_serve(wsgi_dispatcher, listen='*:5483')
     else:

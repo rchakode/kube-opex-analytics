@@ -3,4 +3,4 @@ flask_cors
 requests
 rrdtool
 prometheus_client
-uwsgi
+waitress
