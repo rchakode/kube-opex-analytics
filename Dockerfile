@@ -6,7 +6,7 @@ ARG APP_HOME="/koa"
 
 RUN apt update && \
     apt install -y python3 librrd-dev libpython3-dev python3-pip && \
-    pip3 install --no-cache-dir flask flask_cors requests rrdtool prometheus_client uwsgi && \
+    pip3 install --no-cache-dir flask flask_cors requests rrdtool prometheus_client waitress && \
     rm -rf /var/lib/apt/lists/* && \
     mkdir /data && \
     mkdir -p $APP_HOME/static && \

@@ -16,15 +16,9 @@
 # CONDITIONS OF ANY KIND, either express or implied. See the License for the             #
 # specific language governing permissions and limitations under the License.             #
 
-if [ "$KOA_ENABLE_PROMETHEUS_EXPORTER" = "true" ]; then
-    LC_ALL='C.UTF-8' LANG='C.UTF-8' \
-        uwsgi \
-        --http-socket :5483 \
-        --enable-threads \
-        --wsgi-file backend.py \
-        --callable wsgi_dispatcher \
-        --master
-else
-    LC_ALL='C.UTF-8' LANG='C.UTF-8' \
-        python3 -u ./backend.py
+if [ ! -z "${KOA_ENABLE_PROMETHEUS_EXPORTER}" ]; then
+    echo "WARNING: as of version 0.4.8, startup variable KOA_ENABLE_PROMETHEUS_EXPORTER is now depracated and ignored"
 fi
+
+LC_ALL='C.UTF-8' LANG='C.UTF-8' \
+    python3 -u ./backend.py

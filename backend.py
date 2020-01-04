@@ -33,6 +33,8 @@ import rrdtool
 
 import werkzeug.wsgi
 
+from waitress import serve as waitress_serve
+
 
 def create_directory_if_not_exists(path):
     try:
@@ -43,7 +45,7 @@ def create_directory_if_not_exists(path):
 
 
 class Config:
-    version = '0.4.7'
+    version = '0.4.8'
     db_round_decimals = 6
     db_non_allocatable = 'non-allocatable'
     db_billing_hourly_rate = '.billing-hourly-rate'
@@ -724,7 +726,7 @@ if KOA_CONFIG.cost_model == 'CHARGE_BACK' and KOA_CONFIG.billing_hourly_rate <= 
     KOA_LOGGER.fatal('invalid billing hourly rate for CHARGE_BACK cost allocation')
     sys.exit(1)
 
-if __name__.startswith('uwsgi_file_') or __name__ == '__main__':
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Kubernetes Opex Analytics Backend')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + KOA_CONFIG.version)
     args = parser.parse_args()
@@ -732,6 +734,8 @@ if __name__.startswith('uwsgi_file_') or __name__ == '__main__':
     th_exporter = threading.Thread(target=dump_analytics)
     th_puller.start()
     th_exporter.start()
-
-    if __name__ == '__main__':
+    
+    if not KOA_CONFIG.enable_debug:
+        waitress_serve(wsgi_dispatcher, listen='*:5483')
+    else:
         app.run(host='0.0.0.0', port=5483)
