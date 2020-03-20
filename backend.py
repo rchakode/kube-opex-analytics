@@ -45,7 +45,7 @@ def create_directory_if_not_exists(path):
 
 
 class Config:
-    version = '0.4.8'
+    version = '0.5.0'
     db_round_decimals = 6
     db_non_allocatable = 'non-allocatable'
     db_billing_hourly_rate = '.billing-hourly-rate'
@@ -148,7 +148,7 @@ app = flask.Flask(__name__, static_url_path=KOA_CONFIG.static_content_location, 
 cors = CORS(app, resources={r"/dataset/*": {"origins": "127.0.0.1"}})
 
 # Add prometheus wsgi middleware to route /metrics requests
-dispatcher_middleware = wsgi.DispatcherMiddleware(app, {
+wsgi_dispatcher = wsgi.DispatcherMiddleware(app, {
     '/metrics': prometheus_client.make_wsgi_app()
 })
 
@@ -736,6 +736,6 @@ if __name__ == '__main__':
     th_exporter.start()
 
     if not KOA_CONFIG.enable_debug:
-        waitress_serve(dispatcher_middleware, listen='*:5483')
+        waitress_serve(wsgi_dispatcher, listen='*:5483')
     else:
         app.run(host='0.0.0.0', port=5483)
