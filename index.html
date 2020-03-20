@@ -69,9 +69,6 @@
 <div class="container">
     <div class="row">
         <div class="col-md-12">
-            <div class="page-header">
-                <h1 id="title-container">Kubernetes Resource Usage Analytics - <span id="cost-model"></span></h1>
-            </div>
             <div id="error-message-container">
                 <div class="alert alert-danger alert-dismissible">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
@@ -96,8 +93,9 @@
                             <span class="tricolon"></span>
                         </button>
                         <ul class="dropdown-menu">
-                            <li class="disabled"><a id="usage-cpu-trends-json"  class="dropdown-item" href="#">Export JSON</a></li>
-                            <li class="disabled"><a id="usage-cpu-trends-csv"  class="dropdown-item" href="#">Export CSV</a></li>
+                            <li class="disabled"><a id="usage-cpu-trends-png"  class="dropdown-item" href="#">Export as PNG</a></li>
+                            <li class="disabled"><a id="usage-cpu-trends-json"  class="dropdown-item" href="#">Export as JSON</a></li>
+                            <li class="disabled"><a id="usage-cpu-trends-csv"  class="dropdown-item" href="#">Export as CSV</a></li>
                         </ul>
                     </div>
                 </div>
@@ -116,8 +114,9 @@
                             <span class="tricolon"></span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-right">
-                            <li class="disabled"><a id="usage-memory-trends-json"  class="dropdown-item" href="#">Export JSON</a></li>
-                            <li class="disabled"><a id="usage-memory-trends-csv"  class="dropdown-item" href="#">Export CSV</a></li>
+                            <li class="disabled"><a id="usage-memory-trends-png"  class="dropdown-item" href="#">Export as PNG</a></li>
+                            <li class="disabled"><a id="usage-memory-trends-json"  class="dropdown-item" href="#">Export as JSON</a></li>
+                            <li class="disabled"><a id="usage-memory-trends-csv"  class="dropdown-item" href="#">Export as CSV</a></li>
                         </ul>
                     </div>
                 </div>
@@ -137,8 +136,9 @@
                             <span class="tricolon"></span>
                         </button>
                         <ul class="dropdown-menu">
-                            <li class="disabled"><a id="daily-cpu-usage-json"  class="dropdown-item" href="#">Export JSON</a></li>
-                            <li class="disabled"><a id="daily-cpu-usage-csv"  class="dropdown-item" href="#">Export CSV</a></li>
+                            <li class="disabled"><a id="daily-cpu-usage-png"  class="dropdown-item" href="#">Export as PNG</a></li>
+                            <li class="disabled"><a id="daily-cpu-usage-json"  class="dropdown-item" href="#">Export as JSON</a></li>
+                            <li class="disabled"><a id="daily-cpu-usage-csv"  class="dropdown-item" href="#">Export as CSV</a></li>
                         </ul>
                     </div>
                 </div>
@@ -156,8 +156,9 @@
                             <span class="tricolon"></span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-right">
-                            <li class="disabled"><a id="daily-memory-usage-json"  class="dropdown-item" href="#">Export JSON</a></li>
-                            <li class="disabled"><a id="daily-memory-usage-csv"  class="dropdown-item" href="#">Export CSV</a></li>
+                            <li class="disabled"><a id="daily-memory-usage-png"  class="dropdown-item" href="#">Export as PNG</a></li>
+                            <li class="disabled"><a id="daily-memory-usage-json"  class="dropdown-item" href="#">Export as JSON</a></li>
+                            <li class="disabled"><a id="daily-memory-usage-csv"  class="dropdown-item" href="#">Export as CSV</a></li>
                         </ul>
                     </div>
                 </div>
@@ -177,8 +178,9 @@
                             <span class="tricolon"></span>
                         </button>
                         <ul class="dropdown-menu">
-                            <li class="disabled"><a id="monthly-cpu-usage-json"  class="dropdown-item" href="#">Export JSON</a></li>
-                            <li class="disabled"><a id="monthly-cpu-usage-csv"  class="dropdown-item" href="#">Export CSV</a></li>
+                            <li class="disabled"><a id="monthly-cpu-usage-png"  class="dropdown-item" href="#">Export as PNG</a></li>
+                            <li class="disabled"><a id="monthly-cpu-usage-json"  class="dropdown-item" href="#">Export as JSON</a></li>
+                            <li class="disabled"><a id="monthly-cpu-usage-csv"  class="dropdown-item" href="#">Export as CSV</a></li>
                         </ul>
                     </div>
                 </div>
@@ -196,8 +198,9 @@
                             <span class="tricolon"></span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-right">
-                            <li class="disabled"><a id="monthly-memory-usage-json"  class="dropdown-item" href="#">Export JSON</a></li>
-                            <li class="disabled"><a id="monthly-memory-usage-csv"  class="dropdown-item" href="#">Export CSV</a></li>
+                            <li class="disabled"><a id="monthly-memory-usage-png"  class="dropdown-item" href="#">Export as PNG</a></li>
+                            <li class="disabled"><a id="monthly-memory-usage-json"  class="dropdown-item" href="#">Export as JSON</a></li>
+                            <li class="disabled"><a id="monthly-memory-usage-csv"  class="dropdown-item" href="#">Export as CSV</a></li>
                         </ul>
                     </div>
                 </div>
@@ -281,9 +284,7 @@
                 <li>|</li>
                 <li>Copyright &copy; 2019 <a href="https://www.linkedin.com/in/rodriguechakode">Rodrigue Chakode</a> and contributors</li>
                 <li>|</li>
-                <li>Released under <a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a></li>
-                <li>|</li>
-                <li><a href="https://twitter.com/realopinsight">Twitter</a></li>
+                <li><a href="http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a></li>
                 <li>|</li>
                 <li><a href="https://github.com/rchakode/kube-opex-analytics">GitHub</a></li>
                 <li>|</li>

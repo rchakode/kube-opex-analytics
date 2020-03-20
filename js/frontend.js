@@ -191,10 +191,6 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
 
                 let tooltipContainer = d3Selection.select('.'+targetDivContainer+' .metadata-group .vertical-marker-container');
                 tooltipContainer.datum([]).call(chartTooltip);
-
-                d3Selection.select('#button').on('click', function() {
-                    myStackedAreaChart.exportChart('stacked-area.png', chartTitle);
-                });
             }
         }
 
@@ -254,10 +250,6 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
 
                 let tooltipContainer = d3Selection.select('.'+targetDivContainer+' .metadata-group');
                 tooltipContainer.datum([]).call(chartTooltip);
-
-                d3Selection.select('#button').on('click', function() {
-                    stackedBar.exportChart('stacked-bar.png', chartTitle);
-                });
             }
         }
 
@@ -268,10 +260,6 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             let containerWidth = donutContainer.node() ? donutContainer.node().getBoundingClientRect().width : false;
 
             if (containerWidth) {
-                d3Selection.select('#button').on('click', function() {
-                    myDonutChart.exportChart();
-                });
-
                 myDonutChart
                     .isAnimated(true)
                     .highlightSliceById(2)
@@ -291,10 +279,6 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 }
 
                 donutContainer.datum(dataset).call(myDonutChart);
-
-                d3Selection.select('#button').on('click', function() {
-                    myDonutChart.exportChart('donut.png', chartTitle);
-                });
             }
         }
 
@@ -522,7 +506,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             return new Blob(
                 [JSON.stringify(data)],
                 {type: 'application/json'})
-        }
+        }     
 
         function exportCSV(data) {
             data = JSON.parse(JSON.stringify(data));
@@ -544,6 +528,13 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 [csv],
                 {type: 'text/csv;charset=utf-8'})
         }
+
+        function exportImage(chartElt, filename) {
+            return new Blob(
+                [chartElt.exportChart(filename)],
+                {type: 'image/png'})
+               ;
+        }   
 
         function installExporter(targetDivId, filename, exporterFunc) {
             $(`#${targetDivId}`)
@@ -593,6 +584,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 url: frontendDataDir+'/cpu_usage_trends.json',
                 dataType: 'json',
                 success: function(data) {
+                    installExporter( 'usage-cpu-trends-png', '', () => exportImage(cpuUsageTrendsChart, 'cpu_usage_trends.png'));
                     installExporter( 'usage-cpu-trends-json', 'cpu_usage_trends.json', () => exportJSON(data));
                     installExporter( 'usage-cpu-trends-csv', 'cpu_usage_trends.csv', () => exportCSV(data));
 
@@ -615,6 +607,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 url: frontendDataDir+'/memory_usage_trends.json',
                 dataType: 'json',
                 success: function(data) {
+                    installExporter( 'usage-memory-trends-png', '', () => exportImage(memoryUsageTrendsChart, 'memory_usage_trends.png'));
                     installExporter( 'usage-memory-trends-json', 'memory_usage_trends.json', () => exportJSON(data));
                     installExporter( 'usage-memory-trends-csv', 'memory_usage_trends.csv', () => exportCSV(data));
 
@@ -636,6 +629,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 url: frontendDataDir+'/cpu_usage_period_1209600.json',
                 dataType: 'json',
                 success: function(data) {
+                    installExporter( 'daily-cpu-usage-png', '', () => exportImage(dailyCpuUsageChart, 'cpu_usage_period_14d.png'));
                     installExporter( 'daily-cpu-usage-json', 'cpu_usage_period_14d.json', () => exportJSON(data));
                     installExporter( 'daily-cpu-usage-csv', 'cpu_usage_period_14d.csv', () => exportCSV(data));
 
@@ -658,6 +652,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 url: frontendDataDir+'/memory_usage_period_1209600.json',
                 dataType: 'json',
                 success: function(data) {
+                    installExporter( 'daily-memory-usage-png', '', () => exportImage(dailyMemoryUsageChart, 'memory_usage_period_14d.png'));
                     installExporter( 'daily-memory-usage-json', 'memory_usage_period_14d.json', () => exportJSON(data));
                     installExporter( 'daily-memory-usage-csv', 'memory_usage_period_14d.csv', () => exportCSV(data));
 
@@ -679,6 +674,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 url: frontendDataDir+'/cpu_usage_period_31968000.json',
                 dataType: 'json',
                 success: function(data) {
+                    installExporter( 'monthly-cpu-usage-png', 'monthly-cpu-usage.png', () => exportImage(monthlyCpuUsageChart));
                     installExporter( 'monthly-cpu-usage-json', 'cpu_usage_period_12m.json', () => exportJSON(data));
                     installExporter( 'monthly-cpu-usage-csv', 'cpu_usage_period_12m.csv', () => exportCSV(data));
 
@@ -700,6 +696,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 url: frontendDataDir+'/memory_usage_period_31968000.json',
                 dataType: 'json',
                 success: function(data) {
+                    installExporter( 'monthly-memory-usage-png', '', () => exportImage(monthlyMemoryUsageChart, 'monthly-memory-usage.png'));
                     installExporter( 'monthly-memory-usage-json', 'memory_usage_period_12m.json', () => exportJSON(data));
                     installExporter( 'monthly-memory-usage-csv', 'memory_usage_period_12m.csv', () => exportCSV(data));
 
