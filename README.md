@@ -11,18 +11,22 @@
   - [Goals](#goals)
   - [Concepts](#concepts)
   - [Cost Models](#cost-models)
-  - [Screenshorts](#screenshorts)
-    - [Last Week Hourly Resource Usage Trends](#last-week-hourly-resource-usage-trends)
-    - [Two-weeks Daily CPU and Memory Usage](#two-weeks-daily-cpu-and-memory-usage)
-    - [One-year Monthly CPU and Memory Usage](#one-year-monthly-cpu-and-memory-usage)
-    - [Last Nodes' Occupation by Pods](#last-nodes-occupation-by-pods)
-    - [Grafana Dashboard](#grafana-dashboard)
-  - [Getting Started](#getting-started)
+- [Screenshorts](#screenshorts)
+  - [Last Week Hourly Resource Usage Trends](#last-week-hourly-resource-usage-trends)
+  - [Two-weeks Daily CPU and Memory Usage](#two-weeks-daily-cpu-and-memory-usage)
+  - [One-year Monthly CPU and Memory Usage](#one-year-monthly-cpu-and-memory-usage)
+  - [Last Nodes' Occupation by Pods](#last-nodes-occupation-by-pods)
+  - [Grafana Dashboard](#grafana-dashboard)
+- [Getting Started](#getting-started)
   - [Kubernetes API Access](#kubernetes-api-access)
   - [Configuration Variables](#configuration-variables)
   - [Deployment on Docker](#deployment-on-docker)
     - [Get Access to the User Interface](#get-access-to-the-user-interface)
   - [Deployment on a Kubernetes cluster](#deployment-on-a-kubernetes-cluster)
+    - [Installation using Helm 2 (i.e. with tiller)](#installation-using-helm-2-ie-with-tiller)
+    - [Installation using Helm 3 (i.e. without tiller)](#installation-using-helm-3-ie-without-tiller)
+    - [Installation using Kubectl](#installation-using-kubectl)
+    - [Get Access to UI Service](#get-access-to-ui-service)
   - [Prometheus Exporter](#prometheus-exporter)
   - [Export Charts and Datasets (PNG, CSV, JSON)](#export-charts-and-datasets-png-csv-json)
 - [License & Copyrights](#license--copyrights)
@@ -62,27 +66,27 @@ Cost allocation models can be set through the startup configuration variable `KO
 
 Refer to the [Configuration](#config-variables) section for more details.
 
-## Screenshorts
+# Screenshorts
 <a name="screenshorts"></a>
 
 You can find below screenshorts of built-in charts.
 
-### Last Week Hourly Resource Usage Trends
+## Last Week Hourly Resource Usage Trends
 
 ![](./screenshots/sample-one-week-hourly-usage.png)
 
-### Two-weeks Daily CPU and Memory Usage
+## Two-weeks Daily CPU and Memory Usage
 
 ![](./screenshots/sample-two-weeks-daily-usage.png)
 
-### One-year Monthly CPU and Memory Usage
+## One-year Monthly CPU and Memory Usage
 
 ![](./screenshots/sample-one-year-monthly-usage.png)
 
-### Last Nodes' Occupation by Pods
+## Last Nodes' Occupation by Pods
 ![](./screenshots/sample-last-nodes-occupation-by-pods.png)
 
-### Grafana Dashboard
+## Grafana Dashboard
 <a name="grafana-dashboard"></a> 
 
 You can either build your own dashboard or use our [official one](https://grafana.com/dashboards/10282).
@@ -100,7 +104,7 @@ The dashboard currently provides the following reports:
 ![](./screenshots/kube-opex-analytics-grafana.png)
 
 
-## Getting Started
+# Getting Started
 <a name="getting-started"></a>
 
 ## Kubernetes API Access
@@ -167,27 +171,46 @@ For instance, if you're running Docker on your local machine the interface will 
 ## Deployment on a Kubernetes cluster
 <a name="deployment-on-a-kubernetes-cluster"></a>
 
-There is a [Helm chart](./helm/) to ease the deployment on Kubernetes, either by using `Helm Tiller` or `kubectl`.
+There is a [Helm chart](./helm/) to ease the deployment on Kubernetes using, either `Helm 2` (i.e with [`Tiller`](https://v2.helm.sh/docs/install/)), Helm 3 (without `Tiller`) or `kubectl`.
 
-In both cases check the [values.yaml](./helm/kube-opex-analytics/values.yaml) file to modify the configuration options according to your needs (e.g. to enable persistent volume for data storage, Prometheus Operator/ServiceMonitor, security context, etc).
+In each of the cases, check the [values.yaml](./helm/kube-opex-analytics/values.yaml) file to customize the configuration options according to your specific requirements. 
 
-> **Note on Security Context:**
-> Prior to version `0.4.2` `kube-opex-analytics`'s pods were deployed in privileged mode, meaning that, the container program was executed as `root`. That was causing some warnings to be prompted during the startup (e.g. issue #15); even worse, on Kubernetes clusters with strong security policies, the execution of the container was prevented.
-> As of version `0.4.2` a Kubernetes Security Context has been introduced to configure the pod to be launched in unprivileged mode by default. However, for backward compatibility, it it's still possible to launch the pod in privileged mode by setting the Helm configuration value `securityContext.enabled` to `false`.
+In particular, you may need to customize the default settings used for the persistent data volume, the Prometheus Operator and its ServiceMonitor, the security context, and many others.
 
+> **Note on the Security Context:**
+> Prior to version `0.4.2` `kube-opex-analytics`'s pods were deployed in privileged mode, meaning that the container program was executed as `root`. That was causing some warnings to be prompted during the startup (e.g. issue #15). Even worse, on Kubernetes clusters with strong security policies the execution of the container was prevented. Starting from version `0.4.2` Security Context settings have been introduced to configure the pod to be launched in unprivileged mode by default. However, for backward compatibility, it's still possible to launch the pod in privileged mode by setting the Helm configuration value `securityContext.enabled` to `false`.
 
-In the following deployment commands it's assumed that the target namespace `kube-opex-analytics` exists. If not yet the case create it first, or alternatively you can use any other namespace of your choice.
+In the next deployment commands, it's assumed that the target namespace `kube-opex-analytics` exists. You thus need to create it first or, alternatively, adapt the commands to use any other namespace of your choice.
 
-Using `Helm Tiller`:
+### Installation using Helm 2 (i.e. with tiller)
+<a name="installation-using-helm-2-ie-with-tiller"></a>
 
-```
-$ helm upgrade \
+Helm 2 requires to have [`tiller`](https://v2.helm.sh/docs/install/) installed on the cluster.
+
+```bash
+helm upgrade \
   --namespace kube-opex-analytics \
   --install kube-opex-analytics \
   helm/kube-opex-analytics/
 ```
 
-Using `kubectl`:
+### Installation using Helm 3 (i.e. without tiller)
+<a name="installation-using-helm-3-ie-without-tiller"></a>
+
+Helm 3 does not longer require to have [`tiller`](https://v2.helm.sh/docs/install/).
+
+**Warning**: This approach will work with a fresh installation of `kube-opex-analytics` or a former version installed with Helm 3. Indeeed, this procedure [may fail](https://github.com/helm/helm/issues/6850) if you already have a version installed using Helm 2 or `kubectl`.
+
+```bash
+helm upgrade \
+  --namespace kube-opex-analytics \
+  --install kube-opex-analytics \
+  helm/kube-opex-analytics/
+```
+
+### Installation using Kubectl
+<a name="installation-using-kubectl"></a>
+This approach requires to have the Helm client (version 2 or 3) installed to generate a raw template for kubectl.
 
 ```
 $ helm template \
@@ -196,7 +219,10 @@ $ helm template \
   helm/kube-opex-analytics/ | kubectl apply -f -
 ```
 
-> This will also deploy an HTTP service named `kube-opex-analytics` on port `80` in the selected namespace. This service enables access to the built-in dashboard of `kube-opex-analytics`.
+### Get Access to UI Service
+<a name="get-access-to-ui-service"></a>
+
+The Helm deploys an HTTP service named `kube-opex-analytics` on port `80` in the selected namespace, providing to the built-in dashboard of `kube-opex-analytics`.
 
 ## Prometheus Exporter
 <a name="prometheus-exporter"></a>
