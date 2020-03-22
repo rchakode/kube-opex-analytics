@@ -258,12 +258,11 @@ The exportation steps are the following:
 
 * Get access to kube-opex-analytics's interface.
 * Go to the chart that you want to export dataset.
-* Click on the `tricolon` icon near the chart title, and select the desired format for export.
-  
+* Click on the `tricolon` icon near the chart title, then select the desired export format.
+ 
   ![](./screenshots/export-menu.png)
 
-* Choose a destination filename.
-* You're done, you can now use the dataset to generate other custom analytics according to your specific needs.
+* You're done, the last step shall download the result file instantly.
 
 # License & Copyrights
 <a name="license--copyrights"></a>
