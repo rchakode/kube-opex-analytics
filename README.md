@@ -155,8 +155,8 @@ $ docker run -d \
 
 In this command:
 
- * We provide a local path `/var/lib/kube-opex-analytics` as data volume for the container. That's where `kube-opex-analytics` will store its internal analytics data. You can change the local path to another location, but you MUST take care to adapt the `KOA_DB_LOCATION` environment variable accordingly.
- * The environment variable `KOA_DB_LOCATION` points to the path to use by `kube-opex-analytics` to store its internal data. You can remark that this directory belongs to the data volume atached to the container.
+ * We provide a local path `/var/lib/kube-opex-analytics` as data volume for the container. That's where `kube-opex-analytics` will store its internal analytics data. You can change this local path to another location, but please keep the container volume `/data` as is.
+ * The environment variable `KOA_DB_LOCATION` points to the container path to store data. You may note that this directory belongs to the data volume atached to the container.
  * The environment variable `KOA_K8S_API_ENDPOINT` set the address of the Kubernetes API endpoint.
 
 ### Get Access to the User Interface
@@ -199,7 +199,7 @@ helm upgrade \
 
 Helm 3 does not longer require to have [`tiller`](https://v2.helm.sh/docs/install/).
 
-**Warning**: This approach will work with a fresh installation of `kube-opex-analytics` or a former version installed with Helm 3. Indeeed, this procedure [may fail](https://github.com/helm/helm/issues/6850) if you already have a version installed using Helm 2 or `kubectl`.
+As a consequence the below command shall work with a fresh installation of `kube-opex-analytics` or a former version installed with Helm 3. There is a [known issue](https://github.com/helm/helm/issues/6850) when there is already a version not installed Helm 3.
 
 ```bash
 helm upgrade \
