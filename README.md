@@ -64,7 +64,7 @@ Cost allocation models can be set through the startup configuration variable `KO
 * `RATIO`: compute costs as normalized ratios (`%`) of resource usage during each period of time.
 * `CHARGE_BACK`: compute actual costs using a given cluster hourly rate and the cumulative resource usage during each period of time.
 
-Refer to the [Configuration](#config-variables) section for more details.
+Read the [Configuration](#configuration-variables) section for more details.
 
 # Screenshorts
 <a name="screenshorts"></a>
