@@ -15,7 +15,7 @@
   - [Last Week Hourly Resource Usage Trends](#last-week-hourly-resource-usage-trends)
   - [Two-weeks Daily CPU and Memory Usage](#two-weeks-daily-cpu-and-memory-usage)
   - [One-year Monthly CPU and Memory Usage](#one-year-monthly-cpu-and-memory-usage)
-  - [Last Nodes' Occupation by Pods](#last-nodes-occupation-by-pods)
+  - [Nodes' Occupation by Pods](#nodes-occupation-by-pods)
   - [Grafana Dashboard](#grafana-dashboard)
 - [Getting Started](#getting-started)
   - [Kubernetes API Access](#kubernetes-api-access)
@@ -46,10 +46,10 @@ Actually, `kube-opex-analytics` periodically collects CPU and memory usage metri
 ## Concepts
 <a name="concepts"></a>
 
-`kube-opex-analytics` enables cost allocation and capacity planning analytics based on the following core features:
+`kube-opex-analytics` is designed atop the following core concepts and features:
 
-* **Namespace-focused:** Means that consolidated resource usage metrics consider individual namespaces as fundamental units for resource sharing. A special care is taken to also account and highlight non-allocatable resources .
-* **Hourly Usage & Trends:** Like on public clouds, resource use for each namespace is consolidated on a hourly-basic. This actually corresponds to the ratio (%) of resource used per namespace during each hour. It's the foundation for cost calculation and also allows to get over time trends about resources being consuming per namespace and also at the Kubernetes cluster scale.
+* **Namespace-focused:** Means that consolidated resource usage metrics consider individual namespaces as fundamental units for resource sharing. A special care is taken to also account and highlight `non-allocatable` resources .
+* **Hourly Usage & Trends:** Like on public clouds, resource consumption for each namespace is consolidated on a hourly-basic. This actually corresponds to the ratio (%) of resource used per namespace during each hour. It's the foundation for cost calculation and also allows to get over time trends about resources being consuming per namespace and also at the Kubernetes cluster scale.
 * **Daily and Monthly Usage Costs:** Provides for each period (daily/monthly), namespace, and resource type (CPU/memory), consolidated cost computed given one of the following ways: (i) accumulated hourly usage over the period; (ii) actual costs computed based on resource usage and a given hourly billing rate; (iii) normalized ratio of usage per namespace compared against the global cluster usage.
 * **Occupation of Nodes by Namespaced Pods:** Highlights for each node the share of resources used by active pods labelled by their namespace.
 * **Efficient Visualization:** For metrics generated, `kube-opex-analytics` provides dashboards with relevant charts covering as well the last couple of hours than the last 12 months (i.e. year). For this there are **built-in charts**, a **Prometheus Exporter** along with **Grafana Dashboard** that all work out of the box.
@@ -83,7 +83,7 @@ You can find below screenshorts of built-in charts.
 
 ![](./screenshots/sample-one-year-monthly-usage.png)
 
-## Last Nodes' Occupation by Pods
+## Nodes' Occupation by Pods
 ![](./screenshots/sample-last-nodes-occupation-by-pods.png)
 
 ## Grafana Dashboard
