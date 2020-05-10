@@ -1,4 +1,4 @@
-![](https://github.com/rchakode/kube-opex-analytics/blob/master/kube-opex-analytics.png)
+![](/assets/img/logo.png)
 
 ![](https://img.shields.io/github/license/rchakode/kube-opex-analytics.svg?label=License)
 [![Actions Status](https://github.com/rchakode/kube-opex-analytics/workflows/Build/badge.svg)](https://github.com/rchakode/kube-opex-analytics/actions)
