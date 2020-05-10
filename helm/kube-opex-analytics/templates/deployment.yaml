@@ -33,7 +33,7 @@ spec:
       restartPolicy: Always
       containers:
         - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:{{ .Chart.Version }}"
+          image: "{{ .Values.image.repository }}:{{ include "kube-opex-analytics.imageVersion" . }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- if .Values.envs }}
           env:
