@@ -13,6 +13,7 @@ envs:
 dataVolume:
   persist: true
   capacity: 4Gi
+#  storageClass: default
 
 prometheusOperator:
   enabled: false
