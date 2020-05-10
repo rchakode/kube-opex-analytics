@@ -67,7 +67,7 @@ spec:
       accessModes:
         - ReadWriteOnce
 {{- if .Values.dataVolume.storageClass }}
-      storageClassName: .Values.dataVolume.storageClass
+      storageClassName: {{ .Values.dataVolume.storageClass }}
 {{- end }}
       resources:
         requests:
