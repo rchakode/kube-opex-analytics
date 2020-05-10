@@ -73,13 +73,13 @@ class Config:
         create_directory_if_not_exists(self.frontend_data_location)
         with open(str('%s/backend.json' % self.frontend_data_location), 'w') as fd:
             if self.cost_model == 'CHARGE_BACK':
-                cost_model_label = 'Charge Back'
+                cost_model_label = 'actual costs'
                 cost_model_unit = self.billing_currency
             elif self.cost_model == 'RATIO':
-                cost_model_label = 'Normalized Ratio'
+                cost_model_label = 'normalized ratio'
                 cost_model_unit = '%'
             else:
-                cost_model_label = 'Cumulative Ratio'
+                cost_model_label = 'cumulative ratio'
                 cost_model_unit = '%'
             fd.write('{"cost_model":"%s", "currency":"%s"}' % (cost_model_label, cost_model_unit))
 

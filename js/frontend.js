@@ -565,7 +565,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                     $("#cost-model").text(backend_config.cost_model+' ('+backend_config.currency+')');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
-                    $("#cost-model").text('Ratio (%)');
+                    $("#cost-model").text('%');
                     console.log('failed loading backend config (',xhr.status, ' error)')
                 }
             });
