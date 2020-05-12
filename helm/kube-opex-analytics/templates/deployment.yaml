@@ -26,8 +26,8 @@ spec:
     spec:
       {{- if .Values.securityContext.enabled }}
       securityContext:
-        runAsUser: 830405
-        fsGroup: 830405
+        runAsUser: 60000
+        fsGroup: 60000
       {{- end }}
       serviceAccountName: {{ include "kube-opex-analytics.fullname" . }}
       restartPolicy: Always
