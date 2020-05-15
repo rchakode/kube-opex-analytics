@@ -199,7 +199,7 @@ helm upgrade \
 
 Helm 3 does not longer require to have [`tiller`](https://v2.helm.sh/docs/install/).
 
-As a consequence the below command shall work with a fresh installation of `kube-opex-analytics` or a former version installed with Helm 3. There is a [known issue](https://github.com/helm/helm/issues/6850) when there is already a version not installed Helm 3.
+As a consequence the below command shall work with a fresh installation of `kube-opex-analytics` or a former version installed with Helm 3. There is a [known issue](https://github.com/helm/helm/issues/6850) when there is already a version not installed with Helm 3.
 
 ```bash
 helm upgrade \
