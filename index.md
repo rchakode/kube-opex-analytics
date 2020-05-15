@@ -1,4 +1,4 @@
-![](/assets/img/logo.png)
+![](https://github.com/rchakode/kube-opex-analytics/blob/master/kube-opex-analytics.png)
 
 ![](https://img.shields.io/github/license/rchakode/kube-opex-analytics.svg?label=License)
 [![Actions Status](https://github.com/rchakode/kube-opex-analytics/workflows/Build/badge.svg)](https://github.com/rchakode/kube-opex-analytics/actions)
@@ -6,6 +6,7 @@
 
 
 # Table of Contents
+- [Table of Contents](#table-of-contents)
 - [Overview](#overview)
   - [Goals](#goals)
   - [Concepts](#concepts)
@@ -176,8 +177,8 @@ In each of the cases, check the [values.yaml](./helm/kube-opex-analytics/values.
 
 In particular, you may need to customize the default settings used for the persistent data volume, the Prometheus Operator and its ServiceMonitor, the security context, and many others.
 
-> **Note on the Security Context:**
-> Prior to version `0.4.2` `kube-opex-analytics`'s pods were deployed in privileged mode, meaning that the container program was executed as `root`. That was causing some warnings to be prompted during the startup (e.g. issue #15). Even worse, on Kubernetes clusters with strong security policies the execution of the container was prevented. Starting from version `0.4.2` Security Context settings have been introduced to configure the pod to be launched in unprivileged mode by default. However, for backward compatibility, it's still possible to launch the pod in privileged mode by setting the Helm configuration value `securityContext.enabled` to `false`.
+> **Security Context:**
+> `kube-opex-analytics`'s pod is deployed with a unprivileged security context by default. However, if needed, it's possible to launch the pod in privileged mode by setting the Helm configuration value `securityContext.enabled` to `false`.
 
 In the next deployment commands, it's assumed that the target namespace `kube-opex-analytics` exists. You thus need to create it first or, alternatively, adapt the commands to use any other namespace of your choice.
 
@@ -198,7 +199,7 @@ helm upgrade \
 
 Helm 3 does not longer require to have [`tiller`](https://v2.helm.sh/docs/install/).
 
-As a consequence the below command shall work with a fresh installation of `kube-opex-analytics` or a former version installed with Helm 3. There is a [known issue](https://github.com/helm/helm/issues/6850) when there is already a version not installed Helm 3.
+As a consequence the below command shall work with a fresh installation of `kube-opex-analytics` or a former version installed with Helm 3. There is a [known issue](https://github.com/helm/helm/issues/6850) when there is already a version not installed with Helm 3.
 
 ```bash
 helm upgrade \
