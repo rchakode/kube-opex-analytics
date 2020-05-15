@@ -177,8 +177,8 @@ In each of the cases, check the [values.yaml](./helm/kube-opex-analytics/values.
 
 In particular, you may need to customize the default settings used for the persistent data volume, the Prometheus Operator and its ServiceMonitor, the security context, and many others.
 
-> **Note on the Security Context:**
-> Prior to version `0.4.2` `kube-opex-analytics`'s pods were deployed in privileged mode, meaning that the container program was executed as `root`. That was causing some warnings to be prompted during the startup (e.g. issue #15). Even worse, on Kubernetes clusters with strong security policies the execution of the container was prevented. Starting from version `0.4.2` Security Context settings have been introduced to configure the pod to be launched in unprivileged mode by default. However, for backward compatibility, it's still possible to launch the pod in privileged mode by setting the Helm configuration value `securityContext.enabled` to `false`.
+> **Security Context:**
+> `kube-opex-analytics`'s pod is deployed with a unprivileged security context by default. However, if needed, it's possible to launch the pod in privileged mode by setting the Helm configuration value `securityContext.enabled` to `false`.
 
 In the next deployment commands, it's assumed that the target namespace `kube-opex-analytics` exists. You thus need to create it first or, alternatively, adapt the commands to use any other namespace of your choice.
 
