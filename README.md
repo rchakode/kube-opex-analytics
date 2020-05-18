@@ -214,8 +214,8 @@ This approach requires to have the Helm client (version 2 or 3) installed to gen
 
 ```
 $ helm template \
+  kube-opex-analytics \
   --namespace kube-opex-analytics \
-  --name kube-opex-analytics \
   helm/kube-opex-analytics/ | kubectl apply -f -
 ```
 

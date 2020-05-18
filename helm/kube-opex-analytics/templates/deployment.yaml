@@ -24,24 +24,24 @@ spec:
         app.kubernetes.io/name: {{ include "kube-opex-analytics.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
-      {{- if .Values.securityContext.enabled }}
+    {{- if .Values.securityContext.enabled }}
       securityContext:
-        runAsUser: 60000
-        fsGroup: 60000
-      {{- end }}
+        runAsUser: {{ .Values.securityContext.uid }}
+        fsGroup: {{ .Values.securityContext.uid }}
       serviceAccountName: {{ include "kube-opex-analytics.fullname" . }}
-      restartPolicy: Always
+      restartPolicy: Always          
+    {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ include "kube-opex-analytics.imageVersion" . }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- if .Values.envs }}
+        {{- if .Values.envs }}
           env:
           {{- range $key, $val := .Values.envs }}
             - name: {{ $key | quote }}
               value: {{ $val | quote }}
           {{- end }}
-          {{- end }}
+        {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
@@ -66,9 +66,9 @@ spec:
     spec:
       accessModes:
         - ReadWriteOnce
-{{- if .Values.dataVolume.storageClass }}
+      {{- if .Values.dataVolume.storageClass }}
       storageClassName: {{ .Values.dataVolume.storageClass }}
-{{- end }}
+      {{- end }}
       resources:
         requests:
           storage: {{ .Values.dataVolume.capacity }}
