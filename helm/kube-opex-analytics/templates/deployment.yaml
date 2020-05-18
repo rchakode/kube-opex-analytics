@@ -27,7 +27,7 @@ spec:
     {{- if .Values.securityContext.enabled }}
       securityContext:
         runAsUser: {{ .Values.securityContext.uid }}
-        fsGroup: {{ .Values.securityContext.uid }}
+        fsGroup: {{ .Values.securityContext.gid }}
       serviceAccountName: {{ include "kube-opex-analytics.fullname" . }}
       restartPolicy: Always          
     {{- end }}
