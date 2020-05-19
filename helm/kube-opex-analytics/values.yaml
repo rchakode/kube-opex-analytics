@@ -48,16 +48,18 @@ ingress:
     - host: kube-opex-analytics.local
       paths: []
 # uncomment the following lines and ajust the values to enable TLS
-  # tls: 
+  # tls:
   #  - secretName: kube-opex-analytics-tls
   #    hosts:
   #      - kube-opex-analytics.local
 
+# priorityClassName: default
+
 resources: {}
 # No resource requests not limits is specified by default.
-# We leave this as a conscious choice for the user, as this increases chances charts run 
-# on environments with little resources, such as Minikube. 
-# If you do want to specify resources, uncomment the following lines, adjust them as necessary, 
+# We leave this as a conscious choice for the user, as this increases chances charts run
+# on environments with little resources, such as Minikube.
+# If you do want to specify resources, uncomment the following lines, adjust them as necessary,
 # and remove the curly braces after 'resources:'.
   # limits:
   #   cpu: 256m

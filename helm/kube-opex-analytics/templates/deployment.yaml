@@ -29,8 +29,11 @@ spec:
         runAsUser: {{ .Values.securityContext.uid }}
         fsGroup: {{ .Values.securityContext.gid }}
       serviceAccountName: {{ include "kube-opex-analytics.fullname" . }}
-      restartPolicy: Always          
+      restartPolicy: Always
     {{- end }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ include "kube-opex-analytics.imageVersion" . }}"
