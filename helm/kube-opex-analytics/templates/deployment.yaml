@@ -59,10 +59,15 @@ spec:
               port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-{{- if .Values.dataVolume.persist }}
           volumeMounts:
             - mountPath: /data/
               name: data-vol
+            - mountPath: /koa/static/data/
+              name: static-data-vol
+      volumes:
+      - name: static-data-vol
+        emptyDir: {}
+{{- if .Values.dataVolume.persist }}
   volumeClaimTemplates:
   - metadata:
       name: data-vol
@@ -75,6 +80,9 @@ spec:
       resources:
         requests:
           storage: {{ .Values.dataVolume.capacity }}
+{{- else }}
+      - name: data-vol
+        emptyDir: {}
 {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
