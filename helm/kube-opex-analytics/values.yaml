@@ -44,6 +44,8 @@ service:
 
 ingress:
   enabled: false
+  annotations: {}
+  labels: {}
   hosts:
     - host: kube-opex-analytics.local
       paths: []

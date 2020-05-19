@@ -7,9 +7,12 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kube-opex-analytics.labels" . | nindent 4 }}
+    {{- with .Values.ingress.labels }}
+    {{- toYaml . | trim | nindent 4 }}
+    {{- end }}
   {{- with .Values.ingress.annotations }}
   annotations:
-    {{- toYaml . | nindent 4 }}
+    {{- toYaml . | trim | nindent 4 }}
   {{- end }}
 spec:
 {{- if .Values.ingress.tls }}
