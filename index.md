@@ -9,14 +9,14 @@
 - [Table of Contents](#table-of-contents)
 - [Overview](#overview)
   - [Goals](#goals)
+  - [Screenshorts](#screenshorts)
+    - [Last Week Hourly Resource Usage Trends](#last-week-hourly-resource-usage-trends)
+    - [Two-weeks Daily CPU and Memory Usage](#two-weeks-daily-cpu-and-memory-usage)
+    - [One-year Monthly CPU and Memory Usage](#one-year-monthly-cpu-and-memory-usage)
+    - [Nodes' Occupation by Pods](#nodes-occupation-by-pods)
+    - [Grafana Dashboard](#grafana-dashboard)
   - [Concepts](#concepts)
   - [Cost Models](#cost-models)
-- [Screenshorts](#screenshorts)
-  - [Last Week Hourly Resource Usage Trends](#last-week-hourly-resource-usage-trends)
-  - [Two-weeks Daily CPU and Memory Usage](#two-weeks-daily-cpu-and-memory-usage)
-  - [One-year Monthly CPU and Memory Usage](#one-year-monthly-cpu-and-memory-usage)
-  - [Nodes' Occupation by Pods](#nodes-occupation-by-pods)
-  - [Grafana Dashboard](#grafana-dashboard)
 - [Getting Started](#getting-started)
   - [Kubernetes API Access](#kubernetes-api-access)
   - [Configuration Variables](#configuration-variables)
@@ -27,24 +27,43 @@
     - [Installation using Helm 3 (i.e. without tiller)](#installation-using-helm-3-ie-without-tiller)
     - [Installation using Kubectl](#installation-using-kubectl)
     - [Get Access to UI Service](#get-access-to-ui-service)
-  - [Prometheus Exporter](#prometheus-exporter)
   - [Export Charts and Datasets (PNG, CSV, JSON)](#export-charts-and-datasets-png-csv-json)
+  - [Prometheus Exporter](#prometheus-exporter)
+  - [Grafana Dashboard backed by the Built-in Prometheus Exporter](#grafana-dashboard-backed-by-the-built-in-prometheus-exporter)
 - [License & Copyrights](#license--copyrights)
 - [Support & Contributions](#support--contributions)
 
 # Overview
-<a name="overview"></a>
 
 ## Goals
-<a name="goals"></a>
-
 `kube-opex-analytics` or literally *Kubernetes Opex Analytics* is a tool to help organizations track the resources being consumed by their Kubernetes clusters to prevent overpaying. To do so it generates, short-, mid- and long-term usage reports showing relevant insights on what amount of resources each project is spending over time. The final **goal being to ease cost allocation and capacity planning decisions** with factual analytics.
 
 Actually, `kube-opex-analytics` periodically collects CPU and memory usage metrics from Kubernetes's APIs, processes and consolidates them over various time-aggregation perspectives (hourly, daily, monthly), to produce resource **usage reports covering up to a year**. The reports focus on namespace level, while a special care is taken to also account and highlight **shares of non-allocatable capacities**.
 
 
+## Screenshorts
+Before diving to concepts and technical details in the next sections, the below screenshots illustrate reports leveraged via the `kube-opex-analytics`'s built-in charts or via Grafana backed by the `kube-opex-analytics`'s built-in Prometheus exporter.
+
+### Last Week Hourly Resource Usage Trends
+
+![](./screenshots/sample-one-week-hourly-usage.png)
+
+### Two-weeks Daily CPU and Memory Usage
+
+![](./screenshots/sample-two-weeks-daily-usage.png)
+
+### One-year Monthly CPU and Memory Usage
+
+![](./screenshots/sample-one-year-monthly-usage.png)
+
+### Nodes' Occupation by Pods
+![](./screenshots/sample-last-nodes-occupation-by-pods.png)
+
+### Grafana Dashboard
+This is a screenshot of our [official one](https://grafana.com/dashboards/10282) backed by the `kube-opex-analytics`'s built-in Prometheus Exporter.
+![](./screenshots/kube-opex-analytics-grafana.png)
+
 ## Concepts
-<a name="concepts"></a>
 
 `kube-opex-analytics` is designed atop the following core concepts and features:
 
@@ -56,8 +75,6 @@ Actually, `kube-opex-analytics` periodically collects CPU and memory usage metri
 
 
 ## Cost Models
-<a name="cost-models"></a>
-
 Cost allocation models can be set through the startup configuration variable `KOA_COST_MODEL`. Possible values are:
 
 * `CUMULATIVE_RATIO`: (default value) compute costs as cumulative resource usage for each period of time (daily, monthly).
@@ -66,50 +83,9 @@ Cost allocation models can be set through the startup configuration variable `KO
 
 Read the [Configuration](#configuration-variables) section for more details.
 
-# Screenshorts
-<a name="screenshorts"></a>
-
-You can find below screenshorts of built-in charts.
-
-## Last Week Hourly Resource Usage Trends
-
-![](./screenshots/sample-one-week-hourly-usage.png)
-
-## Two-weeks Daily CPU and Memory Usage
-
-![](./screenshots/sample-two-weeks-daily-usage.png)
-
-## One-year Monthly CPU and Memory Usage
-
-![](./screenshots/sample-one-year-monthly-usage.png)
-
-## Nodes' Occupation by Pods
-![](./screenshots/sample-last-nodes-occupation-by-pods.png)
-
-## Grafana Dashboard
-<a name="grafana-dashboard"></a> 
-
-You can either build your own dashboard or use our [official one](https://grafana.com/dashboards/10282).
-
-Our official Grafana dashboard looks as below and is designed to work out-of-the box with the `kube-opex-analytics`'s [Prometheus exporter](#prometheus-exporter). It requires to set a Grafana varianle named `KOA_DS_PROMETHEUS`, which shall point to your Prometheus server data source.
-
-The dashboard currently provides the following reports:
-
-* Hourly resource usage over time.
-* Current day's ongoing resource usage.
-* Current month's ongoing resource usage.
-
-> You should notice those reports are less rich compared against the ones enabled by the built-in `kube-opex-analytics` dashboard. In particular, the daily and the monthly usage for the different namespaces are not stacked, neither than there are not analytics for past days and months. These limitations are inherent to how Grafana handles timeseries and bar charts.
-
-![](./screenshots/kube-opex-analytics-grafana.png)
-
-
 # Getting Started
-<a name="getting-started"></a>
 
 ## Kubernetes API Access
-<a name="kubernetes-api-access"></a>
-
 `kube-opex-analytics` needs read-only access to the following Kubernetes APIs.
 
 * /apis/metrics.k8s.io/v1beta1
@@ -128,7 +104,7 @@ $ kubectl proxy
 This will open a proxied access to Kubernetes API at `http://127.0.0.1:8001`.
 
 ## Configuration Variables
-<a name="configuration-variables"></a>
+These configuration variables shall be set as environment variables before the startup of the service. 
 
 `kube-opex-analytics` supports the following environment variables when it starts:
 * `KOA_DB_LOCATION` sets the path to use to store internal data. Typically when you consider to set a volume to store those data, you should also take care to set this path to belong to the mounting point.
@@ -139,8 +115,6 @@ This will open a proxied access to Kubernetes API at `http://127.0.0.1:8001`.
 
 
 ## Deployment on Docker
-<a name="deployment-on-docker"></a>
-
 `kube-opex-analytics` is released as a Docker image. So you can quickly start an instance of the service by running the following command:
 
 ```
@@ -160,8 +134,6 @@ In this command:
  * The environment variable `KOA_K8S_API_ENDPOINT` set the address of the Kubernetes API endpoint.
 
 ### Get Access to the User Interface
-<a name="get-access-to-the-user-interface"></a>
-
  Once the container started you can open access the `kube-opex-analytics`'s web interface at `http://<DOCKER_HOST>:5483/`. Where `<DOCKER_HOST>` should be replaced by the IP address or the hostmane of the Docker server.
 
 For instance, if you're running Docker on your local machine the interface will be available at: `http://127.0.0.1:5483/`
@@ -169,8 +141,6 @@ For instance, if you're running Docker on your local machine the interface will 
  > Due to the time needed to have sufficient data to consolidate, you may need to wait almost a hour to have all charts filled. This is a normal operations of `kube-opex-analytics`.
 
 ## Deployment on a Kubernetes cluster
-<a name="deployment-on-a-kubernetes-cluster"></a>
-
 There is a [Helm chart](./helm/) to ease the deployment on Kubernetes using, either `Helm 2` (i.e with [`Tiller`](https://v2.helm.sh/docs/install/)), Helm 3 (without `Tiller`) or `kubectl`.
 
 In each of the cases, check the [values.yaml](./helm/kube-opex-analytics/values.yaml) file to customize the configuration options according to your specific requirements. 
@@ -183,8 +153,6 @@ In particular, you may need to customize the default settings used for the persi
 In the next deployment commands, it's assumed that the target namespace `kube-opex-analytics` exists. You thus need to create it first or, alternatively, adapt the commands to use any other namespace of your choice.
 
 ### Installation using Helm 2 (i.e. with tiller)
-<a name="installation-using-helm-2-ie-with-tiller"></a>
-
 Helm 2 requires to have [`tiller`](https://v2.helm.sh/docs/install/) installed on the cluster.
 
 ```bash
@@ -195,7 +163,6 @@ helm upgrade \
 ```
 
 ### Installation using Helm 3 (i.e. without tiller)
-<a name="installation-using-helm-3-ie-without-tiller"></a>
 
 Helm 3 does not longer require to have [`tiller`](https://v2.helm.sh/docs/install/).
 
@@ -209,24 +176,34 @@ helm upgrade \
 ```
 
 ### Installation using Kubectl
-<a name="installation-using-kubectl"></a>
 This approach requires to have the Helm client (version 2 or 3) installed to generate a raw template for kubectl.
 
 ```
 $ helm template \
+  kube-opex-analytics \
   --namespace kube-opex-analytics \
-  --name kube-opex-analytics \
   helm/kube-opex-analytics/ | kubectl apply -f -
 ```
 
 ### Get Access to UI Service
-<a name="get-access-to-ui-service"></a>
-
 The Helm deploys an HTTP service named `kube-opex-analytics` on port `80` in the selected namespace, providing to the built-in dashboard of `kube-opex-analytics`.
 
-## Prometheus Exporter
-<a name="prometheus-exporter"></a>
 
+## Export Charts and Datasets (PNG, CSV, JSON)
+Any chart provided by kube-opex-analytics can be exported, either as PNG image, CSV or JSON data files.
+
+The exportation steps are the following:
+
+* Get access to kube-opex-analytics's interface.
+* Go to the chart that you want to export dataset.
+* Click on the `tricolon` icon near the chart title, then select the desired export format.
+ 
+  ![](./screenshots/export-menu.png)
+
+* You're done, the last step shall download the result file instantly.
+
+
+## Prometheus Exporter
 Starting from version `0.3.0`, `kube-opex-analytics` enables a Prometheus exporter through the endpoint `/metrics`.
 
 The exporter exposes the following metrics:
@@ -249,31 +226,27 @@ scrape_configs:
 > When the option `prometheusOperator` is enabled during the deployment (see Helm [values.yaml](./helm/kube-opex-analytics/values.yaml) file), you have nothing to do as the scraping should be automatically configured by the deployed `Prometheus ServiceMonitor`.
 
 
-## Export Charts and Datasets (PNG, CSV, JSON)
-<a name="export-charts-and-datasets-png-csv-json"></a>
+## Grafana Dashboard backed by the Built-in Prometheus Exporter
+You can either build your own Grafana dashboard or use our [official one](https://grafana.com/dashboards/10282).
 
-Any chart provided by kube-opex-analytics can be exported, either as PNG image, CSV or JSON data files.
+This official Grafana dashboard looks as below and is designed to work out-of-the box with the `kube-opex-analytics`'s [Prometheus exporter](#prometheus-exporter). It requires to set a Grafana varianle named `KOA_DS_PROMETHEUS`, which shall point to your Prometheus server data source.
 
-The exportation steps are the following:
+The dashboard currently provides the following reports:
 
-* Get access to kube-opex-analytics's interface.
-* Go to the chart that you want to export dataset.
-* Click on the `tricolon` icon near the chart title, then select the desired export format.
- 
-  ![](./screenshots/export-menu.png)
+* Hourly resource usage over time.
+* Current day's ongoing resource usage.
+* Current month's ongoing resource usage.
 
-* You're done, the last step shall download the result file instantly.
+> You should notice those reports are less rich compared against the ones enabled by the built-in `kube-opex-analytics` dashboard. In particular, the daily and the monthly usage for the different namespaces are not stacked, neither than there are not analytics for past days and months. These limitations are inherent to how Grafana handles timeseries and bar charts.
+
+![](./screenshots/kube-opex-analytics-grafana.png)
 
 # License & Copyrights
-<a name="license--copyrights"></a>
-
 This tool (code and documentation) is licensed under the terms of Apache License 2.0. Read the `LICENSE` file for more details on the license terms.
 
 The tool includes and is bound to third-party libraries provided with their owns licenses and copyrights. Read the `NOTICE` file for additional information.
 
 # Support & Contributions
-<a name="support--contributions"></a>
-
 We encourage feedback and always make our best to handle any troubles you may encounter when using this tool.
 
 Here is the link to submit issues: https://github.com/rchakode/kube-opex-analytics/issues.
