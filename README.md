@@ -1,8 +1,9 @@
-![](https://github.com/rchakode/kube-opex-analytics/blob/master/kube-opex-analytics.png)
+![logo](https://github.com/rchakode/kube-opex-analytics/blob/master/kube-opex-analytics.png)
 
-![](https://img.shields.io/github/license/rchakode/kube-opex-analytics.svg?label=License)
-[![Actions Status](https://github.com/rchakode/kube-opex-analytics/workflows/Build/badge.svg)](https://github.com/rchakode/kube-opex-analytics/actions)
-![](https://img.shields.io/docker/pulls/rchakode/kube-opex-analytics.svg?label=Docker%20Pulls)
+![Apache License](https://img.shields.io/github/license/rchakode/kube-opex-analytics.svg?label=License)
+[![Latest build status](https://github.com/rchakode/kube-opex-analytics/workflows/Build/badge.svg)](https://github.com/rchakode/kube-opex-analytics/actions)
+![Docker pulls](https://img.shields.io/docker/pulls/rchakode/kube-opex-analytics.svg?label=Docker%20Pulls)
+[![Calendar Versioning](https://img.shields.io/badge/calver-YY.MM.MICRO-bb8fce.svg)](http://calver.org)
 
 
 # Overview/Goal
@@ -28,8 +29,7 @@ In a nutshell, `kube-opex-analytics` or literally *Kubernetes Opex Analytics* is
   - [Deployment on Docker](#deployment-on-docker)
     - [Get Access to the User Interface](#get-access-to-the-user-interface)
   - [Deployment on a Kubernetes cluster](#deployment-on-a-kubernetes-cluster)
-    - [Installation using Helm 2 (i.e. with tiller)](#installation-using-helm-2-ie-with-tiller)
-    - [Installation using Helm 3 (i.e. without tiller)](#installation-using-helm-3-ie-without-tiller)
+    - [Installation using Helm](#installation-using-helm)
     - [Installation using Kubectl](#installation-using-kubectl)
     - [Get Access to UI Service](#get-access-to-ui-service)
   - [Export Charts and Datasets (PNG, CSV, JSON)](#export-charts-and-datasets-png-csv-json)
@@ -137,12 +137,12 @@ In this command:
 
 For instance, if you're running Docker on your local machine the interface will be available at: `http://127.0.0.1:5483/`
 
- > Due to the time needed to have sufficient data to consolidate, you may need to wait almost a hour to have all charts filled. This is a normal operations of `kube-opex-analytics`.
+ > You typically need to wait almost a hour to have all charts filled. This is a normal operations of `kube-opex-analytics` which is a hourly-based analytics tool.
 
 ## Deployment on a Kubernetes cluster
-There is a [Helm chart](./helm/) to ease the deployment on Kubernetes using, either `Helm 2` (i.e with [`Tiller`](https://v2.helm.sh/docs/install/)), Helm 3 (without `Tiller`) or `kubectl`.
+There is a [Helm chart](./helm/) to ease the deployment on Kubernetes using either `Helm` or `kubectl`.
 
-In each of the cases, check the [values.yaml](./helm/kube-opex-analytics/values.yaml) file to customize the configuration options according to your specific requirements. 
+First review the [values.yaml](./helm/kube-opex-analytics/values.yaml) file to customize the configuration options according to your specific environment. 
 
 In particular, you may need to customize the default settings used for the persistent data volume, the Prometheus Operator and its ServiceMonitor, the security context, and many others.
 
@@ -151,21 +151,8 @@ In particular, you may need to customize the default settings used for the persi
 
 In the next deployment commands, it's assumed that the target namespace `kube-opex-analytics` exists. You thus need to create it first or, alternatively, adapt the commands to use any other namespace of your choice.
 
-### Installation using Helm 2 (i.e. with tiller)
-Helm 2 requires to have [`tiller`](https://v2.helm.sh/docs/install/) installed on the cluster.
-
-```bash
-helm upgrade \
-  --namespace kube-opex-analytics \
-  --install kube-opex-analytics \
-  helm/kube-opex-analytics/
-```
-
-### Installation using Helm 3 (i.e. without tiller)
-
-Helm 3 does not longer require to have [`tiller`](https://v2.helm.sh/docs/install/).
-
-As a consequence the below command shall work with a fresh installation of `kube-opex-analytics` or a former version installed with Helm 3. There is a [known issue](https://github.com/helm/helm/issues/6850) when there is already a version not installed with Helm 3.
+### Installation using Helm
+The deployment, which is validated with Helm 2 and 3, can be performed as follows.
 
 ```bash
 helm upgrade \
