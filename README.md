@@ -36,6 +36,7 @@ In a nutshell, `kube-opex-analytics` or literally *Kubernetes Opex Analytics* is
   - [Export Charts and Datasets (PNG, CSV, JSON)](#export-charts-and-datasets-png-csv-json)
   - [Prometheus Exporter](#prometheus-exporter)
   - [Grafana Dashboards](#grafana-dashboards)
+- [Multi-cluster integration (Google GKE, Amazon EKS, Microsoft AKS)](#multi-cluster-integration-google-gke-amazon-eks-microsoft-aks)
 - [License & Copyrights](#license--copyrights)
 - [Support & Contributions](#support--contributions)
 
@@ -227,6 +228,13 @@ The dashboard currently provides the following reports:
 > You should notice those reports are less rich compared against the ones enabled by the built-in `kube-opex-analytics` dashboard. In particular, the daily and the monthly usage for the different namespaces are not stacked, neither than there are not analytics for past days and months. These limitations are inherent to how Grafana handles timeseries and bar charts.
 
 ![](./screenshots/kube-opex-analytics-grafana.png)
+
+# Multi-cluster integration (Google GKE, Amazon EKS, Microsoft AKS)
+Thanks to a partnership with the [2Alchemists SAS](https://krossboard.app/aboutus/) company, this feature is now implemented by the [Krossboard](https://krossboard.app/) application.
+
+In a nutshell, Krossboard is a software stack that implements a centralized and converged cross-cluster usage analytics approach atop of managed Kubernetes platforms. It currently supports Amazon EKS, Microsoft AKS and Google GKE. [Learn more details](https://krossboard.app/docs/analytics-reports-and-data-export/) at the Krossboard's web site.
+
+  ![](./screenshots/krossboard-current-usage-overview.png)
 
 # License & Copyrights
 This tool (code and documentation) is licensed under the terms of Apache License 2.0. Read the `LICENSE` file for more details on the license terms.
