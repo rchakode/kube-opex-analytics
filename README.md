@@ -139,7 +139,7 @@ In this command:
 
 For instance, if you're running Docker on your local machine the interface will be available at: `http://127.0.0.1:5483/`
 
- > You typically need to wait almost a hour to have all charts filled. This is a normal operations of `kube-opex-analytics` which is a hourly-based analytics tool.
+ > You typically need to wait almost an hour to have all charts filled. This is a normal operations of `kube-opex-analytics` which is an hourly-based analytics tool.
 
 ## Deployment on a Kubernetes cluster
 There is a [Helm chart](./helm/) to ease the deployment on Kubernetes using either `Helm` or `kubectl`.
@@ -217,7 +217,7 @@ scrape_configs:
 ## Grafana Dashboards
 You can either build your own Grafana dashboard or use our [official one](https://grafana.com/dashboards/10282).
 
-This official Grafana dashboard looks as below and is designed to work out-of-the box with the `kube-opex-analytics`'s [Prometheus exporter](#prometheus-exporter). It requires to set a Grafana varianle named `KOA_DS_PROMETHEUS`, which shall point to your Prometheus server data source.
+This official Grafana dashboard looks as below and is designed to work out-of-the box with the `kube-opex-analytics`'s [Prometheus exporter](#prometheus-exporter). It requires to set a Grafana variable named `KOA_DS_PROMETHEUS`, which shall point to your Prometheus server data source.
 
 The dashboard currently provides the following reports:
 
