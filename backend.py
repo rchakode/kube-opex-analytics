@@ -59,7 +59,7 @@ class Config:
     cost_model = os.getenv('KOA_COST_MODEL', 'CUMULATIVE_RATIO')
     billing_currency = os.getenv('KOA_BILLING_CURRENCY_SYMBOL', '$')
     enable_debug = (lambda v: v.lower() in ("yes", "true"))(os.getenv('KOA_ENABLE_DEBUG', 'false'))
-    k8s_debug_auth_token = os.getenv('KOA_K8S_AUTH_TOKEN', 'DEBUG_TOKEN_NOT_FOUND')
+    k8s_auth_token = os.getenv('KOA_K8S_AUTH_TOKEN', 'NO_ENV_AUTH_TOKEN')
 
     def __init__(self):
         self.load_rbac_auth_token()
@@ -651,8 +651,8 @@ def pull_k8s(api_context):
     headers = {}
     endpoint_info = urllib.parse.urlparse(KOA_CONFIG.k8s_api_endpoint)
     if endpoint_info.hostname != '127.0.0.1' and endpoint_info.hostname != 'localhost':
-        if KOA_CONFIG.enable_debug:
-            headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_debug_auth_token)
+        if KOA_CONFIG.k8s_auth_token != 'NO_ENV_AUTH_TOKEN':
+            headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_auth_token)
         else:
             headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_rbac_auth_token)
 
