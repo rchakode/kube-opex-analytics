@@ -360,20 +360,20 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                         resAllocatable = 'cpuAllocatable';
                         break;
                     default:
-                        $("#error-message").append('<li>unknown load type: '+ usageType+'</li>');
+                        $("#error-message").append('<li>unknown load type: '+ escape(usageType)+'</li>');
                         $("#error-message-container").show();
                         return;
                 }
 
                 let node = data[nname];
                 if (typeof node[resUsage] === "undefined" || node[resUsage] == 0) {
-                    $("#error-message").append('<li>No '+resUsage+' metric on node ' + node.name +'</li>');
+                    $("#error-message").append('<li>No '+resUsage+' metric on node ' + escape(node.name) +'</li>');
                     $("#error-message-container").show();
                     continue;
                 }
 
                 if (node[resUsage] == 0) {
-                    $("#error-message").append('<li>Node '+node.name+' has '+resUsage+' equals to zero'+'</li>');
+                    $("#error-message").append('<li>Node '+node.name+' has '+escape(resUsage)+' equals to zero'+'</li>');
                     $("#error-message-container").show();
                     continue;
                 }
