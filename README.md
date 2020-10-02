@@ -10,6 +10,8 @@
 # Overview/Goal
 In a nutshell, `kube-opex-analytics` or literally *Kubernetes Opex Analytics* is a tool to help organizations track the resources being consumed by their Kubernetes clusters to prevent overpaying. To do so it generates, short-, mid- and long-term usage reports showing relevant insights on what amount of resources each project is spending over time. The final **goal being to ease cost allocation and capacity planning decisions** with factual analytics.
 
+`kube-opex-analytics` tracks usage for a single instance of Kubernetes. If you need a centralized multi-Kubernetes usage analytics, you may have to consider our [Krossboard project](https://krossboard.app/).
+
 ![](screenshots/kube-opex-analytics-overview.png)
 
 # Table of Contents
@@ -110,9 +112,16 @@ These configuration variables shall be set as environment variables before the s
 `kube-opex-analytics` supports the following environment variables when it starts:
 * `KOA_DB_LOCATION` sets the path to use to store internal data. Typically when you consider to set a volume to store those data, you should also take care to set this path to belong to the mounting point.
 * `KOA_K8S_API_ENDPOINT` sets the endpoint to the Kubernetes API.
+* `KOA_K8S_CACERT` sets the path to CA file for a self-signed certificate.
+* `KOA_K8S_AUTH_TOKEN` sets a Bearer token to authenticate against the Kubernetes API.
+* `KOA_K8S_AUTH_CLIENT_CERT` sets the path to the X509 client certificate to authenticate against the Kubernetes API.
+* `KOA_K8S_AUTH_CLIENT_CERT_KEY` sets the path to the X509 client certificate key.
+* `KOA_K8S_AUTH_USERNAME` sets the username to authenticate against the Kubernetes API using Basic Authentication.
+* `KOA_K8S_AUTH_PASSWORD` sets the password for Basic Authentication.
 * `KOA_COST_MODEL` (version >= `0.2.0`): sets the model of cost allocation to use. Possible values are: _CUMULATIVE_RATIO_ (default) indicates to compute cost as cumulative resource usage for each period of time (daily, monthly); _CHARGE_BACK_ calculates cost based on a given cluster hourly rate (see `KOA_BILLING_HOURLY_RATE`); _RATIO_ indicates to compute cost as a normalized percentage of resource usage during each period of time.
 * `KOA_BILLING_HOURLY_RATE` (required if cost model is _CHARGE_BACK_): defines a positive floating number corresponding to an estimated hourly rate for the Kubernetes cluster. For example if your cluster cost is $5,000 dollars a month (i.e. `~30*24` hours), its estimated hourly cost would be `6.95 = 5000/(30*24)`.
 * `KOA_BILLING_CURRENCY_SYMBOL` (optional, default is '`$`'): sets a currency string to use to annotate costs on reports.
+
 
 
 ## Deployment on Docker
