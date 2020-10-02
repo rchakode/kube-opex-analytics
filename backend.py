@@ -9,6 +9,7 @@ __email__ = "Rodrigue Chakode <rodrigue.chakode @ gmail dot com"
 __status__ = "Production"
 
 import argparse
+import base64
 import calendar
 import collections
 import enum
@@ -20,7 +21,6 @@ import sys
 import threading
 import time
 import urllib
-import base64
 
 import flask
 
@@ -661,14 +661,18 @@ def pull_k8s(api_context):
             headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_auth_token)
         elif KOA_CONFIG.k8s_rbac_auth_token != 'NO_ENV_TOKEN_FILE':
             headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_rbac_auth_token)
-        elif KOA_CONFIG.k8s_auth_username != 'NO_ENV_AUTH_USERNAME' and KOA_CONFIG.k8s_auth_password != 'NO_ENV_AUTH_PASSWORD':
-                token = base64.b64encode(KOA_CONFIG.k8s_auth_username+':'+KOA_CONFIG.k8s_auth_password)
-                headers['Authorization'] = ('Basic %s' % token)
+        elif KOA_CONFIG.k8s_auth_username != 'NO_ENV_AUTH_USERNAME' and \
+                KOA_CONFIG.k8s_auth_password != 'NO_ENV_AUTH_PASSWORD':
+            token = base64.b64encode('%s:%s' % (KOA_CONFIG.k8s_auth_username, KOA_CONFIG.k8s_auth_password))
+            headers['Authorization'] = ('Basic %s' % token)
         elif os.path.isfile(KOA_CONFIG.k8s_ssl_client_cert) and os.path.isfile(KOA_CONFIG.k8s_ssl_client_cert_key):
-            client_cert=(KOA_CONFIG.k8s_ssl_client_cert, KOA_CONFIG.k8s_ssl_client_cert_key)
+            client_cert = (KOA_CONFIG.k8s_ssl_client_cert, KOA_CONFIG.k8s_ssl_client_cert_key)
 
     try:
-        http_req = requests.get(api_endpoint, verify=KOA_CONFIG.koa_verify_ssl_option, headers=headers, cert=client_cert)
+        http_req = requests.get(api_endpoint,
+                                verify=KOA_CONFIG.koa_verify_ssl_option,
+                                headers=headers,
+                                cert=client_cert)
         if http_req.status_code == 200:
             data = http_req.text
         else:
