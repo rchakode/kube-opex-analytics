@@ -20,6 +20,7 @@ import sys
 import threading
 import time
 import urllib
+import base64
 
 import flask
 
@@ -45,7 +46,7 @@ def create_directory_if_not_exists(path):
 
 
 class Config:
-    version = '20.03.3'
+    version = '20.10.1'
     db_round_decimals = 6
     db_non_allocatable = 'non-allocatable'
     db_billing_hourly_rate = '.billing-hourly-rate'
@@ -53,13 +54,17 @@ class Config:
     frontend_data_location = '.%s/data' % (static_content_location)
     k8s_api_endpoint = os.getenv('KOA_K8S_API_ENDPOINT', 'http://127.0.0.1:8001')
     k8s_verify_ssl = (lambda v: v.lower() in ("yes", "true"))(os.getenv('KOA_K8S_API_VERIFY_SSL', 'true'))
-    k8s_ssl_cacert = os.getenv('KOA_K8S_CACERT', None)
     db_location = os.getenv('KOA_DB_LOCATION', ('%s/.kube-opex-analytics/db') % os.getenv('HOME', '/tmp'))
     polling_interval_sec = int(os.getenv('KOA_POLLING_INTERVAL_SEC', '300'))
     cost_model = os.getenv('KOA_COST_MODEL', 'CUMULATIVE_RATIO')
     billing_currency = os.getenv('KOA_BILLING_CURRENCY_SYMBOL', '$')
     enable_debug = (lambda v: v.lower() in ("yes", "true"))(os.getenv('KOA_ENABLE_DEBUG', 'false'))
     k8s_auth_token = os.getenv('KOA_K8S_AUTH_TOKEN', 'NO_ENV_AUTH_TOKEN')
+    k8s_auth_username = os.getenv('KOA_K8S_AUTH_USERNAME', 'NO_ENV_AUTH_USERNAME')
+    k8s_auth_password = os.getenv('KOA_K8S_AUTH_PASSWORD', 'NO_ENV_AUTH_PASSWORD')
+    k8s_ssl_cacert = os.getenv('KOA_K8S_CACERT', None)
+    k8s_ssl_client_cert = os.getenv('KOA_K8S_AUTH_CLIENT_CERT', 'NO_ENV_CLIENT_CERT')
+    k8s_ssl_client_cert_key = os.getenv('KOA_K8S_AUTH_CLIENT_CERT_KEY', 'NO_ENV_CLIENT_CERT_CERT')
 
     def __init__(self):
         self.load_rbac_auth_token()
@@ -94,7 +99,7 @@ class Config:
             with open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'r') as rbac_token_file:
                 self.k8s_rbac_auth_token = rbac_token_file.read()
         except:
-            self.k8s_rbac_auth_token = 'RBAC_FAILED_LOADING_TOKEN_FILE'
+            self.k8s_rbac_auth_token = 'NO_ENV_TOKEN_FILE'
 
 
 def configure_logger(debug_enabled):
@@ -649,15 +654,21 @@ def pull_k8s(api_context):
     data = None
     api_endpoint = '%s%s' % (KOA_CONFIG.k8s_api_endpoint, api_context)
     headers = {}
+    client_cert = None
     endpoint_info = urllib.parse.urlparse(KOA_CONFIG.k8s_api_endpoint)
     if endpoint_info.hostname != '127.0.0.1' and endpoint_info.hostname != 'localhost':
         if KOA_CONFIG.k8s_auth_token != 'NO_ENV_AUTH_TOKEN':
             headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_auth_token)
-        else:
+        elif KOA_CONFIG.k8s_rbac_auth_token != 'NO_ENV_TOKEN_FILE':
             headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_rbac_auth_token)
+        elif KOA_CONFIG.k8s_auth_username != 'NO_ENV_AUTH_USERNAME' and KOA_CONFIG.k8s_auth_password != 'NO_ENV_AUTH_PASSWORD':
+                token = base64.b64encode(KOA_CONFIG.k8s_auth_username+':'+KOA_CONFIG.k8s_auth_password)
+                headers['Authorization'] = ('Basic %s' % token)
+        elif os.path.isfile(KOA_CONFIG.k8s_ssl_client_cert) and os.path.isfile(KOA_CONFIG.k8s_ssl_client_cert_key):
+            client_cert=(KOA_CONFIG.k8s_ssl_client_cert, KOA_CONFIG.k8s_ssl_client_cert_key)
 
     try:
-        http_req = requests.get(api_endpoint, verify=KOA_CONFIG.koa_verify_ssl_option, headers=headers)
+        http_req = requests.get(api_endpoint, verify=KOA_CONFIG.koa_verify_ssl_option, headers=headers, cert=client_cert)
         if http_req.status_code == 200:
             data = http_req.text
         else:
