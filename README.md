@@ -98,13 +98,16 @@ You need to provide the base URL of the Kubernetes API when starting the program
 
 Typically if you're planning an installation inside a Kubernetes cluster, you can connect to the local cluster API endpoint at: `https://kubernetes.default`.
 
-Likewise, if you're planning an installation outside a Kubernetes cluster you can use a proxied access to Kubernetes API as follows:
+Likewise, if you're planning an installation outside a Kubernetes cluster you would need either the URL to the Kubernetes API or a proxied access as follows. 
 
 ```
 $ kubectl proxy
 ```
 
 This will open a proxied access to Kubernetes API at `http://127.0.0.1:8001`.
+
+If you use a direct access to the Kubernetes API, you may have to set the required credentials through specific environment variables (see [Configuration Variables](#configuration-variables)).
+
 
 ## Configuration Variables
 These configuration variables shall be set as environment variables before the startup of the service. 
