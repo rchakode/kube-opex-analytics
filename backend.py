@@ -687,54 +687,63 @@ def pull_k8s(api_context):
 
 
 def create_metrics_puller():
-    while True:
-        k8s_usage = K8sUsage()
-        KOA_LOGGER.debug('{puller] collecting new metrics')
-        KOA_CONFIG.load_rbac_auth_token()
-        k8s_usage.extract_namespaces_and_initialize_usage(pull_k8s('/api/v1/namespaces'))
-        k8s_usage.extract_nodes(pull_k8s('/api/v1/nodes'))
-        k8s_usage.extract_node_metrics(pull_k8s('/apis/metrics.k8s.io/v1beta1/nodes'))
-        k8s_usage.extract_pods(pull_k8s('/api/v1/pods'))
-        k8s_usage.extract_pod_metrics(pull_k8s('/apis/metrics.k8s.io/v1beta1/pods'))
-        k8s_usage.consolidate_ns_usage()
-        k8s_usage.dump_nodes()
-        if k8s_usage.cpuCapacity > 0.0 and k8s_usage.memCapacity > 0.0:
-            now_epoch = calendar.timegm(time.gmtime())
-            # add non-allocatable resources
-            rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.db_non_allocatable)
-            cpu_usage = compute_usage_percent_ratio(k8s_usage.cpuCapacity - k8s_usage.cpuAllocatable,
-                                                    k8s_usage.cpuCapacity)
-            mem_usage = compute_usage_percent_ratio(k8s_usage.memCapacity - k8s_usage.memAllocatable,
-                                                    k8s_usage.memCapacity)
-            rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_usage, mem_usage=mem_usage)
-            # handle billing data
-            rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.db_billing_hourly_rate)
-            cpu_usage = compute_usage_percent_ratio(k8s_usage.cpuCapacity - k8s_usage.cpuAllocatable,
-                                                    k8s_usage.cpuCapacity)
-            mem_usage = compute_usage_percent_ratio(k8s_usage.memCapacity - k8s_usage.memAllocatable,
-                                                    k8s_usage.memCapacity)
-            rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=KOA_CONFIG.billing_hourly_rate,
-                           mem_usage=KOA_CONFIG.billing_hourly_rate)
-
-            for ns, nsUsage in k8s_usage.nsResUsage.items():
-                rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=ns)
-                cpu_usage = compute_usage_percent_ratio(nsUsage.cpuUsage, k8s_usage.cpuCapacity)
-                mem_usage = compute_usage_percent_ratio(nsUsage.memUsage, k8s_usage.memCapacity)
+    try:
+        while True:
+            k8s_usage = K8sUsage()
+            KOA_LOGGER.debug('{puller] collecting new metrics')
+            KOA_CONFIG.load_rbac_auth_token()
+            k8s_usage.extract_namespaces_and_initialize_usage(pull_k8s('/api/v1/namespaces'))
+            k8s_usage.extract_nodes(pull_k8s('/api/v1/nodes'))
+            k8s_usage.extract_node_metrics(pull_k8s('/apis/metrics.k8s.io/v1beta1/nodes'))
+            k8s_usage.extract_pods(pull_k8s('/api/v1/pods'))
+            k8s_usage.extract_pod_metrics(pull_k8s('/apis/metrics.k8s.io/v1beta1/pods'))
+            k8s_usage.consolidate_ns_usage()
+            k8s_usage.dump_nodes()
+            if k8s_usage.cpuCapacity > 0.0 and k8s_usage.memCapacity > 0.0:
+                now_epoch = calendar.timegm(time.gmtime())
+                # add non-allocatable resources
+                rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.db_non_allocatable)
+                cpu_usage = compute_usage_percent_ratio(k8s_usage.cpuCapacity - k8s_usage.cpuAllocatable,
+                                                        k8s_usage.cpuCapacity)
+                mem_usage = compute_usage_percent_ratio(k8s_usage.memCapacity - k8s_usage.memAllocatable,
+                                                        k8s_usage.memCapacity)
                 rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_usage, mem_usage=mem_usage)
-        time.sleep(int(KOA_CONFIG.polling_interval_sec))
+                # handle billing data
+                rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.db_billing_hourly_rate)
+                cpu_usage = compute_usage_percent_ratio(k8s_usage.cpuCapacity - k8s_usage.cpuAllocatable,
+                                                        k8s_usage.cpuCapacity)
+                mem_usage = compute_usage_percent_ratio(k8s_usage.memCapacity - k8s_usage.memAllocatable,
+                                                        k8s_usage.memCapacity)
+                rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=KOA_CONFIG.billing_hourly_rate,
+                            mem_usage=KOA_CONFIG.billing_hourly_rate)
+
+                for ns, nsUsage in k8s_usage.nsResUsage.items():
+                    rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=ns)
+                    cpu_usage = compute_usage_percent_ratio(nsUsage.cpuUsage, k8s_usage.cpuCapacity)
+                    mem_usage = compute_usage_percent_ratio(nsUsage.memUsage, k8s_usage.memCapacity)
+                    rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_usage, mem_usage=mem_usage)
+            time.sleep(int(KOA_CONFIG.polling_interval_sec))
+    except Exception as err:
+        exception_type = type(err).__name__
+        KOA_LOGGER.error("%s Exception in create_metrics_puller (%s)", exception_type, ex)       
+
 
 
 def dump_analytics():
-    export_interval = round(1.5 * KOA_CONFIG.polling_interval_sec)
-    while True:
-        dbfiles = []
-        for (_, _, filenames) in os.walk(KOA_CONFIG.db_location):
-            dbfiles.extend(filenames)
-            break
-        Rrd.dump_trend_analytics(dbfiles)
-        Rrd.dump_histogram_analytics(dbfiles=dbfiles, period=RrdPeriod.PERIOD_14_DAYS_SEC)
-        Rrd.dump_histogram_analytics(dbfiles=dbfiles, period=RrdPeriod.PERIOD_YEAR_SEC)
-        time.sleep(export_interval)
+    try:
+        export_interval = round(1.5 * KOA_CONFIG.polling_interval_sec)
+        while True:
+            dbfiles = []
+            for (_, _, filenames) in os.walk(KOA_CONFIG.db_location):
+                dbfiles.extend(filenames)
+                break
+            Rrd.dump_trend_analytics(dbfiles)
+            Rrd.dump_histogram_analytics(dbfiles=dbfiles, period=RrdPeriod.PERIOD_14_DAYS_SEC)
+            Rrd.dump_histogram_analytics(dbfiles=dbfiles, period=RrdPeriod.PERIOD_YEAR_SEC)
+            time.sleep(export_interval)
+    except Exception as err:
+        exception_type = type(err).__name__
+        KOA_LOGGER.error("%s Exception in dump_analytics (%s)", exception_type, ex)            
 
 
 # validating configs
