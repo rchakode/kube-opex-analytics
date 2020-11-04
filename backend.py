@@ -714,8 +714,9 @@ def create_metrics_puller():
                                                         k8s_usage.cpuCapacity)
                 mem_usage = compute_usage_percent_ratio(k8s_usage.memCapacity - k8s_usage.memAllocatable,
                                                         k8s_usage.memCapacity)
-                rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=KOA_CONFIG.billing_hourly_rate,
-                            mem_usage=KOA_CONFIG.billing_hourly_rate)
+                rrd.add_sample(timestamp_epoch=now_epoch,
+                               cpu_usage=KOA_CONFIG.billing_hourly_rate,
+                               mem_usage=KOA_CONFIG.billing_hourly_rate)
 
                 for ns, nsUsage in k8s_usage.nsResUsage.items():
                     rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=ns)
@@ -723,10 +724,9 @@ def create_metrics_puller():
                     mem_usage = compute_usage_percent_ratio(nsUsage.memUsage, k8s_usage.memCapacity)
                     rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_usage, mem_usage=mem_usage)
             time.sleep(int(KOA_CONFIG.polling_interval_sec))
-    except Exception as err:
-        exception_type = type(err).__name__
-        KOA_LOGGER.error("%s Exception in create_metrics_puller (%s)", exception_type, ex)       
-
+    except Exception as ex:
+        exception_type = type(ex).__name__
+        KOA_LOGGER.error("%s Exception in dump_analytics (%s)", exception_type, ex)
 
 
 def dump_analytics():
@@ -741,9 +741,9 @@ def dump_analytics():
             Rrd.dump_histogram_analytics(dbfiles=dbfiles, period=RrdPeriod.PERIOD_14_DAYS_SEC)
             Rrd.dump_histogram_analytics(dbfiles=dbfiles, period=RrdPeriod.PERIOD_YEAR_SEC)
             time.sleep(export_interval)
-    except Exception as err:
-        exception_type = type(err).__name__
-        KOA_LOGGER.error("%s Exception in dump_analytics (%s)", exception_type, ex)            
+    except Exception as ex:
+        exception_type = type(ex).__name__
+        KOA_LOGGER.error("%s Exception in dump_analytics (%s)", exception_type, ex)
 
 
 # validating configs
