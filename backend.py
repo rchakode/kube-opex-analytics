@@ -60,6 +60,7 @@ class Config:
     billing_currency = os.getenv('KOA_BILLING_CURRENCY_SYMBOL', '$')
     enable_debug = (lambda v: v.lower() in ("yes", "true"))(os.getenv('KOA_ENABLE_DEBUG', 'false'))
     k8s_auth_token = os.getenv('KOA_K8S_AUTH_TOKEN', 'NO_ENV_AUTH_TOKEN')
+    k8s_auth_token_type = os.getenv('KOA_K8S_AUTH_TOKEN_TYPE', 'Bearer')
     k8s_auth_username = os.getenv('KOA_K8S_AUTH_USERNAME', 'NO_ENV_AUTH_USERNAME')
     k8s_auth_password = os.getenv('KOA_K8S_AUTH_PASSWORD', 'NO_ENV_AUTH_PASSWORD')
     k8s_ssl_cacert = os.getenv('KOA_K8S_CACERT', None)
@@ -658,7 +659,7 @@ def pull_k8s(api_context):
     endpoint_info = urllib.parse.urlparse(KOA_CONFIG.k8s_api_endpoint)
     if endpoint_info.hostname != '127.0.0.1' and endpoint_info.hostname != 'localhost':
         if KOA_CONFIG.k8s_auth_token != 'NO_ENV_AUTH_TOKEN':
-            headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_auth_token)
+            headers['Authorization'] = ('%s %s' % KOA_CONFIG.k8s_auth_token_type, KOA_CONFIG.k8s_auth_token)
         elif KOA_CONFIG.k8s_rbac_auth_token != 'NO_ENV_TOKEN_FILE':
             headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_rbac_auth_token)
         elif KOA_CONFIG.k8s_auth_username != 'NO_ENV_AUTH_USERNAME' and \
