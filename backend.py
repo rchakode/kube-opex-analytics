@@ -46,7 +46,7 @@ def create_directory_if_not_exists(path):
 
 
 class Config:
-    version = '20.10.3'
+    version = '20.10.4'
     db_round_decimals = 6
     db_non_allocatable = 'non-allocatable'
     db_billing_hourly_rate = '.billing-hourly-rate'
