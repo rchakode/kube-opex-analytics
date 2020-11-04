@@ -249,16 +249,16 @@ In a nutshell, Krossboard is a software stack that implements a centralized and 
   ![](./screenshots/krossboard-current-usage-overview.png)
 
 # License & Copyrights
-This tool (code and documentation) is licensed under the terms of Apache License 2.0. Read the `LICENSE` file for more details on the license terms.
+`kube-opex-analytics` (code and documentation) is licensed under the terms of Apache License 2.0. Read the `LICENSE` file for more details on the license terms.
 
-The tool includes and is bound to third-party libraries provided with their owns licenses and copyrights. Read the `NOTICE` file for additional information.
+It includes and is bound to third-party libraries provided with their owns licenses and copyrights. Read the `NOTICE` file for additional information.
 
 # Support & Contributions
-We encourage feedback and always make our best to handle any troubles you may encounter when using this tool.
+We encourage feedback and always make our best to handle any troubles you may encounter when using it.
 
 Here is the link to submit issues: https://github.com/rchakode/kube-opex-analytics/issues.
 
-New ideas are welcomed, please open an issue to submit your idea if you have any one.
+New ideas are welcomed, if you have any idea to improve it please open an issue to submit it.
 
 Contributions are accepted subject that the code and documentation be released under the terms of Apache 2.0 License.
 
