@@ -7,15 +7,15 @@
 
 
 
-# Overview/Goal
-In a nutshell, `kube-opex-analytics` or literally *Kubernetes Opex Analytics* is a tool to help organizations track the resources being consumed by their Kubernetes clusters to prevent overpaying. To do so it generates, short-, mid- and long-term usage reports showing relevant insights on what amount of resources each project is spending over time. The final **goal being to ease cost allocation and capacity planning decisions** with factual analytics.
+# Overview
+In a nutshell, `kube-opex-analytics` or literally *Kubernetes Opex Analytics* is a tool to help organizations track the resources being consumed by their Kubernetes clusters to prevent overpaying. To this end, it generates short-, mid- and long-term usage reports showing relevant insights on what amount of resources each project is spending over time. The final **goal being to ease cost allocation and capacity planning decisions** with factual analytics.
 
-`kube-opex-analytics` tracks usage for a single instance of Kubernetes. For a centralized multi-Kubernetes usage analytics, you may have to consider our [Krossboard project](https://krossboard.app/).
+> **Multi-cluster analytics:** `kube-opex-analytics` tracks the usage for a single instance of Kubernetes. For a centralized multi-Kubernetes usage analytics, you may have to consider our [Krossboard project](https://krossboard.app/).
 
 ![](screenshots/kube-opex-analytics-overview.png)
 
 # Table of Contents
-- [Overview/Goal](#overviewgoal)
+- [Overview](#overview)
 - [Table of Contents](#table-of-contents)
 - [Concepts](#concepts)
   - [Fundamentals Principles](#fundamentals-principles)
@@ -38,7 +38,7 @@ In a nutshell, `kube-opex-analytics` or literally *Kubernetes Opex Analytics* is
   - [Export Charts and Datasets (PNG, CSV, JSON)](#export-charts-and-datasets-png-csv-json)
   - [Prometheus Exporter](#prometheus-exporter)
   - [Grafana Dashboards](#grafana-dashboards)
-- [Multi-cluster integration (Google GKE, Amazon EKS, Microsoft AKS)](#multi-cluster-integration-google-gke-amazon-eks-microsoft-aks)
+- [Multi-cluster analytics](#multi-cluster-analytics)
 - [License & Copyrights](#license--copyrights)
 - [Support & Contributions](#support--contributions)
 
@@ -241,10 +241,10 @@ The dashboard currently provides the following reports:
 
 ![](./screenshots/kube-opex-analytics-grafana.png)
 
-# Multi-cluster integration (Google GKE, Amazon EKS, Microsoft AKS)
-Thanks to a partnership with the [2Alchemists SAS](https://krossboard.app/aboutus/) company, this feature is now implemented by the [Krossboard](https://krossboard.app/) application.
+# Multi-cluster analytics
+Thanks to a partnership with the [2Alchemists SAS](https://krossboard.app/aboutus/) company, this feature is now implemented by [Krossboard](https://krossboard.app/).
 
-In a nutshell, Krossboard is a software stack that implements a centralized and converged cross-cluster usage analytics approach atop of managed Kubernetes platforms. It currently supports Amazon EKS, Microsoft AKS and Google GKE. [Learn more details](https://krossboard.app/docs/analytics-reports-and-data-export/) at the Krossboard's web site.
+It's actively tested against Amazon EKS, Microsoft AKS, Google GKE Red Hat OpenShift, Rancher RKE, and various vanilla deployments. [Learn more...]
 
   ![](./screenshots/krossboard-current-usage-overview.png)
 
