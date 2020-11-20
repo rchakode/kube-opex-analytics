@@ -20,7 +20,7 @@ In a nutshell, `kube-opex-analytics` or literally *Kubernetes Opex Analytics* is
 - [Concepts](#concepts)
   - [Fundamentals Principles](#fundamentals-principles)
   - [Cost Models](#cost-models)
-- [Screenshorts](#screenshorts)
+- [Screenshots](#screenshots)
   - [Last Week Hourly Resource Usage Trends](#last-week-hourly-resource-usage-trends)
   - [Two-weeks Daily CPU and Memory Usage](#two-weeks-daily-cpu-and-memory-usage)
   - [One-year Monthly CPU and Memory Usage](#one-year-monthly-cpu-and-memory-usage)
@@ -64,7 +64,7 @@ Cost allocation models can be set through the startup configuration variable `KO
 
 Read the [Configuration](#configuration-variables) section for more details.
 
-# Screenshorts
+# Screenshots
 Before diving to concepts and technical details in the next sections, the below screenshots illustrate reports leveraged via the `kube-opex-analytics`'s built-in charts or via Grafana backed by the `kube-opex-analytics`'s built-in Prometheus exporter.
 
 ## Last Week Hourly Resource Usage Trends
