@@ -246,7 +246,7 @@ Thanks to a partnership with the [2Alchemists SAS](https://krossboard.app/aboutu
 
 It's actively tested against Amazon EKS, Microsoft AKS, Google GKE Red Hat OpenShift, Rancher RKE, and various vanilla deployments. [Learn more...]
 
-  ![](./screenshots/krossboard-current-usage-overview.png)
+  ![](https://github.com/2-alchemists/krossboard/blob/master/assets/krossboard-demo-v1.1.0.gif)
 
 # License & Copyrights
 `kube-opex-analytics` (code and documentation) is licensed under the terms of Apache License 2.0. Read the `LICENSE` file for more details on the license terms.
