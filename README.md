@@ -8,7 +8,7 @@
 
 
 # Overview
-In a nutshell, `kube-opex-analytics` or literally *Kubernetes Opex Analytics* is a tool to help organizations track the resources being consumed by their Kubernetes clusters to prevent overpaying. To this end, it generates short-, mid- and long-term usage reports showing relevant insights on what amount of resources each project is spending over time. The final **goal being to ease cost allocation and capacity planning decisions** with factual analytics.
+In a nutshell, `kube-opex-analytics` or literally *Kubernetes Opex Analytics* is a tool to help organizations track the resources being consumed by their Kubernetes clusters to prevent overpaying. To this end, it generates short-, mid- and long-term usage reports showing relevant insights on what amount of resources each project is consuming over time. The final **goal being to ease cost allocation and capacity planning decisions** with factual analytics.
 
 > **Multi-cluster analytics:** `kube-opex-analytics` tracks the usage for a single instance of Kubernetes. For a centralized multi-Kubernetes usage analytics, you may have to consider our [Krossboard](https://krossboard.app/) project. Watch a [demo video here](https://youtu.be/lfkUIREDYDY). 
 
@@ -43,13 +43,13 @@ In a nutshell, `kube-opex-analytics` or literally *Kubernetes Opex Analytics* is
 - [Support & Contributions](#support--contributions)
 
 # Concepts
-`kube-opex-analytics` periodically collects CPU and memory usage metrics from Kubernetes's APIs, processes and consolidates them over various time-aggregation perspectives (hourly, daily, monthly), to produce resource **usage reports covering up to a year**. The reports focus on namespace level, while a special care is taken to also account and highlight **shares of non-allocatable capacities**.
+`kube-opex-analytics` periodically collects CPU and memory usage metrics from Kubernetes's API, processes and consolidates them over various time-aggregation perspectives (hourly, daily, monthly), to produce resource **usage reports covering up to a year**. The reports focus on namespace level, while a special care is taken to also account and highlight **shares of non-allocatable capacities**.
 
 ## Fundamentals Principles
 `kube-opex-analytics` is designed atop the following core concepts and features:
 
 * **Namespace-focused:** Means that consolidated resource usage metrics consider individual namespaces as fundamental units for resource sharing. A special care is taken to also account and highlight `non-allocatable` resources .
-* **Hourly Usage & Trends:** Like on public clouds, resource consumption for each namespace is consolidated on a hourly-basic. This actually corresponds to the ratio (%) of resource used per namespace during each hour. It's the foundation for cost calculation and also allows to get over time trends about resources being consuming per namespace and also at the Kubernetes cluster scale.
+* **Hourly Usage & Trends:** Like on public clouds, resource consumption for each namespace is consolidated on a hourly-basic. This actually corresponds to the ratio (%) of resource used per namespace during each hour. It's the foundation for cost allocation and also allows to get over time trends about resources being consuming per namespace and also at the Kubernetes cluster scale.
 * **Daily and Monthly Usage Costs:** Provides for each period (daily/monthly), namespace, and resource type (CPU/memory), consolidated cost computed given one of the following ways: (i) accumulated hourly usage over the period; (ii) actual costs computed based on resource usage and a given hourly billing rate; (iii) normalized ratio of usage per namespace compared against the global cluster usage.
 * **Occupation of Nodes by Namespaced Pods:** Highlights for each node the share of resources used by active pods labelled by their namespace.
 * **Efficient Visualization:** For metrics generated, `kube-opex-analytics` provides dashboards with relevant charts covering as well the last couple of hours than the last 12 months (i.e. year). For this there are **built-in charts**, a **Prometheus Exporter** along with **Grafana Dashboard** that all work out of the box.
@@ -65,7 +65,7 @@ Cost allocation models can be set through the startup configuration variable `KO
 Read the [Configuration](#configuration-variables) section for more details.
 
 # Screenshots
-Before diving to concepts and technical details in the next sections, the below screenshots illustrate reports leveraged via the `kube-opex-analytics`'s built-in charts or via Grafana backed by the `kube-opex-analytics`'s built-in Prometheus exporter.
+The below screenshots illustrate some reports leveraged via the `kube-opex-analytics`'s built-in charts or via Grafana backed by the `kube-opex-analytics`'s Prometheus exporter.
 
 ## Last Week Hourly Resource Usage Trends
 
@@ -91,22 +91,14 @@ This is a screenshot of our [official one](https://grafana.com/dashboards/10282)
 ## Kubernetes API Access
 `kube-opex-analytics` needs read-only access to the following Kubernetes APIs.
 
-* /apis/metrics.k8s.io/v1beta1
 * /api/v1
+* /apis/metrics.k8s.io/v1beta1 (provided by [Kubernetes Metrics Server](https://github.com/kubernetes-sigs/metrics-server), which shall be installed on the cluster if it's not yet the case).
 
-You need to provide the base URL of the Kubernetes API when starting the program (see example below).
+You need to provide the base URL of the Kubernetes API when starting the program.
+ * For a typically deployment inside the Kubernetes cluster, you have to provide the local cluster API endpoint at (i.e. `https://kubernetes.default`).
+ * Otherwise, if you're planning an installation outside the Kubernetes cluster you can provide either, the URL to the Kubernetes API (e.g. https://1.2.3.4:6443), or a proxied API (the command `kubectl proxy` shall open a proxied access to the Kubernetes API with the following endpoint by default `http://127.0.0.1:8001`).
 
-Typically if you're planning an installation inside a Kubernetes cluster, you can connect to the local cluster API endpoint at: `https://kubernetes.default`.
-
-Likewise, if you're planning an installation outside a Kubernetes cluster you would need either the URL to the Kubernetes API or a proxied access as follows. 
-
-```
-$ kubectl proxy
-```
-
-This will open a proxied access to Kubernetes API at `http://127.0.0.1:8001`.
-
-If you use a direct access to the Kubernetes API, you may have to set the required credentials through specific environment variables (see [Configuration Variables](#configuration-variables)).
+> When deployed outside the cluster without a proxy access, it'll be likely required to provide credentials to authenticate against the Kubernetes API. The credentials can be a Bearer token, a Basic auth token, or even X509 client certifcate credentials. See [Configuration Variables](#configuration-variables) for more details.
 
 
 ## Configuration Variables
@@ -124,7 +116,6 @@ These configuration variables shall be set as environment variables before the s
 * `KOA_COST_MODEL` (version >= `0.2.0`): sets the model of cost allocation to use. Possible values are: _CUMULATIVE_RATIO_ (default) indicates to compute cost as cumulative resource usage for each period of time (daily, monthly); _CHARGE_BACK_ calculates cost based on a given cluster hourly rate (see `KOA_BILLING_HOURLY_RATE`); _RATIO_ indicates to compute cost as a normalized percentage of resource usage during each period of time.
 * `KOA_BILLING_HOURLY_RATE` (required if cost model is _CHARGE_BACK_): defines a positive floating number corresponding to an estimated hourly rate for the Kubernetes cluster. For example if your cluster cost is $5,000 dollars a month (i.e. `~30*24` hours), its estimated hourly cost would be `6.95 = 5000/(30*24)`.
 * `KOA_BILLING_CURRENCY_SYMBOL` (optional, default is '`$`'): sets a currency string to use to annotate costs on reports.
-
 
 
 ## Deployment on Docker
@@ -262,4 +253,4 @@ New ideas are welcomed, if you have any idea to improve it please open an issue 
 
 Contributions are accepted subject that the code and documentation be released under the terms of Apache 2.0 License.
 
-To contribute bug patches or new features, you can use the Github Pull Request model.
+To contribute bug patches or new features, please submit a Pull Request.
