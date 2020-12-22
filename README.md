@@ -102,9 +102,8 @@ You need to provide the base URL of the Kubernetes API when starting the program
 
 
 ## Configuration Variables
-These configuration variables shall be set as environment variables before the startup of the service. 
+When needed, these configuration environment variables shall be set before starting `kube-opex-analytics`:
 
-`kube-opex-analytics` supports the following environment variables when it starts:
 * `KOA_DB_LOCATION` sets the path to use to store internal data. Typically when you consider to set a volume to store those data, you should also take care to set this path to belong to the mounting point.
 * `KOA_K8S_API_ENDPOINT` sets the endpoint to the Kubernetes API.
 * `KOA_K8S_CACERT` sets the path to CA file for a self-signed certificate.
