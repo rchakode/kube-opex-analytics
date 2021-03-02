@@ -18,4 +18,5 @@ jobs:
         docker build . --file Dockerfile --tag rchakode/kube-opex-analytics:$IMAGE_TAG
         docker tag rchakode/kube-opex-analytics:$IMAGE_TAG rchakode/kube-opex-analytics:latest
         echo "$DOCKERHUB_PASSWORD" | docker login -u $DOCKERHUB_USERNAME --password-stdin
+        docker push rchakode/kube-opex-analytics:$IMAGE_TAG
         docker push rchakode/kube-opex-analytics
