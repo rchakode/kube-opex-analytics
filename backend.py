@@ -761,6 +761,6 @@ if __name__ == '__main__':
     th_exporter.start()
 
     if not KOA_CONFIG.enable_debug:
-        waitress_serve(wsgi_dispatcher, listen='*:5483')
+        waitress_serve(wsgi_dispatcher, listen='0.0.0.0:5483')
     else:
         app.run(host='0.0.0.0', port=5483)
