@@ -9,8 +9,8 @@
 <summary>
 Table of Contents
 </summary>
+
 - [Overview](#overview)
-- [Table of Contents](#table-of-contents)
 - [Concepts](#concepts)
   - [Fundamentals Principles](#fundamentals-principles)
   - [Cost Models](#cost-models)
@@ -35,6 +35,7 @@ Table of Contents
 - [Multi-cluster analytics](#multi-cluster-analytics)
 - [License & Copyrights](#license--copyrights)
 - [Support & Contributions](#support--contributions)
+
 </details>
 
 
