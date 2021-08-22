@@ -5,18 +5,12 @@
 [![Calendar Versioning](https://img.shields.io/badge/calver-YY.MM.MICRO-bb8fce.svg)](http://calver.org)
 ![Docker pulls](https://img.shields.io/docker/pulls/rchakode/kube-opex-analytics.svg?label=Docker%20Pulls)
 
+<details>
+<summary>
+Table of Contents
+</summary>
 
-
-# Overview
-In a nutshell, `kube-opex-analytics` or literally *Kubernetes Opex Analytics* is a tool to help organizations track the resources being consumed by their Kubernetes clusters to prevent overpaying. To this end, it generates short-, mid- and long-term usage reports showing relevant insights on what amount of resources each project is consuming over time. The final **goal being to ease cost allocation and capacity planning decisions** with factual analytics.
-
-> **Multi-cluster analytics:** `kube-opex-analytics` tracks the usage for a single instance of Kubernetes. For a centralized multi-Kubernetes usage analytics, you may have to consider our [Krossboard](https://krossboard.app/) project. Watch a [demo video here](https://youtu.be/lfkUIREDYDY). 
-
-![](screenshots/kube-opex-analytics-overview.png)
-
-# Table of Contents
 - [Overview](#overview)
-- [Table of Contents](#table-of-contents)
 - [Concepts](#concepts)
   - [Fundamentals Principles](#fundamentals-principles)
   - [Cost Models](#cost-models)
@@ -41,6 +35,17 @@ In a nutshell, `kube-opex-analytics` or literally *Kubernetes Opex Analytics* is
 - [Multi-cluster analytics](#multi-cluster-analytics)
 - [License & Copyrights](#license--copyrights)
 - [Support & Contributions](#support--contributions)
+
+</details>
+
+
+# Overview
+In a nutshell, `kube-opex-analytics` or literally *Kubernetes Opex Analytics* is a tool to help organizations track the resources being consumed by their Kubernetes clusters to prevent overpaying. To this end, it generates short-, mid- and long-term usage reports showing relevant insights on what amount of resources each project is consuming over time. The final **goal being to ease cost allocation and capacity planning decisions** with factual analytics.
+
+> **Multi-cluster analytics:** `kube-opex-analytics` tracks the usage for a single instance of Kubernetes. For a centralized multi-Kubernetes usage analytics, you may have to consider our [Krossboard](https://krossboard.app/) project. Watch a [demo video here](https://youtu.be/lfkUIREDYDY). 
+
+![](screenshots/kube-opex-analytics-overview.png)
+
 
 # Concepts
 `kube-opex-analytics` periodically collects CPU and memory usage metrics from Kubernetes's API, processes and consolidates them over various time-aggregation perspectives (hourly, daily, monthly), to produce resource **usage reports covering up to a year**. The reports focus on namespace level, while a special care is taken to also account and highlight **shares of non-allocatable capacities**.
