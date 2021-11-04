@@ -94,11 +94,13 @@ For the different nodes discovered in the Kubernetes cluster, this section shows
 
 ## Grafana Dashboard
 This is a screenshot of our [official one](https://grafana.com/dashboards/10282) backed by the `kube-opex-analytics`'s built-in Prometheus Exporter.
+
 ![](./screenshots/kube-opex-analytics-grafana.png)
 
 # Getting Started
+This section will guides you through the deployment requirements, the configuration variables and the deployment itself. 
 
-## Kubernetes API Access
+## Requirements
 `kube-opex-analytics` needs read-only access to the following Kubernetes APIs.
 
 * /api/v1
@@ -109,7 +111,6 @@ You need to provide the base URL of the Kubernetes API when starting the program
  * Otherwise, if you're planning an installation outside the Kubernetes cluster you can provide either, the URL to the Kubernetes API (e.g. https://1.2.3.4:6443), or a proxied API (the command `kubectl proxy` shall open a proxied access to the Kubernetes API with the following endpoint by default `http://127.0.0.1:8001`).
 
 > When deployed outside the cluster without a proxy access, it'll be likely required to provide credentials to authenticate against the Kubernetes API. The credentials can be a Bearer token, a Basic auth token, or even X509 client certifcate credentials. See [Configuration Variables](#configuration-variables) for more details.
-
 
 ## Configuration Variables
 When needed, these configuration environment variables shall be set before starting `kube-opex-analytics`:
@@ -125,7 +126,6 @@ When needed, these configuration environment variables shall be set before start
 * `KOA_COST_MODEL` (version >= `0.2.0`): sets the model of cost allocation to use. Possible values are: _CUMULATIVE_RATIO_ (default) indicates to compute cost as cumulative resource usage for each period of time (daily, monthly); _CHARGE_BACK_ calculates cost based on a given cluster hourly rate (see `KOA_BILLING_HOURLY_RATE`); _RATIO_ indicates to compute cost as a normalized percentage of resource usage during each period of time.
 * `KOA_BILLING_HOURLY_RATE` (required if cost model is _CHARGE_BACK_): defines a positive floating number corresponding to an estimated hourly rate for the Kubernetes cluster. For example if your cluster cost is $5,000 dollars a month (i.e. `~30*24` hours), its estimated hourly cost would be `6.95 = 5000/(30*24)`.
 * `KOA_BILLING_CURRENCY_SYMBOL` (optional, default is '`$`'): sets a currency string to use to annotate costs on reports.
-
 
 ## Deployment on Docker
 `kube-opex-analytics` is released as a Docker image. So you can quickly start an instance of the service by running the following command:
@@ -201,7 +201,6 @@ The exportation steps are the following:
   ![](./screenshots/export-menu.png)
 
 * You're done, the last step shall download the result file instantly.
-
 
 ## Prometheus Exporter
 Starting from version `0.3.0`, `kube-opex-analytics` enables a Prometheus exporter through the endpoint `/metrics`.
