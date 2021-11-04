@@ -73,18 +73,23 @@ Read the [Configuration](#configuration-variables) section for more details.
 The below screenshots illustrate some reports leveraged via the `kube-opex-analytics`'s built-in charts or via Grafana backed by the `kube-opex-analytics`'s Prometheus exporter.
 
 ## Last Week Hourly Resource Usage Trends
+For the different namespaces discovered in the Kubernetes cluster, this section shows hourly usage trends for CPU and memory resources during the last week (last seven days).
 
 ![](./screenshots/sample-one-week-hourly-usage.png)
 
 ## Two-weeks Daily CPU and Memory Usage
+For the different namespaces discovered in the Kubernetes cluster, this section shows daily cumulated usage for CPU and memory resources during the last 2 weeks.
 
 ![](./screenshots/sample-two-weeks-daily-usage.png)
 
 ## One-year Monthly CPU and Memory Usage
+For the different namespaces discovered in the Kubernetes cluster, this section shows monthly cumulated usage for CPU and memory resources during the last 12 months.
 
 ![](./screenshots/sample-one-year-monthly-usage.png)
 
 ## Nodes' Occupation by Pods
+For the different nodes discovered in the Kubernetes cluster, this section shows for each node the CPU and the memory resources currently consumed by running pods.
+
 ![](./screenshots/sample-last-nodes-occupation-by-pods.png)
 
 ## Grafana Dashboard
