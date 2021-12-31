@@ -243,7 +243,7 @@ The dashboard currently provides the following reports:
 # Multi-cluster analytics
 Thanks to a partnership with the [2Alchemists SAS](https://krossboard.app/aboutus/) company, this feature is now implemented by [Krossboard](https://krossboard.app/).
 
-It's actively tested against Amazon EKS, Microsoft AKS, Google GKE Red Hat OpenShift, Rancher RKE, and various vanilla deployments. [Learn more...]
+It's actively tested against Amazon EKS, Microsoft AKS, Google GKE Red Hat OpenShift, Rancher RKE, and various vanilla deployments. [Learn more...](https://krossboard.app/)
 
   ![](https://github.com/2-alchemists/krossboard/blob/master/assets/krossboard-demo-v1.1.0.gif)
 
