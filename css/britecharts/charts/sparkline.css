@@ -1,7 +1,6 @@
 .sparkline {
   stroke: #ADB0B6;
   stroke-width: 1;
-  fill: none;
   stroke-linecap: round;
   stroke-linejoin: round; }
   .sparkline .line {
