@@ -21,6 +21,7 @@ import sys
 import threading
 import time
 import urllib
+from typing import Any, List
 
 import flask
 
@@ -46,7 +47,7 @@ def create_directory_if_not_exists(path):
 
 
 class Config:
-    version = '20.10.5'
+    version = '22.02.0'
     db_round_decimals = 6
     db_non_allocatable = 'non-allocatable'
     db_billing_hourly_rate = '.billing-hourly-rate'
@@ -79,13 +80,13 @@ class Config:
         create_directory_if_not_exists(self.frontend_data_location)
         with open(str('%s/backend.json' % self.frontend_data_location), 'w') as fd:
             if self.cost_model == 'CHARGE_BACK':
-                cost_model_label = 'actual costs'
+                cost_model_label = 'costs'
                 cost_model_unit = self.billing_currency
             elif self.cost_model == 'RATIO':
-                cost_model_label = 'normalized ratio'
+                cost_model_label = 'normalized'
                 cost_model_unit = '%'
             else:
-                cost_model_label = 'cumulative ratio'
+                cost_model_label = 'cumulative'
                 cost_model_unit = '%'
             fd.write('{"cost_model":"%s", "currency":"%s"}' % (cost_model_label, cost_model_unit))
 
@@ -101,6 +102,14 @@ class Config:
                 self.k8s_rbac_auth_token = rbac_token_file.read()
         except:
             self.k8s_rbac_auth_token = 'NO_ENV_TOKEN_FILE'
+
+    @staticmethod
+    def request_efficiency_db_file_extention():
+        return '__rf'
+
+    @staticmethod
+    def usage_efficiency_db(ns):
+        return '%s%s' % (ns, Config.request_efficiency_db_file_extention())
 
 
 def configure_logger(debug_enabled):
@@ -221,12 +230,16 @@ class Pod:
         self.nodeName = ''
         self.phase = ''
         self.state = "PodNotScheduled"
+        self.cpuUsage = 0.0
+        self.memUsage = 0.0
+        self.cpuRequest = 0.0
+        self.memRequest = 0.0
 
 
-class ResourceUsage:
-    def __init__(self, cpuUsage, memUsage):
-        self.cpuUsage = cpuUsage
-        self.memUsage = memUsage
+class ResourceCapacities:
+    def __init__(self, cpu, mem):
+        self.cpu = cpu
+        self.mem = mem
 
 
 class JSONMarshaller(json.JSONEncoder):
@@ -257,10 +270,10 @@ class JSONMarshaller(json.JSONEncoder):
                 'cpuUsage': obj.cpuUsage,
                 'memUsage': obj.memUsage
             }
-        elif isinstance(obj, ResourceUsage):
+        elif isinstance(obj, ResourceCapacities):
             return {
-                'cpuUsage': obj.cpuUsage,
-                'memUsage': obj.memUsage
+                'cpu': obj.cpu,
+                'mem': obj.mem
             }
         return json.JSONEncoder.default(self, obj)
 
@@ -269,11 +282,12 @@ class K8sUsage:
     def __init__(self):
         self.nodes = {}
         self.pods = {}
-        self.nsResUsage = {}
+        self.usageByNamespace = {}
+        self.requestByNamespace = {}
         self.popupContent = ''
         self.nodeHtmlList = ''
-        self.cpuUsedByPods = 0.0
-        self.memUsedByPods = 0.0
+        self.cpuUsageAllPods = 0.0
+        self.memUsageAllPods = 0.0
         self.cpuCapacity = 0.0
         self.memCapacity = 0.0
         self.cpuAllocatable = 0.0
@@ -328,8 +342,10 @@ class K8sUsage:
         # process likely valid data
         data_json = json.loads(data)
         for _, item in enumerate(data_json['items']):
-            self.nsResUsage[item['metadata']['name']] = ResourceUsage(
-                cpuUsage=0.0, memUsage=0.0)
+            metadata = item.get('metadata', None)
+            if metadata is not None:
+                self.usageByNamespace[metadata.get('name')] = ResourceCapacities(cpu=0.0, mem=0.0)
+                self.requestByNamespace[metadata.get('name')] = ResourceCapacities(cpu=0.0, mem=0.0)
 
     def extract_nodes(self, data):
         # exit if not valid data
@@ -341,34 +357,41 @@ class K8sUsage:
             node = Node()
             node.podsRunning = []
             node.podsNotRunning = []
-            node.name = item['metadata']['name']
-            node.id = item['metadata']['uid']
-            node.cpuCapacity = self.decode_cpu_capacity(item['status']['capacity']['cpu'])
-            node.cpuAllocatable = self.decode_cpu_capacity(item['status']['allocatable']['cpu'])
-            node.memCapacity = self.decode_memory_capacity(item['status']['capacity']['memory'])
-            node.memAllocatable = self.decode_memory_capacity(item['status']['allocatable']['memory'])
-            node.containerRuntime = item['status']['nodeInfo']['containerRuntimeVersion']
 
-            for _, cond in enumerate(item['status']['conditions']):
-                node.message = cond['message']
-                if cond['type'] == 'Ready' and cond['status'] == 'True':
-                    node.state = 'Ready'
-                    break
-                if cond['type'] == 'KernelDeadlock' and cond['status'] == 'True':
-                    node.state = 'KernelDeadlock'
-                    break
-                if cond['type'] == 'NetworkUnavailable' and cond['status'] == 'True':
-                    node.state = 'NetworkUnavailable'
-                    break
-                if cond['type'] == 'OutOfDisk' and cond['status'] == 'True':
-                    node.state = 'OutOfDisk'
-                    break
-                if cond['type'] == 'MemoryPressure' and cond['status'] == 'True':
-                    node.state = 'MemoryPressure'
-                    break
-                if cond['type'] == 'DiskPressure' and cond['status'] == 'True':
-                    node.state = 'DiskPressure'
-                    break
+            metadata = item.get('metadata', None)
+            if metadata is not None:
+                node.id = metadata.get('uid', None)
+                node.name = metadata.get('name', None)
+
+            status = item.get('status', None)
+            if status is not None:
+                node.containerRuntime = status['nodeInfo']['containerRuntimeVersion']
+
+                node.cpuCapacity = self.decode_cpu_capacity(status['capacity']['cpu'])
+                node.cpuAllocatable = self.decode_cpu_capacity(status['allocatable']['cpu'])
+                node.memCapacity = self.decode_memory_capacity(status['capacity']['memory'])
+                node.memAllocatable = self.decode_memory_capacity(status['allocatable']['memory'])
+
+                for _, cond in enumerate(status['conditions']):
+                    node.message = cond['message']
+                    if cond['type'] == 'Ready' and cond['status'] == 'True':
+                        node.state = 'Ready'
+                        break
+                    if cond['type'] == 'KernelDeadlock' and cond['status'] == 'True':
+                        node.state = 'KernelDeadlock'
+                        break
+                    if cond['type'] == 'NetworkUnavailable' and cond['status'] == 'True':
+                        node.state = 'NetworkUnavailable'
+                        break
+                    if cond['type'] == 'OutOfDisk' and cond['status'] == 'True':
+                        node.state = 'OutOfDisk'
+                        break
+                    if cond['type'] == 'MemoryPressure' and cond['status'] == 'True':
+                        node.state = 'MemoryPressure'
+                        break
+                    if cond['type'] == 'DiskPressure' and cond['status'] == 'True':
+                        node.state = 'DiskPressure'
+                        break
             self.nodes[node.name] = node
 
     def extract_node_metrics(self, data):
@@ -398,8 +421,7 @@ class K8sUsage:
             pod.id = item['metadata']['uid']
             pod.phase = item['status']['phase']
             if 'conditions' not in item['status']:
-                KOA_LOGGER.debug(
-                    '[puller] phase of pod %s in namespace %s is %s', pod.name, pod.namespace, pod.phase)
+                KOA_LOGGER.debug('[puller] phase of pod %s in namespace %s is %s', pod.name, pod.namespace, pod.phase)
             else:
                 pod.state = 'PodNotScheduled'
                 for _, cond in enumerate(item['status']['conditions']):
@@ -418,6 +440,15 @@ class K8sUsage:
 
             if pod.state != 'PodNotScheduled':
                 pod.nodeName = item['spec']['nodeName']
+                pod.cpuRequest = 0.0
+                pod.memRequest = 0.0
+                for _, container in enumerate(item.get('spec').get('containers')):
+                    resources = container.get('resources', None)
+                    if resources is not None:
+                        requests = resources.get('requests', None)
+                        if requests is not None:
+                            pod.cpuRequest += self.decode_cpu_capacity(requests.get('cpu', '0'))
+                            pod.memRequest += self.decode_memory_capacity(requests.get('memory', '0'))
             else:
                 pod.nodeName = None
 
@@ -441,21 +472,26 @@ class K8sUsage:
                 self.pods[pod.name] = pod
 
     def consolidate_ns_usage(self):
-        self.cpuUsedByPods = 0.0
-        self.memUsedByPods = 0.0
+
+        self.cpuUsageAllPods = 0.0
+        self.memUsageAllPods = 0.0
         for pod in self.pods.values():
             if hasattr(pod, 'cpuUsage') and hasattr(pod, 'memUsage'):
-                self.cpuUsedByPods += pod.cpuUsage
-                self.nsResUsage[pod.namespace].cpuUsage += pod.cpuUsage
-                self.nsResUsage[pod.namespace].memUsage += pod.memUsage
-                self.memUsedByPods += pod.memUsage
+                self.cpuUsageAllPods += pod.cpuUsage
+                self.usageByNamespace[pod.namespace].cpu += pod.cpuUsage
+                self.usageByNamespace[pod.namespace].mem += pod.memUsage
+                self.requestByNamespace[pod.namespace].cpu += pod.cpuRequest
+                self.requestByNamespace[pod.namespace].mem += pod.memRequest
+                self.memUsageAllPods += pod.memUsage
                 self.nodes[pod.nodeName].podsRunning.append(pod)
+
         self.cpuCapacity += 0.0
         self.memCapacity += 0.0
         for node in self.nodes.values():
             if hasattr(node, 'cpuCapacity') and hasattr(node, 'memCapacity'):
                 self.cpuCapacity += node.cpuCapacity
                 self.memCapacity += node.memCapacity
+
         self.cpuAllocatable += 0.0
         self.memAllocatable += 0.0
         for node in self.nodes.values():
@@ -523,8 +559,11 @@ class Rrd:
 
         rrd_end_ts_in = int(int(calendar.timegm(time.gmtime()) * step) / step)
         rrd_start_ts_in = int(rrd_end_ts_in - int(period))
-        rrd_result = rrdtool.fetch(self.rrd_location, 'AVERAGE', '-r', str(step), '-s', str(rrd_start_ts_in), '-e',
-                                   str(rrd_end_ts_in))
+        rrd_result = rrdtool.fetch(self.rrd_location,
+                                   'AVERAGE',
+                                   '-r', str(step),
+                                   '-s', str(rrd_start_ts_in),
+                                   '-e', str(rrd_end_ts_in))
         rrd_start_ts_out, _, step = rrd_result[0]
         rrd_current_ts = rrd_start_ts_out
         res_usage = collections.defaultdict(list)
@@ -588,25 +627,41 @@ class Rrd:
         return periodic_cpu_usage, periodic_mem_usage
 
     @staticmethod
-    def dump_trend_analytics(dbfiles):
+    def dump_trend_analytics(dbfiles, category='usage'):
+        """
+        Compute the analytics trends given a category.
+
+        :param dbfiles: array of RRD files
+        :param category: may be 'usage' or 'rf' (request factor) according the type of analytics trends expected
+        :return: None
+        """
         res_usage = collections.defaultdict(list)
         for _, db in enumerate(dbfiles):
             if db == KOA_CONFIG.db_billing_hourly_rate:
                 if not KOA_CONFIG.enable_debug:
                     continue
+
             rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=db)
             current_trend_data = rrd.dump_trend_data(period=RrdPeriod.PERIOD_7_DAYS_SEC)
             for res in [ResUsageType.CPU, ResUsageType.MEMORY]:
                 if current_trend_data[res]:
                     res_usage[res].append(current_trend_data[res])
 
-        with open(str('%s/cpu_usage_trends.json' % KOA_CONFIG.frontend_data_location), 'w') as fd:
+        with open(str('%s/cpu_%s_trends.json' % (KOA_CONFIG.frontend_data_location, category)), 'w') as fd:
             fd.write('[' + ','.join(res_usage[0]) + ']')
-        with open(str('%s/memory_usage_trends.json' % KOA_CONFIG.frontend_data_location), 'w') as fd:
+
+        with open(str('%s/memory_%s_trends.json' % (KOA_CONFIG.frontend_data_location, category)), 'w') as fd:
             fd.write('[' + ','.join(res_usage[1]) + ']')
 
     @staticmethod
     def dump_histogram_analytics(dbfiles, period):
+        """
+        Dump usage history data.
+
+        :param dbfiles: The target RRD file
+        :param period: the retrieval period
+        :return:
+        """
         now_gmtime = time.gmtime()
         usage_export = collections.defaultdict(list)
         usage_per_type_date = {}
@@ -689,9 +744,11 @@ def pull_k8s(api_context):
 def create_metrics_puller():
     try:
         while True:
-            k8s_usage = K8sUsage()
-            KOA_LOGGER.debug('{puller] collecting new metrics')
+            KOA_LOGGER.debug('{puller] collecting new samples')
+
             KOA_CONFIG.load_rbac_auth_token()
+
+            k8s_usage = K8sUsage()
             k8s_usage.extract_namespaces_and_initialize_usage(pull_k8s('/api/v1/namespaces'))
             k8s_usage.extract_nodes(pull_k8s('/api/v1/nodes'))
             k8s_usage.extract_node_metrics(pull_k8s('/apis/metrics.k8s.io/v1beta1/nodes'))
@@ -699,47 +756,69 @@ def create_metrics_puller():
             k8s_usage.extract_pod_metrics(pull_k8s('/apis/metrics.k8s.io/v1beta1/pods'))
             k8s_usage.consolidate_ns_usage()
             k8s_usage.dump_nodes()
+
             if k8s_usage.cpuCapacity > 0.0 and k8s_usage.memCapacity > 0.0:
                 now_epoch = calendar.timegm(time.gmtime())
-                # add non-allocatable resources
+
+                # handle non-allocatable resources
+                cpu_non_allocatable = compute_usage_percent_ratio(k8s_usage.cpuCapacity - k8s_usage.cpuAllocatable,
+                                                                  k8s_usage.cpuCapacity)
+                mem_non_allocatable = compute_usage_percent_ratio(k8s_usage.memCapacity - k8s_usage.memAllocatable,
+                                                                  k8s_usage.memCapacity)
                 rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.db_non_allocatable)
-                cpu_usage = compute_usage_percent_ratio(k8s_usage.cpuCapacity - k8s_usage.cpuAllocatable,
-                                                        k8s_usage.cpuCapacity)
-                mem_usage = compute_usage_percent_ratio(k8s_usage.memCapacity - k8s_usage.memAllocatable,
-                                                        k8s_usage.memCapacity)
-                rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_usage, mem_usage=mem_usage)
+                rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_non_allocatable, mem_usage=mem_non_allocatable)
+
                 # handle billing data
                 rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.db_billing_hourly_rate)
-                cpu_usage = compute_usage_percent_ratio(k8s_usage.cpuCapacity - k8s_usage.cpuAllocatable,
-                                                        k8s_usage.cpuCapacity)
-                mem_usage = compute_usage_percent_ratio(k8s_usage.memCapacity - k8s_usage.memAllocatable,
-                                                        k8s_usage.memCapacity)
-                rrd.add_sample(timestamp_epoch=now_epoch,
-                               cpu_usage=KOA_CONFIG.billing_hourly_rate,
+                rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=KOA_CONFIG.billing_hourly_rate,
                                mem_usage=KOA_CONFIG.billing_hourly_rate)
 
-                for ns, nsUsage in k8s_usage.nsResUsage.items():
+                # handle resource request and usage by pods
+                for ns, ns_usage in k8s_usage.usageByNamespace.items():
                     rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=ns)
-                    cpu_usage = compute_usage_percent_ratio(nsUsage.cpuUsage, k8s_usage.cpuCapacity)
-                    mem_usage = compute_usage_percent_ratio(nsUsage.memUsage, k8s_usage.memCapacity)
+                    cpu_usage = compute_usage_percent_ratio(ns_usage.cpu, k8s_usage.cpuCapacity)
+                    mem_usage = compute_usage_percent_ratio(ns_usage.mem, k8s_usage.memCapacity)
                     rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_usage, mem_usage=mem_usage)
+
+                    cpu_efficiency = 1.0
+                    mem_efficiency = 1.0
+                    request_capacities = k8s_usage.requestByNamespace.get(ns, None)
+                    if request_capacities is not None:
+                        if request_capacities.cpu > 0.0:
+                            cpu_efficiency = round(ns_usage.cpu / request_capacities.cpu, 2)
+                        if request_capacities.mem > 0.0:
+                            mem_efficiency = round(ns_usage.mem / request_capacities.mem, 2)
+                    rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.usage_efficiency_db(ns))
+                    rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_efficiency, mem_usage=mem_efficiency)
+
             time.sleep(int(KOA_CONFIG.polling_interval_sec))
+
     except Exception as ex:
         exception_type = type(ex).__name__
-        KOA_LOGGER.error("%s Exception in dump_analytics (%s)", exception_type, ex)
+        KOA_LOGGER.error("%s Exception in create_metrics_puller (%s)", exception_type, ex)
 
 
 def dump_analytics():
     try:
         export_interval = round(1.5 * KOA_CONFIG.polling_interval_sec)
         while True:
-            dbfiles = []
+            dbfiles: List[Any] = []
             for (_, _, filenames) in os.walk(KOA_CONFIG.db_location):
                 dbfiles.extend(filenames)
                 break
-            Rrd.dump_trend_analytics(dbfiles)
-            Rrd.dump_histogram_analytics(dbfiles=dbfiles, period=RrdPeriod.PERIOD_14_DAYS_SEC)
-            Rrd.dump_histogram_analytics(dbfiles=dbfiles, period=RrdPeriod.PERIOD_YEAR_SEC)
+
+            ns_dbfiles = []
+            rf_dbfiles = []
+            for fn in dbfiles:
+                if fn.endswith(KOA_CONFIG.request_efficiency_db_file_extention()):
+                    rf_dbfiles.append(fn)
+                else:
+                    ns_dbfiles.append(fn)
+
+            Rrd.dump_trend_analytics(ns_dbfiles, 'usage')
+            Rrd.dump_trend_analytics(rf_dbfiles, 'rf')
+            Rrd.dump_histogram_analytics(dbfiles=ns_dbfiles, period=RrdPeriod.PERIOD_14_DAYS_SEC)
+            Rrd.dump_histogram_analytics(dbfiles=ns_dbfiles, period=RrdPeriod.PERIOD_YEAR_SEC)
             time.sleep(export_interval)
     except Exception as ex:
         exception_type = type(ex).__name__

@@ -20,6 +20,9 @@
 
 
 var currentUsageType = '';
+var usageTrendType = 'usage-trend-type-default';
+var cumulativeUsageType = 'daily';
+
 const KoaColorSchema = [
     "#6600ff",
     "#9966ff",
@@ -66,7 +69,7 @@ const KoaColorSchema = [
     "#660033",
     "#990033",
     "#993333"
-    ]
+]
 
 requirejs.config({
     baseUrl: 'js',
@@ -77,7 +80,8 @@ requirejs.config({
         d3Selection: './d3-selection/dist/d3-selection.min',
         stackedAreaChart: './britecharts/umd/stackedArea.min',
         stackedBarChart: './britecharts/umd/stackedBar.min',
-        dotnutChart: './britecharts/umd/donut.min',
+        donutChart: './britecharts/umd/donut.min',
+        lineChart: './britecharts/umd/line.min',
         legend: './britecharts/umd/legend.min',
         colors: './britecharts/umd/colors.min',
         tooltip: './britecharts/umd/tooltip.min'
@@ -89,40 +93,42 @@ requirejs.config({
 });
 
 
-define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'dotnutChart', 'legend', 'colors', 'tooltip'],
-    function ($, bootstrap, bootswatch, d3Selection, stackedAreaChart, stackedBarChart, donut, legend, colors, tooltip) {
+define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'donutChart', 'lineChart', 'legend', 'colors', 'tooltip'],
+    function ($, bootstrap, bootswatch, d3Selection, stackedAreaChart, stackedBarChart, donut, lineChart, legend, colors, tooltip) {
         let cpuUsageTrendsChart = stackedAreaChart();
         let memoryUsageTrendsChart = stackedAreaChart();
+        let cpuRfTrendsChart = lineChart();
+        let memoryRfTrendsChart = lineChart();
         let dailyCpuUsageChart = stackedBarChart();
         let dailyMemoryUsageChart = stackedBarChart();
         let monthlyCpuUsageChart = stackedBarChart();
         let monthlyMemoryUsageChart = stackedBarChart();
 
-        const truncateText = function(str, length, ending) {
+        const truncateText = function (str, length, ending) {
             if (length == null) {
-              length = 100;
+                length = 100;
             }
             if (ending == null) {
-              ending = '...';
+                ending = '...';
             }
             if (str.length > length) {
-              return str.substring(0, length - ending.length) + ending;
+                return str.substring(0, length - ending.length) + ending;
             } else {
-              return str;
+                return str;
             }
         };
 
 
         function renderLegend(dataset, targetDivContainer) {
             let legendChart = legend();
-            let legendContainer = d3Selection.select('.'+targetDivContainer);
+            let legendContainer = d3Selection.select('.' + targetDivContainer);
 
             let containerWidth = legendContainer.node() ? legendContainer.node().getBoundingClientRect().width : false;
 
             if (containerWidth) {
-                d3Selection.select('.'+targetDivContainer+' .britechart-legend').remove();
+                d3Selection.select('.' + targetDivContainer + ' .britechart-legend').remove();
                 legendChart
-                    .width(containerWidth*0.8)
+                    .width(containerWidth * 0.8)
                     .height(400)
                     .marginRatio(2)
                     .markerSize(10)
@@ -136,127 +142,109 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             }
         }
 
-        function updateStackedAreaChart(dataset, myStackedAreaChart, targetDivContainer, yLabel, chartTitle) {
-            let chartTooltip = tooltip();
-            let container = d3Selection.select('.'+targetDivContainer);
-            let containerWidth = container.node() ? container.node().getBoundingClientRect().width : false;
+        function updateLineOrAreaChart(dataset, mychart, htmlContainerClass, yLabel, chartTitle) {
+            let htmlContainer = d3Selection.select('.' + htmlContainerClass);
+            let htmlContainerWidth = htmlContainer.node() ? htmlContainer.node().getBoundingClientRect().width : false;
+            let mychartTooltip = tooltip();
 
-            if (containerWidth) {
-
-                dataset.data.sort(
-                    function(data1, data2) {
-                        let ts1 = Date.parse(data1.dateUTC)
-                        let ts2 = Date.parse(data2.dateUTC)
-                        if (ts1 < ts2)
-                            return -1;
-                        if (ts1 > ts2)
-                            return 1;
-                        return 0;
-                    }
-                );
-
-                //container.html(myStackedBarChart.loadingState());
-                myStackedAreaChart
-                    .isAnimated(true)
-                    .tooltipThreshold(600)
-                    .height(400)
-                    .grid('full')
-                    .xAxisFormat('custom')
-                    .xAxisCustomFormat('%b %d %H:%M')
-                    .xTicks(2)
-                    .yAxisLabel(yLabel)
-                    .width(containerWidth)
-                    .dateLabel('dateUTC')
-                    .valueLabel('usage')
-                    .margin({left: 75, top: 50, right: 25, bottom: 50})
-                    .colorSchema(KoaColorSchema)
-                    .on('customDataEntryClick', function(d, mousePosition) {
-                        console.log('Data entry marker clicked', d, mousePosition);
-                    })
-                    .on('customMouseOver', chartTooltip.show)
-                    .on('customMouseMove', function(dataPoint, topicColorMap, dataPointXPosition) {
-                        chartTooltip.update(dataPoint, topicColorMap, dataPointXPosition);
-                    })
-                    .on('customMouseOut', chartTooltip.hide);
-
-                if (KoaColorSchema) {
-                    myStackedAreaChart.colorSchema(KoaColorSchema);
-                }
-
-                container.datum(dataset.data).call(myStackedAreaChart);
-
-                chartTooltip
-                    .topicLabel('values')
-                    .title(chartTitle);
-
-                let tooltipContainer = d3Selection.select('.'+targetDivContainer+' .metadata-group .vertical-marker-container');
-                tooltipContainer.datum([]).call(chartTooltip);
+            if (! htmlContainerWidth) {
+                return;
             }
+
+            mychart
+                .isAnimated(true)
+                .tooltipThreshold(600)
+                .height(400)
+                .grid('full')
+                .xAxisFormat('custom')
+                .xAxisCustomFormat('%b %d %H:%M')
+                .xTicks(2)
+                .yAxisLabel(yLabel)
+                .width(htmlContainerWidth)
+                .margin({left: 75, top: 50, right: 25, bottom: 50})
+                .colorSchema(KoaColorSchema)
+                .on('customDataEntryClick', function (d, mousePosition) {
+                    console.log('Data entry marker clicked', d, mousePosition);
+                })
+                .on('customMouseOver', mychartTooltip.show)
+                .on('customMouseMove', function (dataPoint, topicColorMap, dataPointXPosition) {
+                    mychartTooltip.update(dataPoint, topicColorMap, dataPointXPosition);
+                })
+                .on('customMouseOut', mychartTooltip.hide);
+
+            htmlContainer.datum(dataset).call(mychart);
+
+            mychartTooltip.title(chartTitle);
+            if (! dataset.hasOwnProperty('data')) {
+                mychartTooltip.topicLabel('values');
+            }
+
+            let tooltipContainer = d3Selection.select('.' + htmlContainerClass + ' .metadata-group .vertical-marker-container');
+            tooltipContainer.datum([]).call(mychartTooltip);
         }
 
-
-        function updateStackedBarChart(dataset, myStackedBarChart, targetDivContainer, yLabel, chartTitle) {
+        function updateStackedBarChart(dataset, mychart, htmlContainerClass, yLabel, chartTitle) {
             let chartTooltip = tooltip();
-            let container = d3Selection.select('.'+targetDivContainer);
-            let containerWidth = container.node() ? container.node().getBoundingClientRect().width : false;
+            let htmlContainer = d3Selection.select('.' + htmlContainerClass);
+            let htmlContainerWidth = htmlContainer.node() ? htmlContainer.node().getBoundingClientRect().width : false;
 
-            if (containerWidth) {
-
-                dataset.data.sort(
-                    function(data1, data2) {
-                        let ts1 = Date.parse(data1.date+' GMT')
-                        let ts2 = Date.parse(data2.date+' GMT')
-                        if (ts1 < ts2)
-                            return -1;
-                        if (ts1 > ts2)
-                            return 1;
-                        return 0;
-                    }
-                );
-                //container.html(myStackedBarChart.loadingState());
-                myStackedBarChart
-                    .isAnimated(true)
-                    //.hasPercentage(true)
-                    .tooltipThreshold(400)
-                    .height(400)
-                    .width(containerWidth)
-                    .grid('horizontal')
-                    .stackLabel('stack')
-                    .nameLabel('date')
-                    .valueLabel('usage')
-                    .nameLabelFormat('%b %d')
-                    .betweenBarsPadding(0.2)
-                    .yAxisLabel(yLabel)
-                    .colorSchema(KoaColorSchema)
-                    .margin({left: 75, top: 50, right: 25, bottom: 50})
-                    .on('customMouseOver', function(data) {
-                        chartTooltip.show();
-                    })
-                    .on('customMouseOut', function() {
-                        chartTooltip.hide();
-                    })
-                    .on('customMouseMove', function(dataPoint, topicColorMap, pos) {
-                        chartTooltip.update(dataPoint, topicColorMap, pos);
-                    });
-
-                container.datum(dataset.data).call(myStackedBarChart);
-
-                chartTooltip
-                    .nameLabel('stack')
-                    .dateLabel('date')
-                    .topicLabel('values')
-                    .shouldShowDateInTitle(false)
-                    .title(chartTitle);
-
-                let tooltipContainer = d3Selection.select('.'+targetDivContainer+' .metadata-group');
-                tooltipContainer.datum([]).call(chartTooltip);
+            if (! htmlContainerWidth) {
+                return;
             }
+
+            dataset.data.sort(
+                function (data1, data2) {
+                    let ts1 = Date.parse(data1.date + ' GMT')
+                    let ts2 = Date.parse(data2.date + ' GMT')
+                    if (ts1 < ts2)
+                        return -1;
+                    if (ts1 > ts2)
+                        return 1;
+                    return 0;
+                }
+            );
+
+            mychart
+                .isAnimated(true)
+                .tooltipThreshold(400)
+                .height(400)
+                .width(htmlContainerWidth)
+                .grid('horizontal')
+                .stackLabel('stack')
+                .nameLabel('date')
+                .valueLabel('usage')
+                .valueLabelFormat(',f')
+                .betweenBarsPadding(0.2)
+                .yAxisLabel(yLabel)
+                .colorSchema(KoaColorSchema)
+                .margin({left: 75, top: 50, right: 25, bottom: 50})
+                .on('customMouseOver', function (data) {
+                    chartTooltip.show();
+                })
+                .on('customMouseOut', function () {
+                    chartTooltip.hide();
+                })
+                .on('customMouseMove', function (dataPoint, topicColorMap, pos) {
+                    chartTooltip.update(dataPoint, topicColorMap, pos);
+                });
+
+            htmlContainer.datum(dataset.data).call(mychart);
+
+            chartTooltip
+                .nameLabel('stack')
+                .dateLabel('date')
+                .topicLabel('values')
+                .shouldShowDateInTitle(false)
+                .title(chartTitle);
+
+            let tooltipContainer = d3Selection.select('.' + htmlContainerClass + ' .metadata-group');
+            tooltipContainer.datum([]).call(chartTooltip);
         }
 
 
         function updateDonutChart(dataset, myDonutChart, targetDivContainer, legendContainer, chartTitle) {
             let legendChart = renderLegend(dataset, legendContainer);
-            let donutContainer = d3Selection.select('.'+targetDivContainer);
+            let donutContainer = d3Selection.select('.' + targetDivContainer);
             let containerWidth = donutContainer.node() ? donutContainer.node().getBoundingClientRect().width : false;
 
             if (containerWidth) {
@@ -265,12 +253,12 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                     .highlightSliceById(2)
                     .width(containerWidth)
                     .height(containerWidth)
-                    .externalRadius(containerWidth/2.5)
-                    .internalRadius(containerWidth/5)
-                    .on('customMouseOver', function(data) {
+                    .externalRadius(containerWidth / 2.5)
+                    .internalRadius(containerWidth / 5)
+                    .on('customMouseOver', function (data) {
                         legendChart.highlight(data.data.id);
                     })
-                    .on('customMouseOut', function() {
+                    .on('customMouseOut', function () {
                         legendChart.clearHighlight();
                     });
 
@@ -283,65 +271,62 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
         }
 
 
-        function generateTooltip(node)
-        {
+        function generateTooltip(node) {
             let tooltip = '<table class="table table-striped"><tbody>';
 
-            tooltip += '<tr><td>Host</td><td>'+node.name+'</td></tr>';
-            tooltip += '<tr><td>UID</td><td>'+node.id+'</td></tr>';
-            tooltip += '<tr><td>Container Runtime</td><td>'+node.containerRuntime+'</td></tr>';
-            tooltip += '<tr><td>State</td><td>'+node.state+'</td></tr>';
-            tooltip += '<tr><td>CPU</td><td>'+node.cpuCapacity+'</td></tr>';
-            tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>'+computeLoad(node.cpuAllocatable, node.cpuCapacity)+'</td></tr>';
-            tooltip += '<tr><td>&nbsp;&nbsp;Usage</td><td>'+computeLoad(node.cpuUsage, node.cpuCapacity)+'</td></tr>';
-            tooltip += '<tr><td>Memory</td><td>'+node.memCapacity+'</td></tr>';
-            tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>'+computeLoad(node.memAllocatable, node.memAllocatable)+'</td></tr>';
-            tooltip += '<tr><td>&nbsp;&nbsp;Usage</td><td>'+computeLoad(node.memUsage, node.memCapacity)+'</td></tr>';
-            tooltip += '<tr><td>Pods Running</td><td>'+node.podsRunning.length+'</td></tr>';
+            tooltip += '<tr><td>Host</td><td>' + node.name + '</td></tr>';
+            tooltip += '<tr><td>UID</td><td>' + node.id + '</td></tr>';
+            tooltip += '<tr><td>Container Runtime</td><td>' + node.containerRuntime + '</td></tr>';
+            tooltip += '<tr><td>State</td><td>' + node.state + '</td></tr>';
+            tooltip += '<tr><td>CPU</td><td>' + node.cpuCapacity + '</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>' + computeLoad(node.cpuAllocatable, node.cpuCapacity) + '</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Usage</td><td>' + computeLoad(node.cpuUsage, node.cpuCapacity) + '</td></tr>';
+            tooltip += '<tr><td>Memory</td><td>' + node.memCapacity + '</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>' + computeLoad(node.memAllocatable, node.memAllocatable) + '</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Usage</td><td>' + computeLoad(node.memUsage, node.memCapacity) + '</td></tr>';
+            tooltip += '<tr><td>Pods Running</td><td>' + node.podsRunning.length + '</td></tr>';
 
             tooltip += '</tbody></table>';
             return tooltip;
         }
 
-        function createPopupContent(nodeInfo)
-        {
-            return ('<div class="modal fade" id="'+nodeInfo.id+'" tabindex="-1" role="dialog" aria-labelledby="'+nodeInfo.name+'" aria-hidden="true">'
-                +'<div class="modal-dialog">'
-                +'<div class="modal-content">'
-                +'<div class="modal-header">'
-                +'<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>'
-                +'<h4 class="modal-title" id="'+nodeInfo.name+'">'+nodeInfo.name+'</h4>'
-                +'</div>'
-                +'<div class="modal-body">'
-                +generateTooltip(nodeInfo)
-                +'</div>'
-                +'<div class="modal-footer">'
-                +'<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>'
-                +'</div>'
-                +'</div>'
-                +'</div>'
-                +'</div>');
+        function createPopupContent(nodeInfo) {
+            return ('<div class="modal fade" id="' + nodeInfo.id + '" tabindex="-1" role="dialog" aria-labelledby="' + nodeInfo.name + '" aria-hidden="true">'
+                + '<div class="modal-dialog">'
+                + '<div class="modal-content">'
+                + '<div class="modal-header">'
+                + '<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>'
+                + '<h4 class="modal-title" id="' + nodeInfo.name + '">' + nodeInfo.name + '</h4>'
+                + '</div>'
+                + '<div class="modal-body">'
+                + generateTooltip(nodeInfo)
+                + '</div>'
+                + '<div class="modal-footer">'
+                + '<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>'
+                + '</div>'
+                + '</div>'
+                + '</div>'
+                + '</div>');
         }
 
 
-        function buildNodesLoadDataSet(data, usageType)
-        {
-            let dataset = { "data": new Map() };
+        function buildNodesLoadDataSet(data, usageType) {
+            let dataset = {"data": new Map()};
 
             let nodeHtmlList = '';
             let popupContent = '';
             for (let nname in data) {
                 if (data.hasOwnProperty(nname)) {
                     let node = data[nname];
-                    nodeHtmlList += '<li><a href="#" data-toggle="modal" data-target="#'+node.id+'">'+ node.name+'</a></li>';
+                    nodeHtmlList += '<li><a href="#" data-toggle="modal" data-target="#' + node.id + '">' + node.name + '</a></li>';
                     popupContent += createPopupContent(node);
                 }
             }
-            $("#host-list-container").html('<ul>'+nodeHtmlList+"</ul>");
+            $("#host-list-container").html('<ul>' + nodeHtmlList + "</ul>");
             $("#popup-container").html(popupContent);
 
             for (let nname in data) {
-                if (! data.hasOwnProperty(nname)) {
+                if (!data.hasOwnProperty(nname)) {
                     continue;
                 }
                 let resUsage = '';
@@ -360,27 +345,27 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                         resAllocatable = 'cpuAllocatable';
                         break;
                     default:
-                        $("#error-message").append('<li>unknown load type: '+ escape(usageType)+'</li>');
+                        $("#error-message").append('<li>unknown load type: ' + escape(usageType) + '</li>');
                         $("#error-message-container").show();
                         return;
                 }
 
                 let node = data[nname];
                 if (typeof node[resUsage] === "undefined" || node[resUsage] == 0) {
-                    $("#error-message").append('<li>No '+resUsage+' metric on node ' + escape(node.name) +'</li>');
+                    $("#error-message").append('<li>No ' + resUsage + ' metric on node ' + escape(node.name) + '</li>');
                     $("#error-message-container").show();
                     continue;
                 }
 
                 if (node[resUsage] == 0) {
-                    $("#error-message").append('<li>Node '+node.name+' has '+escape(resUsage)+' equals to zero'+'</li>');
+                    $("#error-message").append('<li>Node ' + node.name + ' has ' + escape(resUsage) + ' equals to zero' + '</li>');
                     $("#error-message-container").show();
                     continue;
                 }
 
                 // sort pods in ascending order in against resource usage
                 node.podsRunning.sort(
-                    function(p1, p2) {
+                    function (p1, p2) {
                         if (p1[resUsage] < p2[resUsage])
                             return -1;
                         if (p1[resUsage] > p2[resUsage])
@@ -398,7 +383,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                     let podLoadRel = computeLoad(pod[resUsage], node[resUsage]);
                     loadColors.push(computeLoadHeatMapColor(podLoadRel));
                     sumLoad += podLoad;
-                    if (pod[resUsage] > 0.0 ) {
+                    if (pod[resUsage] > 0.0) {
                         chartData.push({
                             "name": truncateText(pod.name, 25, '...'),
                             "id": pid,
@@ -422,7 +407,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 chartData.push({
                     "name": 'unused',
                     "id": 9999,
-                    "quantity": node[resCapacity] * (1 - sumLoad/100),
+                    "quantity": node[resCapacity] * (1 - sumLoad / 100),
                     "percentage": (100.0 - sumLoad)
                 });
                 loadColors.push(computeLoadHeatMapColor(0));
@@ -432,18 +417,17 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
         }
 
 
-        function computeLoad(used, capacity)
-        {
-            return Math.ceil(1e4*used/capacity ) / 100
+        function computeLoad(used, capacity) {
+            return Math.ceil(1e4 * used / capacity) / 100
         }
 
-        function  computeLoadHeatMapColor(load) {
+        function computeLoadHeatMapColor(load) {
             const NUM_COLORS = 4;
             const HeatMapColors = Object.freeze({
-                '0': [0,0,255],
-                '1': [0,255,0],
-                '2': [255,255,0],
-                '3': [255,0,0]
+                '0': [0, 0, 255],
+                '1': [0, 255, 0],
+                '2': [255, 255, 0],
+                '3': [255, 0, 0]
             });
 
             let colorLevel = load / 100;
@@ -452,61 +436,91 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             let fractBetween = 0;
             if (colorLevel <= 0) {
                 idx1 = idx2 = 0;
-            } else if (colorLevel >= 1)  {
+            } else if (colorLevel >= 1) {
                 idx1 = idx2 = NUM_COLORS - 1;
             } else {
                 let tmpValue = colorLevel * (NUM_COLORS - 1);
-                idx1  = Math.floor(tmpValue);
-                idx2  = idx1+1;
+                idx1 = Math.floor(tmpValue);
+                idx2 = idx1 + 1;
                 fractBetween = tmpValue - idx1;
             }
 
-            let r = (HeatMapColors[idx2][0] - HeatMapColors[idx1][0])*fractBetween + HeatMapColors[idx1][0];
-            let g = (HeatMapColors[idx2][1] - HeatMapColors[idx1][1])*fractBetween + HeatMapColors[idx1][1];
-            let b = (HeatMapColors[idx2][2] - HeatMapColors[idx1][2])*fractBetween + HeatMapColors[idx1][2];
-            return 'rgb('+r+','+g+',' +b+')';
+            let r = (HeatMapColors[idx2][0] - HeatMapColors[idx1][0]) * fractBetween + HeatMapColors[idx1][0];
+            let g = (HeatMapColors[idx2][1] - HeatMapColors[idx1][1]) * fractBetween + HeatMapColors[idx1][1];
+            let b = (HeatMapColors[idx2][2] - HeatMapColors[idx1][2]) * fractBetween + HeatMapColors[idx1][2];
+            return 'rgb(' + r + ',' + g + ',' + b + ')';
         }
 
 
-        function updateNodeUsage(frontendDataDir)
-        {
-            currentUsageType = $("#node-usage-type option:selected" ).val();
+        function updateNodeUsage() {
+            currentUsageType = $("#node-usage-type option:selected").val();
             $.ajax({
                 type: "GET",
-                url: frontendDataDir+'/nodes.json',
+                url: `${FrontendApi.DATA_DIR}/nodes.json`,
                 dataType: 'json',
-                success: function(data) {
+                success: function (data) {
                     let dataset = buildNodesLoadDataSet(data, currentUsageType, 'donut');
                     let dynHtml = '';
                     let donuts = new Map();
                     for (let [nname, _] of dataset.data) {
                         donuts[nname] = donut();
                         dynHtml += '<div class="col-md-4">';
-                        dynHtml += '  <h4>'+nname+'</h4>';
-                        dynHtml += '  <div class="js-'+nname+'"></div>';
-                        dynHtml += '  <div class="js-'+nname+'-legend" britechart-legend"></div>';
+                        dynHtml += '  <h4>' + nname + '</h4>';
+                        dynHtml += '  <div class="js-' + nname + '"></div>';
+                        dynHtml += '  <div class="js-' + nname + '-legend" britechart-legend"></div>';
                         dynHtml += '</div>';
                     }
                     $("#js-nodes-load-container").html(dynHtml);
                     for (let [nname, ndata] of dataset.data) {
                         updateDonutChart(ndata['chartData'],
                             donuts[nname],
-                            'js-'+nname,
-                            'js-'+nname+'-legend');
+                            'js-' + nname,
+                            'js-' + nname + '-legend');
                     }
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append('<li>download node data'+' ('+xhr.status+')</li>');
+                    $("#error-message").append('<li>download node data' + ' (' + xhr.status + ')</li>');
                     $("#error-message-container").show();
                 }
             });
+        }
+
+
+        function showUsageTrendType() {
+            usageTrendType = $("#selected-usage-trend-type option:selected").val();
+            if (usageTrendType === 'usage-efficiency') {
+                $('#chart-block-trends-hourly-usage').hide();
+                $("#chart-block-trends-rf").show();
+                refreshTrendsChartByType(cpuRfTrendsChart, 'CPU', 'rf');
+                refreshTrendsChartByType(memoryRfTrendsChart, 'Memory', 'rf');
+            } else {
+                $("#chart-block-trends-rf").hide();
+                $("#chart-block-trends-hourly-usage").show();
+                refreshTrendsChartByType(cpuUsageTrendsChart, 'CPU', 'usage');
+                refreshTrendsChartByType(memoryUsageTrendsChart, 'Memory', 'usage');
+            }
+        }
+
+        function showCumulativeUsageByType() {
+            cumulativeUsageType = $("#selected-cumulative-usage-type option:selected").val();
+            if (cumulativeUsageType === 'monthly') {
+                $("#chart-block-daily").hide();
+                $("#chart-block-monthly").show();
+                refreshCumulativeChartByType(monthlyCpuUsageChart, 'CPU', 'monthly');
+                refreshCumulativeChartByType(monthlyMemoryUsageChart, 'Memory', 'monthly');
+            } else {
+                $("#chart-block-monthly").hide();
+                $("#chart-block-daily").show();
+                refreshCumulativeChartByType(dailyCpuUsageChart, 'CPU', 'daily');
+                refreshCumulativeChartByType(dailyMemoryUsageChart, 'Memory', 'daily');
+            }
         }
 
         function exportJSON(data) {
             return new Blob(
                 [JSON.stringify(data)],
                 {type: 'application/json'})
-        }     
+        }
 
         function exportCSV(data) {
             data = JSON.parse(JSON.stringify(data));
@@ -526,22 +540,23 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
 
             return new Blob(
                 [csv],
-                {type: 'text/csv;charset=utf-8'})
+                {type: 'text/csv;charset=utf-8'}
+            );
         }
 
         function exportImage(chartElt, filename) {
             return new Blob(
                 [chartElt.exportChart(filename)],
-                {type: 'image/png'})
-               ;
-        }   
+                {type: 'image/png'}
+            );
+        }
 
         function installExporter(targetDivId, filename, exporterFunc) {
             $(`#${targetDivId}`)
-                .unbind( 'click' )
+                .unbind('click')
                 .attr('href', '#')
-                .click(function() {
-                    if(this.href.endsWith('#')) {
+                .click(function () {
+                    if (this.href.endsWith('#')) {
                         let blob = exporterFunc();
                         let url = window.URL.createObjectURL(blob);
 
@@ -554,168 +569,120 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 .removeClass('disabled')
         }
 
-        function loadBackendConfig(frontendDataDir)
-        {
+        function loadBackendConfig() {
             $("#cost-model").text('');
             $.ajax({
                 type: "GET",
-                url: frontendDataDir+'/backend.json',
+                url: FrontendApi.DATA_DIR + '/backend.json',
                 dataType: 'json',
-                success: function(backend_config) {
-                    $("#cost-model").text(backend_config.cost_model+' ('+backend_config.currency+')');
+                success: function (backend_config) {
+                    $("#cost-model").text(backend_config.cost_model + ' (' + backend_config.currency + ')');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
                     $("#cost-model").text('%');
-                    console.log('failed loading backend config (',xhr.status, ' error)')
+                    console.log('failed loading backend config (', xhr.status, ' error)')
                 }
             });
-        }        
+        }
 
-        function triggerRefreshUsageCharts(frontendDataDir)
+        function refreshTrendsChartByType(chart, resourceType, trendType) {
+            let resourceTypeLowered = resourceType.toLowerCase();
+            let dataFile = `${resourceTypeLowered}_${trendType}_trends.json`;
+            let datasetPath = `${FrontendApi.DATA_DIR}/${dataFile}`;
+
+            const TREND_TYPE_LABELS = Object.freeze({
+                "usage": "Hourly Usage",
+                "rf": "Hourly Usage Efficiency",
+            });
+
+            $.ajax({
+                type: "GET",
+                url: datasetPath,
+                dataType: 'json',
+                success: function(data) {
+                    let chartCategory = `${resourceTypeLowered}-${trendType}`;
+                    installExporter( `trends-${resourceTypeLowered}-png`, '', () => exportImage(chart, 'kopex-trends-'+chartCategory+'.png'));
+                    installExporter( `trends-${resourceTypeLowered}-json`, 'kopex-trends-'+chartCategory+'.json', () => exportJSON(data));
+                    installExporter( `trends-${resourceTypeLowered}-csv`, 'kopex-trends-'+chartCategory+'.csv', () => exportCSV(data));
+
+                    if (trendType === 'rf') {
+                        const dataset = {
+                            data: data.map(
+                                ({name, usage,dateUTC }) => ({
+                                    topicName: name,
+                                    name: name,
+                                    date: dateUTC,
+                                    value: usage
+                                })
+                            )
+                        };
+                        updateLineOrAreaChart(
+                            dataset,
+                            chart,
+                            `js-chart-trends-${chartCategory}`,
+                            `${resourceType} ${TREND_TYPE_LABELS[trendType]}`,
+                            `${TREND_TYPE_LABELS[trendType]}`);
+                    } else {
+                        const dataset = data.map(
+                            ({name, usage,dateUTC }) => ({
+                                name: name,
+                                date: dateUTC,
+                                value: usage
+                            })
+                        );
+                        updateLineOrAreaChart(
+                            dataset,
+                            chart,
+                            `js-chart-trends-${chartCategory}`,
+                            `${resourceType} ${TREND_TYPE_LABELS[trendType]}`,
+                            `${TREND_TYPE_LABELS[trendType]}`);
+                    }
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    $("#error-message").append(`<li>error ${xhr.status} downloading data file ${dataFile}</li>`);
+                    $("#error-message-container").show();
+                }
+            });
+        }
+
+        function refreshCumulativeChartByType(chart, resourceType, periodType) {
+            let resourceTypeLowered = resourceType.toLowerCase();
+            let DATASET_FILES = Object.freeze({
+                "daily": `${resourceTypeLowered}_usage_period_1209600.json`,
+                "monthly": `${resourceTypeLowered}_usage_period_31968000.json`,
+            });
+
+            $.ajax({
+                type: "GET",
+                url: `${FrontendApi.DATA_DIR}/${DATASET_FILES[periodType]}`,
+                dataType: 'json',
+                success: function(data) {
+                    installExporter( `consolidated-${resourceTypeLowered}-usage-png`, '', () => exportImage(chart, 'kopex-'+resourceTypeLowered+'-usage.png'));
+                    installExporter( `consolidated-${resourceTypeLowered}-usage-json`, 'kopex-'+resourceTypeLowered+'-usage.json', () => exportJSON(data));
+                    installExporter( `consolidated-${resourceTypeLowered}-usage-csv`, 'kopex-'+resourceTypeLowered+'-usage.csv', () => exportCSV(data));
+
+                    updateStackedBarChart(
+                        {"data": data},
+                        chart,
+                        `js-chart-${periodType}-${resourceTypeLowered}-usage`,
+                        `${resourceType} consumption`,
+                        `${periodType} ${resourceType} Usage`);
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    $("#error-message").append(`<li>error ${xhr.status} downloading data file ${DATASET_FILES[periodType]}</li>`);
+                    $("#error-message-container").show();
+                }
+            });
+        }
+
+        function triggerRefreshUsageCharts()
         {
-            console.log(Date(), 'updating usage...')
             $("#error-message-container").hide();
             $("#error-message").html('')
-
-            loadBackendConfig(frontendDataDir);
-
-            $.ajax({
-                type: "GET",
-                url: frontendDataDir+'/cpu_usage_trends.json',
-                dataType: 'json',
-                success: function(data) {
-                    installExporter( 'usage-cpu-trends-png', '', () => exportImage(cpuUsageTrendsChart, 'cpu_usage_trends.png'));
-                    installExporter( 'usage-cpu-trends-json', 'cpu_usage_trends.json', () => exportJSON(data));
-                    installExporter( 'usage-cpu-trends-csv', 'cpu_usage_trends.csv', () => exportCSV(data));
-
-                    updateStackedAreaChart(
-                        {"data": data},
-                        cpuUsageTrendsChart,
-                        'js-usage-cpu-trends',
-                        'CPU Usage',
-                        'Hourly CPU Usage');
-                },
-                error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append('<li>download hourly cpu usage'+' ('+xhr.status+')</li>');
-                    $("#error-message-container").show();
-                }
-            });
-
-
-            $.ajax({
-                type: "GET",
-                url: frontendDataDir+'/memory_usage_trends.json',
-                dataType: 'json',
-                success: function(data) {
-                    installExporter( 'usage-memory-trends-png', '', () => exportImage(memoryUsageTrendsChart, 'memory_usage_trends.png'));
-                    installExporter( 'usage-memory-trends-json', 'memory_usage_trends.json', () => exportJSON(data));
-                    installExporter( 'usage-memory-trends-csv', 'memory_usage_trends.csv', () => exportCSV(data));
-
-                    updateStackedAreaChart(
-                        {"data": data},
-                        memoryUsageTrendsChart,
-                        'js-usage-memory-trends',
-                        'Memory Usage',
-                        'Hourly Memory Usage');
-                },
-                error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append('<li>download hourly memory usage'+' ('+xhr.status+')</li>');
-                    $("#error-message-container").show();
-                }
-            });
-
-            $.ajax({
-                type: "GET",
-                url: frontendDataDir+'/cpu_usage_period_1209600.json',
-                dataType: 'json',
-                success: function(data) {
-                    installExporter( 'daily-cpu-usage-png', '', () => exportImage(dailyCpuUsageChart, 'cpu_usage_period_14d.png'));
-                    installExporter( 'daily-cpu-usage-json', 'cpu_usage_period_14d.json', () => exportJSON(data));
-                    installExporter( 'daily-cpu-usage-csv', 'cpu_usage_period_14d.csv', () => exportCSV(data));
-
-                    updateStackedBarChart(
-                        {"data": data},
-                        dailyCpuUsageChart,
-                        'js-daily-cpu-usage',
-                        'Cumulative CPU Usage',
-                        'Daily CPU Usage');
-                },
-                error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append('<li>download daily cpu usage'+' ('+xhr.status+')</li>');
-                    $("#error-message-container").show();
-                }
-            });
-
-
-            $.ajax({
-                type: "GET",
-                url: frontendDataDir+'/memory_usage_period_1209600.json',
-                dataType: 'json',
-                success: function(data) {
-                    installExporter( 'daily-memory-usage-png', '', () => exportImage(dailyMemoryUsageChart, 'memory_usage_period_14d.png'));
-                    installExporter( 'daily-memory-usage-json', 'memory_usage_period_14d.json', () => exportJSON(data));
-                    installExporter( 'daily-memory-usage-csv', 'memory_usage_period_14d.csv', () => exportCSV(data));
-
-                    updateStackedBarChart(
-                        {"data": data},
-                        dailyMemoryUsageChart,
-                        'js-daily-memory-usage',
-                        'Cumulative Memory Usage',
-                        'Daily Memory Usage');
-                },
-                error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append('<li>download daily memory usage'+' ('+xhr.status+')</li>');
-                    $("#error-message-container").show();
-                }
-            });
-
-            $.ajax({
-                type: "GET",
-                url: frontendDataDir+'/cpu_usage_period_31968000.json',
-                dataType: 'json',
-                success: function(data) {
-                    installExporter( 'monthly-cpu-usage-png', 'monthly-cpu-usage.png', () => exportImage(monthlyCpuUsageChart));
-                    installExporter( 'monthly-cpu-usage-json', 'cpu_usage_period_12m.json', () => exportJSON(data));
-                    installExporter( 'monthly-cpu-usage-csv', 'cpu_usage_period_12m.csv', () => exportCSV(data));
-
-                    updateStackedBarChart(
-                         {"data": data},
-                         monthlyCpuUsageChart,
-                        'js-monthly-cpu-usage',
-                        'Cumulative CPU Usage',
-                        'Monthly CPU Usage');
-                },
-                error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append('<li>download monthly cpu usage'+' ('+xhr.status+')</li>');
-                    $("#error-message-container").show();
-                }
-            });
-
-            $.ajax({
-                type: "GET",
-                url: frontendDataDir+'/memory_usage_period_31968000.json',
-                dataType: 'json',
-                success: function(data) {
-                    installExporter( 'monthly-memory-usage-png', '', () => exportImage(monthlyMemoryUsageChart, 'monthly-memory-usage.png'));
-                    installExporter( 'monthly-memory-usage-json', 'memory_usage_period_12m.json', () => exportJSON(data));
-                    installExporter( 'monthly-memory-usage-csv', 'memory_usage_period_12m.csv', () => exportCSV(data));
-
-                    updateStackedBarChart(
-                         {"data": data},
-                         monthlyMemoryUsageChart,
-                        'js-monthly-memory-usage',
-                        'Cumulative Memory Usage',
-                        'Monthly Memory Usage');
-                },
-                error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append('<li>download monthly memory usage'+' ('+xhr.status+')</li>');
-                    $("#error-message-container").show();
-                }
-            });
-
-            // update nodes usage
-            updateNodeUsage(frontendDataDir);
-            console.log(Date(), 'updating completed')
+            loadBackendConfig();
+            showUsageTrendType();
+            showCumulativeUsageByType();
+            updateNodeUsage();
         }
 
         (function($)
@@ -735,13 +702,15 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                             $('#js-node-load-container').show();
                         }
                     });
-                triggerRefreshUsageCharts(frontendDataDir, UsageTypes.CPU);
-                setInterval(function() {triggerRefreshUsageCharts(frontendDataDir);}, 300000); // update every 5 mins
+                triggerRefreshUsageCharts(UsageTypes.CPU);
+                setInterval(function() {triggerRefreshUsageCharts();}, 300000); // update every 5 mins
             });
         })(jQuery);
 
         // export API
-        FrontendApi.refreshUsageCharts =  triggerRefreshUsageCharts;
-        FrontendApi.updateNodeUsage =  updateNodeUsage;
+        FrontendApi.refreshUsageCharts = triggerRefreshUsageCharts;
+        FrontendApi.updateNodeUsage = updateNodeUsage;
+        FrontendApi.showSelectedUsageTrendType = showUsageTrendType;
+        FrontendApi.showCumulativeUsageByType = showCumulativeUsageByType;
     }
 );

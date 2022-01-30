@@ -19,7 +19,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Kubernetes Opex Analytics | Hourly, Daily and Monthly Analytics of Kubernetes Cluster Resource Usage</title>
+    <title>Kubernetes Opex Analytics | Hourly, Daily and Monthly Analytics of Kubernetes Cluster Usage</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="utf-8">
     <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
@@ -29,8 +29,8 @@
     <link rel="stylesheet" href="css/frontend.css">
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
-      <script src="../bower_components/html5shiv/dist/html5shiv.js"></script>
-      <script src="../bower_components/respond/dest/respond.min.js"></script>
+    <script src="../bower_components/html5shiv/dist/html5shiv.js"></script>
+    <script src="../bower_components/respond/dest/respond.min.js"></script>
     <![endif]-->
     <script type='text/javascript' >
         var FrontendApi = {};
@@ -40,7 +40,7 @@
                 "MEM": "memory",
                 "CONSOLIDATED": "consolidated",
             });
-        var frontendDataDir='{{ koa_frontend_data_location }}';
+        FrontendApi.DATA_DIR='{{ koa_frontend_data_location }}';
     </script>
     <script data-main="js/frontend.js" src="js/require-v2.3.6.min.js" > </script>
     <script>
@@ -68,10 +68,10 @@
 
 <div class="container">
     <div class="row">
-        <div class="col-md-3">
-            <legend><span>Usage unit:</span>&nbsp;<span id="cost-model"></span></legend>
+        <div class="col-md-5">
+            <legend><span>Accounting model:</span> <span id="cost-model"></span></legend>
         </div>
-        <div class="col-md-9">
+        <div class="col-md-7">
             <div id="error-message-container">
                 <div class="alert alert-danger alert-dismissible">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
@@ -84,149 +84,121 @@
             </script>
         </div>
     </div>
-    <div class="row chart-container">
-        <div class="col-md-6">
-            <div class="row">
-                <div class="col-md-11">
-                    <legend>Hourly CPU Usage per Namespace - 7 Days</legend>
-                </div>
-                <div class="col-md-1">
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <span class="tricolon"></span>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li class="disabled"><a id="usage-cpu-trends-png"  class="dropdown-item" href="#">Export as PNG</a></li>
-                            <li class="disabled"><a id="usage-cpu-trends-json"  class="dropdown-item" href="#">Export as JSON</a></li>
-                            <li class="disabled"><a id="usage-cpu-trends-csv"  class="dropdown-item" href="#">Export as CSV</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
 
-            <div class="js-usage-cpu-trends card--chart"></div>
-        </div>
-        <div class="col-md-6">
-            <div class="row">
-                <div class="col-md-11">
-                    <legend>Hourly Memory Usage per Namespace - 7 Days</legend>
-                </div>
-                <div class="col-md-1">
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <span class="tricolon"></span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-right">
-                            <li class="disabled"><a id="usage-memory-trends-png"  class="dropdown-item" href="#">Export as PNG</a></li>
-                            <li class="disabled"><a id="usage-memory-trends-json"  class="dropdown-item" href="#">Export as JSON</a></li>
-                            <li class="disabled"><a id="usage-memory-trends-csv"  class="dropdown-item" href="#">Export as CSV</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="js-usage-memory-trends card--chart"></div>
-        </div>
-    </div>
-    <div class="row chart-container">
-        <div class="col-md-6">
-            <div class="row">
-                <div class="col-md-11">
-                    <legend>Daily Cumulative CPU Usage per Namespace - 14 Days</legend>
-                </div>
-                <div class="col-md-1">
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <span class="tricolon"></span>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li class="disabled"><a id="daily-cpu-usage-png"  class="dropdown-item" href="#">Export as PNG</a></li>
-                            <li class="disabled"><a id="daily-cpu-usage-json"  class="dropdown-item" href="#">Export as JSON</a></li>
-                            <li class="disabled"><a id="daily-cpu-usage-csv"  class="dropdown-item" href="#">Export as CSV</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="js-daily-cpu-usage"></div>
-        </div>
-        <div class="col-md-6">
-            <div class="row">
-                <div class="col-md-11">
-                    <legend>Daily Cumulative Memory Usage per Namespace - 14 Days</legend>
-                </div>
-                <div class="col-md-1">
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <span class="tricolon"></span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-right">
-                            <li class="disabled"><a id="daily-memory-usage-png"  class="dropdown-item" href="#">Export as PNG</a></li>
-                            <li class="disabled"><a id="daily-memory-usage-json"  class="dropdown-item" href="#">Export as JSON</a></li>
-                            <li class="disabled"><a id="daily-memory-usage-csv"  class="dropdown-item" href="#">Export as CSV</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="js-daily-memory-usage"></div>
-        </div>
-    </div>
-    <div class="row chart-container">
-        <div class="col-md-6">
-            <div class="row">
-                <div class="col-md-11">
-                    <legend>Monthly Cumulative CPU Usage per Namespace - 12 Months</legend>
-                </div>
-                <div class="col-md-1">
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <span class="tricolon"></span>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li class="disabled"><a id="monthly-cpu-usage-png"  class="dropdown-item" href="#">Export as PNG</a></li>
-                            <li class="disabled"><a id="monthly-cpu-usage-json"  class="dropdown-item" href="#">Export as JSON</a></li>
-                            <li class="disabled"><a id="monthly-cpu-usage-csv"  class="dropdown-item" href="#">Export as CSV</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="js-monthly-cpu-usage"></div>
-        </div>
-        <div class="col-md-6">
-            <div class="row">
-                <div class="col-md-11">
-                    <legend>Monthly Cumulative Memory Usage per Namespace - 12 Months</legend>
-                </div>
-                <div class="col-md-1">
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <span class="tricolon"></span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-right">
-                            <li class="disabled"><a id="monthly-memory-usage-png"  class="dropdown-item" href="#">Export as PNG</a></li>
-                            <li class="disabled"><a id="monthly-memory-usage-json"  class="dropdown-item" href="#">Export as JSON</a></li>
-                            <li class="disabled"><a id="monthly-memory-usage-csv"  class="dropdown-item" href="#">Export as CSV</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="js-monthly-memory-usage"></div>
-        </div>
-    </div>
+
     <div class="row chart-container">
         <div class="col-md-9">
-            <legend>Last Nodes'
+            <legend>Usage Trends - 7 days
+                <select id="selected-usage-trend-type" onchange="FrontendApi.showSelectedUsageTrendType()">
+                    <option value="default" disabled selected style="display:none;">Hourly Usage</option>
+                    <option value="hourly-usage">Hourly Usage</option>
+                    <option value="usage-efficiency">Usage/Request Efficiency</option>
+                </select>
+            </legend>
+        </div>
+        <div class="col-md-2">
+        </div>
+        <div class="col-md-1">
+            <div class="btn-group">
+                <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <a class="chart-download">&nbsp;export</a>
+                </button>
+                <ul class="dropdown-menu">
+                    <li class="disabled"><a id="trends-cpu-png"  class="dropdown-item" href="#">Export CPU Chart (PNG)</a></li>
+                    <li class="disabled"><a id="trends-cpu-json"  class="dropdown-item" href="#">Export CPU Data (JSON)</a></li>
+                    <li class="disabled"><a id="trends-cpu-csv"  class="dropdown-item" href="#">Export CPU Data (CSV)</a></li>
+                    <li class="disabled"><a id="trends-memory-png"  class="dropdown-item" href="#">Export Memory Chart (PNG)</a></li>
+                    <li class="disabled"><a id="trends-memory-json"  class="dropdown-item" href="#">Export Memory Data (JSON)</a></li>
+                    <li class="disabled"><a id="trends-memory-csv"  class="dropdown-item" href="#">Export Memory Data (CSV)</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="chart-block-trends-rf">
+            <div class="col-md-6">
+                <div class="js-chart-trends-cpu-rf"></div>
+            </div>
+            <div class="col-md-6">
+                <div class="js-chart-trends-memory-rf"></div>
+            </div>
+        </div>
+
+        <div id="chart-block-trends-hourly-usage">
+            <div class="col-md-6">
+                <div class="js-chart-trends-cpu-usage"></div>
+            </div>
+            <div class="col-md-6">
+                <div class="js-chart-trends-memory-usage"></div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <div class="row chart-container">
+
+        <div class="col-md-9">
+            <legend>Cumulative Usage
+                <select id="selected-cumulative-usage-type" onchange="FrontendApi.showCumulativeUsageByType()">
+                    <option value="default" disabled selected style="display:none;">Daily</option>
+                    <option value="daily">Daily</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+            </legend>
+        </div>
+        <div class="col-md-2">
+        </div>
+        <div class="col-md-1">
+            <div class="btn-group">
+                <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <a class="chart-download">&nbsp;export</a>
+                </button>
+                <ul class="dropdown-menu">
+                    <li class="disabled"><a id="consolidated-cpu-usage-png"  class="dropdown-item" href="#">Export CPU Chart (PNG)</a></li>
+                    <li class="disabled"><a id="consolidated-cpu-usage-json"  class="dropdown-item" href="#">Export CPU Data (JSON)</a></li>
+                    <li class="disabled"><a id="consolidated-cpu-usage-csv"  class="dropdown-item" href="#">Export CPU Data (CSV)</a></li>
+                    <li class="disabled"><a id="consolidated-memory-usage-png"  class="dropdown-item" href="#">Export Memory Chart (PNG)</a></li>
+                    <li class="disabled"><a id="consolidated-memory-usage-json"  class="dropdown-item" href="#">Export Memory Data (JSON)</a></li>
+                    <li class="disabled"><a id="consolidated-memory-usage-csv"  class="dropdown-item" href="#">Export Memory Data (CSV)</a></li>
+                </ul>
+            </div>
+        </div>
+
+
+        <div id="chart-block-daily">
+            <div class="col-md-6">
+                <div class="js-chart-daily-cpu-usage"></div>
+            </div>
+            <div class="col-md-6">
+                <div class="js-chart-daily-memory-usage"></div>
+            </div>
+        </div>
+
+        <div id="chart-block-monthly">
+            <div class="col-md-6">
+                <div class="js-chart-monthly-cpu-usage"></div>
+            </div>
+            <div class="col-md-6">
+                <div class="js-chart-monthly-memory-usage"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row chart-container">
+        <div class="col-md-9">
+            <legend>Nodes - Occupation by pods
                 <span>
-                    <select id="node-usage-type" onchange="FrontendApi.updateNodeUsage(frontendDataDir)">
+                    <select id="node-usage-type" onchange="FrontendApi.updateNodeUsage()">
                         <option value="cpu" disabled selected style="display:none;">CPU</option>
                         <option value="cpu">CPU</option>
                         <option value="memory">Memory</option>
                     </select>
                 </span>
-            Usage by Pods
             </legend>
             <div id="js-nodes-load-container" > </div>
         </div>
         <div class="col-md-3">
-            <legend>Available nodes</legend>
+            <legend>List of nodes</legend>
             <div id="host-list-container"></div>
         </div>
     </div>
@@ -251,7 +223,8 @@
                     Copyright &copy; 2019 Rodrigue Chakode and contributors.
                 </p>
                 <p>
-                    Kubernetes Opex Analytics is provided as part of RealOpInsight Project (<a href="http://realopinsight.com">http://realopinsight.com</a>).
+                    Kubernetes Opex Analytics is designed and made available free of charge thanks to the support of REALOPS'LABS company
+                    (<a href="https://realopslabs.com" target="_blank">https://realopslabs.com</a>).
                 </p>
                 <p>
                     The product is licensed under the Apache License,
@@ -281,35 +254,32 @@
 
 <footer>
     <div class="container pos-rel z1">
-    <div class="flex-row gt20 mb20">
-        <div class="col-md-1">
-            &nbsp;
-        </div>
-        <div class="col-md-3">
-            <ul class="nav flex-column">
-                <li class="nav-item">
-                    <legend>About</legend>
-                    <a class="nav-link active" href="https://github.com/rchakode/kube-opex-analytics/releases">kube-opex-analytics v{{ koa_version }}</a>
-                    <a class="nav-link" href="http://www.apache.org/licenses/LICENSE-2.0">Terms</a>
-                    <a class="nav-link" href="https://github.com/rchakode/kube-opex-analytics">Issues & Contributions (Github)</a>
-                </li>
-              </ul>
-            </div>
+        <div class="flex-row gt20 mb20">
             <div class="col-md-4">
+                &nbsp;&nbsp;
+            </div>
+            <div class="col-md-3">
                 <ul class="nav flex-column">
                     <li class="nav-item">
-                        <legend>Related Products (by the same author)</legend>
+                        <legend>kube-opex-analytics v{{ koa_version }}</legend>
+                        <a class="nav-link active" href="https://github.com/rchakode/kube-opex-analytics/releases">Release notes</a>
+                        <a class="nav-link" href="https://github.com/rchakode/kube-opex-analytics/blob/master/LICENSE">License Terms</a>
+                        <a class="nav-link" href="https://github.com/rchakode/kube-opex-analytics">Issues & Contributions (Github)</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-md-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <legend>Related Products</legend>
                         Centralized Multi-Kubernetes Usage Analytics
                         <a class="nav-link disabled" href="https://krossboard.app/">Krossboard Project</a>
                         Operations Monitoring for Kubernetes Applications
                         <a class="nav-link disabled" href="http://realopinsight.com/">RealOpInsight Project</a>
                     </li>
-                  </ul>
-                </div>               
-            <div class="col-md-3">
-                <legend>&copy; 2020 <a href="https://www.linkedin.com/in/rodriguechakode">Rodrigue Chakode</a> and contributors</legend>
+                </ul>
             </div>
-            <div class="col-md-1">
+            <div class="col-md-2">
                 &nbsp;
             </div>
         </div>
