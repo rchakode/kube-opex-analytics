@@ -20,6 +20,14 @@
     content: '⁝';
 }
 
+.chart-download:before {
+    content: '\2193 ';
+}
+
+.chart-download:after {
+    content: ' \2193';
+}
+
 legend {
     margin-top: .5rem;
     color: rgba(0, 0, 0, 0.65);
