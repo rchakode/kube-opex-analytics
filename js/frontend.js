@@ -609,7 +609,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                         const dataset = {
                             data: data.map(
                                 ({name, usage,dateUTC }) => ({
-                                    topicName: name,
+                                    topicName: name.substring(0, name.length - 4),
                                     name: name,
                                     date: dateUTC,
                                     value: usage
