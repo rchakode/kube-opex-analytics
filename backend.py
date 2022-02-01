@@ -20,6 +20,7 @@ import os
 import sys
 import threading
 import time
+import traceback
 import urllib
 from typing import Any, List
 
@@ -438,19 +439,19 @@ class K8sUsage:
                         pod.state = "Initialized"
                         break
 
-            if pod.state != 'PodNotScheduled':
+            if pod.state == 'PodNotScheduled':
+                pod.nodeName = None
+            else:
                 pod.nodeName = item['spec']['nodeName']
                 pod.cpuRequest = 0.0
                 pod.memRequest = 0.0
                 for _, container in enumerate(item.get('spec').get('containers')):
                     resources = container.get('resources', None)
                     if resources is not None:
-                        requests = resources.get('requests', None)
-                        if requests is not None:
-                            pod.cpuRequest += self.decode_cpu_capacity(requests.get('cpu', '0'))
-                            pod.memRequest += self.decode_memory_capacity(requests.get('memory', '0'))
-            else:
-                pod.nodeName = None
+                        resource_requests = resources.get('requests', None)
+                        if resource_requests is not None:
+                            pod.cpuRequest += self.decode_cpu_capacity(resource_requests.get('cpu', '0'))
+                            pod.memRequest += self.decode_memory_capacity(resource_requests.get('memory', '0'))
 
             self.pods[pod.name] = pod
 
@@ -461,8 +462,8 @@ class K8sUsage:
         # process likely valid data
         data_json = json.loads(data)
         for _, item in enumerate(data_json['items']):
-            podName = '%s.%s' % (item['metadata']['name'], item['metadata']['namespace'])
-            pod = self.pods.get(podName, None)
+            pod_name = '%s.%s' % (item['metadata']['name'], item['metadata']['namespace'])
+            pod = self.pods.get(pod_name, None)
             if pod is not None:
                 pod.cpuUsage = 0.0
                 pod.memUsage = 0.0
@@ -472,11 +473,15 @@ class K8sUsage:
                 self.pods[pod.name] = pod
 
     def consolidate_ns_usage(self):
+        """
+        Consolidate namespace usage.
 
+        :return:
+        """
         self.cpuUsageAllPods = 0.0
         self.memUsageAllPods = 0.0
         for pod in self.pods.values():
-            if hasattr(pod, 'cpuUsage') and hasattr(pod, 'memUsage'):
+            if pod.nodeName is not None and hasattr(pod, 'cpuUsage') and hasattr(pod, 'memUsage'):
                 self.cpuUsageAllPods += pod.cpuUsage
                 self.usageByNamespace[pod.namespace].cpu += pod.cpuUsage
                 self.usageByNamespace[pod.namespace].mem += pod.memUsage
@@ -484,14 +489,12 @@ class K8sUsage:
                 self.requestByNamespace[pod.namespace].mem += pod.memRequest
                 self.memUsageAllPods += pod.memUsage
                 self.nodes[pod.nodeName].podsRunning.append(pod)
-
         self.cpuCapacity += 0.0
         self.memCapacity += 0.0
         for node in self.nodes.values():
             if hasattr(node, 'cpuCapacity') and hasattr(node, 'memCapacity'):
                 self.cpuCapacity += node.cpuCapacity
                 self.memCapacity += node.memCapacity
-
         self.cpuAllocatable += 0.0
         self.memAllocatable += 0.0
         for node in self.nodes.values():
@@ -547,8 +550,8 @@ class Rrd:
                 timestamp_epoch,
                 round(cpu_usage, KOA_CONFIG.db_round_decimals),
                 round(mem_usage, KOA_CONFIG.db_round_decimals)))
-        except rrdtool.OperationalError as e:
-            KOA_LOGGER.error("failing adding rrd sample (%s)", e)
+        except rrdtool.OperationalError:
+            KOA_LOGGER.error("failing adding rrd sample => %s", traceback.format_exc())
 
     def dump_trend_data(self, period, step_in=None):
         now_epoch_utc = calendar.timegm(time.gmtime())
@@ -795,7 +798,7 @@ def create_metrics_puller():
 
     except Exception as ex:
         exception_type = type(ex).__name__
-        KOA_LOGGER.error("%s Exception in create_metrics_puller (%s)", exception_type, ex)
+        KOA_LOGGER.error("%s Exception in create_metrics_puller => %s", exception_type, traceback.format_exc())
 
 
 def dump_analytics():
@@ -822,7 +825,7 @@ def dump_analytics():
             time.sleep(export_interval)
     except Exception as ex:
         exception_type = type(ex).__name__
-        KOA_LOGGER.error("%s Exception in dump_analytics (%s)", exception_type, ex)
+        KOA_LOGGER.error("%s Exception in dump_analytics => %s", exception_type, traceback.format_exc())
 
 
 # validating configs
