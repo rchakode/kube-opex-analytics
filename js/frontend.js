@@ -132,7 +132,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                     .height(400)
                     .marginRatio(2)
                     .markerSize(10)
-                    .numberFormat('');
+                    .numberFormat('.2s');
 
                 if (KoaColorSchema) {
                     legendChart.colorSchema(KoaColorSchema);
@@ -307,7 +307,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
         }
 
 
-        function buildNodesLoadDataSet(data, usageType) {
+        function buildNodesDataSet(data, usageType) {
             let dataset = {"data": new Map()};
 
             let nodeHtmlList = '';
@@ -456,7 +456,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 url: `${FrontendApi.DATA_DIR}/nodes.json`,
                 dataType: 'json',
                 success: function (data) {
-                    let dataset = buildNodesLoadDataSet(data, currentUsageType, 'donut');
+                    let dataset = buildNodesDataSet(data, currentUsageType, 'donut');
                     let dynHtml = '';
                     let donuts = new Map();
                     for (let [nname, _] of dataset.data) {
