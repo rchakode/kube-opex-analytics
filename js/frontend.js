@@ -163,9 +163,6 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 .width(htmlContainerWidth)
                 .margin({left: 75, top: 50, right: 25, bottom: 50})
                 .colorSchema(KoaColorSchema)
-                .on('customDataEntryClick', function (d, mousePosition) {
-                    console.log('Data entry marker clicked', d, mousePosition);
-                })
                 .on('customMouseOver', mychartTooltip.show)
                 .on('customMouseMove', function (dataPoint, topicColorMap, dataPointXPosition) {
                     mychartTooltip.update(dataPoint, topicColorMap, dataPointXPosition);
