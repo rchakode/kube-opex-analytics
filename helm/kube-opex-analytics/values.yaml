@@ -57,7 +57,7 @@ ingress:
 
 # priorityClassName: default
 
-resources: {}
+resources:
 # No resource requests not limits is specified by default.
 # We leave this as a conscious choice for the user, as this increases chances charts run
 # on environments with little resources, such as Minikube.
@@ -66,9 +66,9 @@ resources: {}
   # limits:
   #   cpu: 256m
   #   memory: 512Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
 
 nodeSelector: {}
 
