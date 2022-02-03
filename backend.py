@@ -783,20 +783,16 @@ def create_metrics_puller():
                     mem_usage = compute_usage_percent_ratio(ns_usage.mem, k8s_usage.memCapacity)
                     rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_usage, mem_usage=mem_usage)
 
-                    cpu_efficiency = 0.0
-                    mem_efficiency = 0.0
+                    cpu_efficiency = 1.0
+                    mem_efficiency = 1.0
                     request_capacities = k8s_usage.requestByNamespace.get(ns, None)
                     if request_capacities is not None:
                         if request_capacities.cpu > 0.0:
                             cpu_efficiency = round(ns_usage.cpu / request_capacities.cpu, 2)
                         if request_capacities.mem > 0.0:
                             mem_efficiency = round(ns_usage.mem / request_capacities.mem, 2)
-                    else:
-                        if ns_usage.cpu > 0.0 and ns_usage.mem > 0.0:
-                            cpu_efficiency = 1.0
-                            mem_efficiency = 1.0
 
-                    if cpu_efficiency > 0.0 and mem_efficiency > 0.0:
+                    if cpu_efficiency > 0.0 or mem_efficiency > 0.0:
                         rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.usage_efficiency_db(ns))
                         rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_efficiency, mem_usage=mem_efficiency)
 
