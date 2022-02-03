@@ -13,4 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-This product includes third-party librairies released under their own licenses.
+This product is bound to the following third-party librairies. Please read their license terms for more details.
+
+  * [Britecharts](https://britecharts.github.io/britecharts/).
+  * [D3.js](https://d3js.org/).
+  * [RRDtool](https://oss.oetiker.ch/rrdtool/)
