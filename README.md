@@ -73,18 +73,17 @@ This is a screenshot of our [official one](https://grafana.com/dashboards/10282)
 =======
 In a nutshell `kube-opex-analytics` (literally *Kubernetes Opex Analytics*) is a tool to help organizations track the resources being consumed by their Kubernetes clusters over time (hourly, daily, monthly). Doing so `kube-opex-analytics` aims to prevent overpaying by enabling each organization to understand how their Kubernetes resources are consumed over time, and hence be able to take appropriated decisions when applicable.
 
-Without be exhaustive, here is a short list of analytics and accounting capabilities that `kube-opex-analytics` addresses:
- * usage accounting per namespace: what capacities each namespace is consuming over time (hourly, daily, monthly).
- * accounting of `non-allocatable` capacities (i.e. capacities dedicated to Kubernetes operations): at boh cluster and node levels, this allows to track the share of non-allocatable capacities versus the usable capacities (i.e. capacities used by actual application workloads). 
- * cluster usage accounting and capacity planning: what capacities are consumed globally on a cluster, instantly and over time.
- * usage/request efficiency per namespace: how efficient resource requests are compared against actual resource usage over time (hourly trends).
- * cost allocation and charge back analytics: automatic processing and visualization of resource usage accounting per namespace over various period of time (daily, monthly).
- * Dashboards and visualization: built-in dashboards as well as Grafana dashboards are provided to visualize the enabled analytics. A native Prometheus exporter is also enable to support custom Grafana dashboards. 
-
-Read the [design fundamentals](./docs/design-fundamentals.md) to learn more. 
+ * **Usage accounting per namespace:** what capacities each namespace is consuming over time (hourly, daily, monthly).
+ * **Accounting of `non-allocatable` capacities**: these are capacities dedicated to the operations of Kubernetes components on each node. From node to cluster level, `kube-opex-analytics` tracks and consolidates the share of non-allocatable capacities and highlights them against usable capacities (i.e. capacities used by actual application workloads). 
+ * **Cluster usage accounting and capacity planning:** This feature makes it easy to account and visualize capacities consumed on a cluster, globally, instantly and over time.
+ * **Usage/request efficiency per namespace:** Based on hourly-consolidated trends, this original feature help know how efficient resource requests set on Kubernetes are, compared against the actual resource usage over time.
+ * **Cost allocation and charge back analytics:** automatic processing and visualization of resource usage accounting per namespace over various period of time (daily, monthly).
+ * **Flexible visualization:** `kube-opex-analytics` enables built-in analytics dashboards, as well as a native Prometheus exporter that exposes its analytics metrics for third-party visualization tools like Grafana. 
  
 > **Multi-cluster analytics:** `kube-opex-analytics` tracks the usage for a single instance of Kubernetes. For a centralized multi-Kubernetes usage analytics, you may have to consider our [Krossboard](https://krossboard.app/) product. Watch a [demo video here](https://youtu.be/lfkUIREDYDY).
 >>>>>>> 831502b (reorganize docs in separated files)
+
+Read the [design fundamentals](./docs/design-fundamentals.md) to learn more.
 
 # Getting Started
   * [Design Fundamentals](./docs/design-fundamentals.md)
@@ -95,11 +94,10 @@ Read the [design fundamentals](./docs/design-fundamentals.md) to learn more.
   * [Centralized multi-cluster analytics](./docs/multi-cluster-analytics.md)
   * [Configuration Settings](./docs/configuration-settings.md)
 
-
 # License
-`kube-opex-analytics` (code and documentation) is licensed under the terms of Apache License 2.0. Read the [LICENSE](./LICENSE) file for more details on the license terms.
+`kube-opex-analytics` (code and documentation) is licensed under the terms of Apache License 2.0. Read the [LICENSE](./LICENSE) terms for more details.
 
-In addition, `kube-opex-analytics` is bound to third-party libraries each with its specific license terms. Read the [NOTICE](./NOTICE) for additional information.
+Besides, `kube-opex-analytics` is bound to third-party libraries each with its specific license terms. Read the [NOTICE](./NOTICE) for additional information.
 
 # Support & Contributions
 We encourage feedback and always make our best to handle any troubles you may encounter when using it.
