@@ -5,10 +5,11 @@
 envs:
   KOA_DB_LOCATION: /data/db
   KOA_K8S_API_ENDPOINT: https://kubernetes.default
-  KOA_K8S_API_VERIFY_SSL: false
   KOA_COST_MODEL: CUMULATIVE_RATIO
   KOA_BILLING_HOURLY_RATE: 0.0
   KOA_BILLING_CURRENCY_SYMBOL: $
+  KOA_K8S_API_VERIFY_SSL: true
+  KOA_K8S_CACERT: /run/secrets/kubernetes.io/serviceaccount/ca.crt
 
 dataVolume:
   persist: true
