@@ -14,6 +14,7 @@
  
 # Overview
 <<<<<<< HEAD
+<<<<<<< HEAD
 In a nutshell, `kube-opex-analytics` or literally *Kubernetes Opex Analytics* is a tool to help organizations track the resources being consumed by their Kubernetes clusters to prevent overpaying. To this end, it generates short-, mid- and long-term usage reports showing relevant insights on what amount of resources each project is consuming over time. The final **goal being to ease cost allocation and capacity planning decisions** with factual analytics.
 
 > **Multi Kubernetes clusters analytics:** `kube-opex-analytics` tracks the usage for a single instance of Kubernetes. For a centralized multi-Kubernetes usage analytics, you may have to consider our [Krossboard](https://krossboard.app/) project. Watch a [demo video here](https://youtu.be/lfkUIREDYDY). 
@@ -72,6 +73,9 @@ This is a screenshot of our [official one](https://grafana.com/dashboards/10282)
 ![](./screenshots/kube-opex-analytics-grafana.png)
 =======
 In a nutshell `kube-opex-analytics` (literally *Kubernetes Opex Analytics*) is a tool to help organizations track the resources being consumed by their Kubernetes clusters over time (hourly, daily, monthly). Doing so `kube-opex-analytics` aims to prevent overpaying by enabling each organization to understand how their Kubernetes resources are consumed over time, and hence be able to take appropriated decisions when applicable.
+=======
+`kube-opex-analytics` (literally *Kubernetes Opex Analytics*) is a Kubernetes usage analytics tool to help organizations track the resources being consumed by their Kubernetes clusters over time (hourly, daily, monthly). Doing so `kube-opex-analytics` aims to prevent overpaying by enabling each organization to understand how their Kubernetes resources are consumed over time, and hence be able to take appropriated decisions when applicable.
+>>>>>>> 3d78665 (Update README.md)
 
  * **Usage accounting per namespace:** what capacities each namespace is consuming over time (hourly, daily, monthly).
  * **Accounting of `non-allocatable` capacities**: these are capacities dedicated to the operations of Kubernetes components on each node. From node to cluster level, `kube-opex-analytics` tracks and consolidates the share of non-allocatable capacities and highlights them against usable capacities (i.e. capacities used by actual application workloads). 
