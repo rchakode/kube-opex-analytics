@@ -1,0 +1,66 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-opex-analytics
+  namespace: kube-opex-analytics
+  labels:
+    helm.sh/chart: kube-opex-analytics-2022-02-02-740796d
+    app.kubernetes.io/name: kube-opex-analytics
+    app.kubernetes.io/instance: kube-opex-analytics
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+    app: kube-opex-analytics
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-opex-analytics
+  labels:
+    helm.sh/chart: kube-opex-analytics-2022-02-02-740796d
+    app.kubernetes.io/name: kube-opex-analytics
+    app.kubernetes.io/instance: kube-opex-analytics
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+    app: kube-opex-analytics
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - nodes
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - metrics.k8s.io
+  resources:
+  - nodes
+  - nodes/stats
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-opex-analytics
+  labels:
+    helm.sh/chart: kube-opex-analytics-2022-02-02-740796d
+    app.kubernetes.io/name: kube-opex-analytics
+    app.kubernetes.io/instance: kube-opex-analytics
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+    app: kube-opex-analytics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-opex-analytics
+subjects:
+- kind: ServiceAccount
+  name: kube-opex-analytics
+  namespace: kube-opex-analytics

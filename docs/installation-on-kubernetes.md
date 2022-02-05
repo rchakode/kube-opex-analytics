@@ -1,49 +1,50 @@
-# Deploy kube-opex-analytics on a Kubernetes cluster
+# Deploy kube-opex-analytics on Kubernetes
 This section describes how to deploy `kube-opex-analytics` on a Kubernetes cluster.
 
-- [Deploy kube-opex-analytics on a Kubernetes cluster](#deploy-kube-opex-analytics-on-a-kubernetes-cluster)
+- [Deploy kube-opex-analytics on Kubernetes](#deploy-kube-opex-analytics-on-kubernetes)
   - [Requirements](#requirements)
   - [Deployment manifests](#deployment-manifests)
+  - [Installation using kubectl and kustomize](#installation-using-kubectl-and-kustomize)
   - [Installation using Helm](#installation-using-helm)
-  - [Installation using Kubectl](#installation-using-kubectl)
   - [Get Access to UI Service](#get-access-to-ui-service)
 
 ## Requirements
 `kube-opex-analytics` needs read-only access to the following Kubernetes APIs.
 
-* /api/v1
-* /apis/metrics.k8s.io/v1beta1 (provided by [Kubernetes Metrics Server](https://github.com/kubernetes-sigs/metrics-server), which shall be installed on the cluster if it's not yet the case).
+* `/api/v1`
+* `/apis/metrics.k8s.io/v1beta1` (provided by [Kubernetes Metrics Server](https://github.com/kubernetes-sigs/metrics-server), which shall be installed on the cluster if it's not yet the case).
 
-On a typically deployment inside the Kubernetes cluster, the following Kubernetes API base URL shall be used: `https://kubernetes.default`.
+On a typical deployment inside the Kubernetes cluster, the following Kubernetes API base URL shall be used: `https://kubernetes.default`.
 
 ## Deployment manifests
-There is a [Helm chart](./helm/) to ease the deployment on Kubernetes using either `Helm` or `kubectl`.
-
-First review the [values.yaml](./helm/kube-opex-analytics/values.yaml) file to customize the configuration options according to your specific environment. 
-
-In particular, you may need to customize the default settings used for the persistent data volume, the Prometheus Operator and its ServiceMonitor, the security context, and many others.
+`kube-opex-analytics` can be installed using one of the following methods:
+* [kubectl + Kustomize](#installation-using-kubectl-and-kustomize) 
+* [Helm](#installation-using-helm).
 
 > **Security Context:**
 > `kube-opex-analytics`'s pod is deployed with a unprivileged security context by default. However, if needed, it's possible to launch the pod in privileged mode by setting the Helm configuration value `securityContext.enabled` to `false`.
 
+## Installation using kubectl and kustomize
+First review the default configuration settings in the deployment ConfigMap: `kustomize/kube-opex-analytics-config.yaml`.
+
+Then, perform the following command to submit the deployment.
+The target namespace (`kube-opex-analytics` in the command) is assumed to exist. Otherwise, create it first.
+
+```
+$ kubectl --namespace kube-opex-analytics apply -k ./kustomize
+```
+
 ## Installation using Helm
-The following deployment command shall deploy `kube-opex-analytics` in the namespace `kube-opex-analytics`. It's assumed that the namespace exists, otherwise create it first.
+First review the default configuration settings in the Helm values file: `helm/kube-opex-analytics/values.yaml`. In particular, review the sections related to the persistent data volume, the Prometheus exporter and security context.
+
+Then, perform the following command to submit the deployment. 
+The target namespace (`kube-opex-analytics` in the command) is assumed to exist. Otherwise, create it first.
 
 ```bash
 helm upgrade \
   --namespace kube-opex-analytics \
   --install kube-opex-analytics \
   helm/kube-opex-analytics/
-```
-
-## Installation using Kubectl
-This approach requires to have the Helm client (version 2 or 3) installed to generate a raw template for kubectl.
-
-```
-$ helm template \
-  kube-opex-analytics \
-  --namespace kube-opex-analytics \
-  helm/kube-opex-analytics/ | kubectl apply -f -
 ```
 
 ## Get Access to UI Service
