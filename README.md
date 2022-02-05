@@ -91,8 +91,8 @@ Read the [design fundamentals](./docs/design-fundamentals.md) to learn more.
 
 # Getting Started
   * [Design Fundamentals](./docs/design-fundamentals.md)
-  * [Installation on Kubernetes cluster](./docs/installation-on-kubernetes.md)
-  * [Installation on a Docker machine](./docs/installation-on-docker.md)
+  * [Installation on Kubernete](./docs/installation-on-kubernetes.md)
+  * [Installation on Docker](./docs/installation-on-docker.md)
   * [Quick tour of built-in dashboards adn charts](./docs/built-in-dashboards-and-charts.md)
   * [Prometheus Exporter and Grafana Dashboards](./docs/prometheus-exporter-grafana-dashboard.md)
   * [Centralized multi-cluster analytics](./docs/multi-cluster-analytics.md)
