@@ -8,8 +8,8 @@ This section describes how to deploy `kube-opex-analytics` on a Docker machine u
 
 ## Requirements
 `kube-opex-analytics` needs read-only access to the following Kubernetes APIs:
-  * /api/v1
-  * /apis/metrics.k8s.io/v1beta1 (provided by [Kubernetes Metrics Server](https://github.com/kubernetes-sigs/metrics-server), which shall be installed on the cluster if it's not yet the case).
+  * `/api/v1`
+  * `/apis/metrics.k8s.io/v1beta1` (provided by [Kubernetes Metrics Server](https://github.com/kubernetes-sigs/metrics-server), which shall be installed on the cluster if it's not yet the case).
 
 You need to provide the base URL of the Kubernetes API when starting the program. 
 As aforementioned endpoints would typically require authentication, you have to proceed with one of the following options to authenticated with Kubernetes API:
