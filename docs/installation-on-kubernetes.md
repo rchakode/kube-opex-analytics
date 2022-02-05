@@ -28,7 +28,7 @@ On a typical deployment inside the Kubernetes cluster, the following Kubernetes 
 First review the default configuration settings in the deployment ConfigMap: `kustomize/kube-opex-analytics-config.yaml`.
 
 Then, perform the following command to submit the deployment.
-The target namespace (`kube-opex-analytics` in the command) is assumed to exist. Otherwise, create it first.
+The target namespace (`kube-opex-analytics`) is assumed to exist. Otherwise, create it first.
 
 ```
 $ kubectl --namespace kube-opex-analytics apply -k ./kustomize
@@ -38,13 +38,10 @@ $ kubectl --namespace kube-opex-analytics apply -k ./kustomize
 First review the default configuration settings in the Helm values file: `helm/kube-opex-analytics/values.yaml`. In particular, review the sections related to the persistent data volume, the Prometheus exporter and security context.
 
 Then, perform the following command to submit the deployment. 
-The target namespace (`kube-opex-analytics` in the command) is assumed to exist. Otherwise, create it first.
+The target namespace (`kube-opex-analytics`) is assumed to exist. Otherwise, create it first.
 
 ```bash
-helm upgrade \
-  --namespace kube-opex-analytics \
-  --install kube-opex-analytics \
-  helm/kube-opex-analytics/
+helm upgrade --namespace kube-opex-analytics --install kube-opex-analytics helm/kube-opex-analytics/
 ```
 
 ## Get Access to UI Service
