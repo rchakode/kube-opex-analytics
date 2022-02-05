@@ -4,7 +4,7 @@ ARG RUNTIME_USER="koa"
 ARG RUNTIME_USER_UID=4583
 ARG APP_HOME="/koa"
 
-RUN apt update && \
+RUN apt --no-install-recommends update && \
     apt install -y python3 librrd-dev libpython3-dev python3-pip && \
     pip3 install --no-cache-dir flask flask_cors requests rrdtool prometheus_client waitress && \
     rm -rf /var/lib/apt/lists/* && \
