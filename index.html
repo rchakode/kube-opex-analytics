@@ -66,12 +66,9 @@
     </div>
 </div>
 
-<div class="container">
+<div class="container page-header">
     <div class="row">
-        <div class="col-md-5">
-            <legend><span>Accounting model:</span> <span id="cost-model"></span></legend>
-        </div>
-        <div class="col-md-7">
+        <div class="col-md-12">
             <div id="error-message-container">
                 <div class="alert alert-danger alert-dismissible">
                     <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
@@ -87,9 +84,9 @@
 
 
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-5">
             <legend>
-                Usage Trends - 7 days
+                Usage Trends <span class="accounting-cost-model"></span> - 7 days
                 <select id="selected-usage-trend-type" onchange="FrontendApi.showSelectedUsageTrendType()">
                     <option value="default" disabled selected style="display:none;">Hourly Usage</option>
                     <option value="hourly-usage">Hourly Usage</option>
@@ -97,10 +94,12 @@
                 </select>
             </legend>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-5">
+            <span class="control-label">Date Filter (start/end):</span>
             <input type="datetime-local" id="filter-start-date" name="filter-start-date">
             <input type="datetime-local" id="filter-end-date" name="filter-end-date">
         </div>
+
         <div class="col-md-2">
             <div class="btn-group">
                 <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -143,7 +142,7 @@
     <div class="row chart-container">
 
         <div class="col-md-9">
-            <legend>Cumulative Usage
+            <legend>Usage Accounting <span class="accounting-cost-model"></span>
                 <select id="selected-cumulative-usage-type" onchange="FrontendApi.showCumulativeUsageByType()">
                     <option value="default" disabled selected style="display:none;">Daily</option>
                     <option value="daily">Daily</option>
