@@ -31,7 +31,7 @@ Then, perform the following command to submit the deployment.
 The target namespace (`kube-opex-analytics`) is assumed to exist. Otherwise, create it first.
 
 ```
-$ kubectl --namespace kube-opex-analytics apply -k ./manifests/kustomize
+$ kubectl -n kube-opex-analytics apply -k ./manifests/kustomize
 ```
 
 ## Installation using Helm
@@ -41,7 +41,7 @@ Then, perform the following command to submit the deployment.
 The target namespace (`kube-opex-analytics`) is assumed to exist. Otherwise, create it first.
 
 ```bash
-helm upgrade --namespace kube-opex-analytics --install kube-opex-analytics manifests/helm/kube-opex-analytics/
+helm upgrade -n kube-opex-analytics --install kube-opex-analytics manifests/helm/kube-opex-analytics/
 ```
 
 ## Get Access to UI Service

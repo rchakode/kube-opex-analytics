@@ -3,13 +3,9 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: kube-opex-analytics
-  namespace: kube-opex-analytics
   labels:
-    helm.sh/chart: kube-opex-analytics-2022-02-02-740796d
     app.kubernetes.io/name: kube-opex-analytics
     app.kubernetes.io/instance: kube-opex-analytics
-    app.kubernetes.io/version: "1.0"
-    app.kubernetes.io/managed-by: Helm
     app: kube-opex-analytics
 spec:
   replicas: 1
@@ -37,9 +33,20 @@ spec:
             - name: "KOA_DB_LOCATION"
               value: "/data/db"
             - name: "KOA_K8S_API_ENDPOINT"
-              value: "https://kubernetes.default"
+              valueFrom:
+                configMapKeyRef:
+                  key: KOA_K8S_API_ENDPOINT
+                  name: kube-opex-analytics-config
             - name: "KOA_K8S_API_VERIFY_SSL"
-              value: "false"
+              valueFrom:
+                configMapKeyRef:
+                  key: KOA_K8S_API_VERIFY_SSL
+                  name: kube-opex-analytics-config
+            - name: "KOA_K8S_CACERT"
+              valueFrom:
+                configMapKeyRef:
+                  key: KOA_K8S_CACERT
+                  name: kube-opex-analytics-config
             - name: "KOA_BILLING_CURRENCY_SYMBOL"
               valueFrom:
                 configMapKeyRef:
