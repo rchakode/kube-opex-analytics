@@ -14,12 +14,16 @@ This section describes the built-in dashboards and charts provided by `kube-opex
 ## Hourly Consolidated Usage Trends (7 last days)
 For the different namespaces discovered in the Kubernetes cluster, these charts show hourly usage trends for CPU and memory resources during the last week (7 days).
 
+The aim of these charts is to help understand trends of actual resource usage by each namespace, but also globally thanks to the stacked-area charts.
+
 The date filter can be used to zoom out/in on a specific time range.
 
 ![](../screenshots/kube-opex-analytics-hourly-consolidated-usage-trends.png)
 
 ## Hourly Usage/Requests Efficiency Trends (7 last days)
 For the different namespaces discovered in the Kubernetes cluster, these charts show hourly usage/requests efficiency trends for CPU and memory resources during the last week (7 days).
+
+The aim of these charts is to help understand how efficient resource requests set on Kubernetes workloads are, compared against the actual resource usage over time.
 
 The date filter can be used to zoom out/in on a specific time range.
 
