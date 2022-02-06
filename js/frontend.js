@@ -18,7 +18,6 @@
 'use strict';
 
 
-
 var currentUsageType = '';
 var usageTrendType = 'usage-trend-type-default';
 var cumulativeUsageType = 'daily';
@@ -93,7 +92,7 @@ requirejs.config({
 });
 
 
-define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'donutChart', 'lineChart', 'legend', 'colors', 'tooltip'],
+define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'donutChart', 'lineChart', 'legend', 'colors', 'tooltip'],
     function ($, bootstrap, bootswatch, d3Selection, stackedAreaChart, stackedBarChart, donut, lineChart, legend, colors, tooltip) {
         let cpuUsageTrendsChart = stackedAreaChart();
         let memoryUsageTrendsChart = stackedAreaChart();
@@ -147,7 +146,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             let htmlContainerWidth = htmlContainer.node() ? htmlContainer.node().getBoundingClientRect().width : false;
             let mychartTooltip = tooltip();
 
-            if (! htmlContainerWidth) {
+            if (!htmlContainerWidth) {
                 return;
             }
 
@@ -172,7 +171,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             htmlContainer.datum(dataset).call(mychart);
 
             mychartTooltip.title(chartTitle);
-            if (! dataset.hasOwnProperty('data')) {
+            if (!dataset.hasOwnProperty('data')) {
                 mychartTooltip.topicLabel('values');
             }
 
@@ -185,7 +184,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             let htmlContainer = d3Selection.select('.' + htmlContainerClass);
             let htmlContainerWidth = htmlContainer.node() ? htmlContainer.node().getBoundingClientRect().width : false;
 
-            if (! htmlContainerWidth) {
+            if (!htmlContainerWidth) {
                 return;
             }
 
@@ -596,44 +595,48 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 type: "GET",
                 url: datasetPath,
                 dataType: 'json',
-                success: function(data) {
+                success: function (data) {
                     let chartCategory = `${resourceTypeLowered}-${trendType}`;
-                    installExporter( `trends-${resourceTypeLowered}-png`, '', () => exportImage(chart, 'kopex-trends-'+chartCategory+'.png'));
-                    installExporter( `trends-${resourceTypeLowered}-json`, 'kopex-trends-'+chartCategory+'.json', () => exportJSON(data));
-                    installExporter( `trends-${resourceTypeLowered}-csv`, 'kopex-trends-'+chartCategory+'.csv', () => exportCSV(data));
+                    installExporter(`trends-${resourceTypeLowered}-png`, '', () => exportImage(chart, 'kopex-trends-' + chartCategory + '.png'));
+                    installExporter(`trends-${resourceTypeLowered}-json`, 'kopex-trends-' + chartCategory + '.json', () => exportJSON(data));
+                    installExporter(`trends-${resourceTypeLowered}-csv`, 'kopex-trends-' + chartCategory + '.csv', () => exportCSV(data));
+
+                    let startDateFilter = $("#filter-start-date").val();
+                    let endDateFilter = $('#filter-end-date').val();
 
                     if (trendType === 'rf') {
                         const dataset = {
-                            data: data.map(
-                                ({name, usage,dateUTC }) => ({
-                                    topicName: name.substring(0, name.length - 4),
-                                    name: name,
-                                    date: dateUTC,
-                                    value: usage
-                                })
-                            )
+                            data:
+                                data.filter(item => (item.dateUTC >= startDateFilter && item.dateUTC <= endDateFilter))
+                                    .map(
+                                        ({name, usage, dateUTC}) => ({
+                                            topicName: name.substring(0, name.length - 4),
+                                            name: name,
+                                            date: dateUTC,
+                                            value: usage
+                                        })
+                                    )
                         };
-                        updateLineOrAreaChart(
-                            dataset,
-                            chart,
+                        updateLineOrAreaChart(dataset, chart,
                             `js-chart-trends-${chartCategory}`,
                             `${resourceType} ${TREND_TYPE_LABELS[trendType]}`,
                             `${TREND_TYPE_LABELS[trendType]}`);
                     } else {
-                        const dataset = data.map(
-                            ({name, usage,dateUTC }) => ({
-                                name: name,
-                                date: dateUTC,
-                                value: usage
-                            })
-                        );
-                        updateLineOrAreaChart(
-                            dataset,
-                            chart,
+                        const dataset =
+                            data.filter(item => (item.dateUTC >= startDateFilter && item.dateUTC <= endDateFilter))
+                                .map(
+                                    ({name, usage, dateUTC}) => ({
+                                        name: name,
+                                        date: dateUTC,
+                                        value: usage
+                                    })
+                                );
+                        updateLineOrAreaChart(dataset, chart,
                             `js-chart-trends-${chartCategory}`,
                             `${resourceType} ${TREND_TYPE_LABELS[trendType]}`,
                             `${TREND_TYPE_LABELS[trendType]}`);
                     }
+
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
                     $("#error-message").append(`<li>error ${xhr.status} downloading data file ${dataFile}</li>`);
@@ -653,10 +656,10 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
                 type: "GET",
                 url: `${FrontendApi.DATA_DIR}/${DATASET_FILES[periodType]}`,
                 dataType: 'json',
-                success: function(data) {
-                    installExporter( `consolidated-${resourceTypeLowered}-usage-png`, '', () => exportImage(chart, 'kopex-'+resourceTypeLowered+'-usage.png'));
-                    installExporter( `consolidated-${resourceTypeLowered}-usage-json`, 'kopex-'+resourceTypeLowered+'-usage.json', () => exportJSON(data));
-                    installExporter( `consolidated-${resourceTypeLowered}-usage-csv`, 'kopex-'+resourceTypeLowered+'-usage.csv', () => exportCSV(data));
+                success: function (data) {
+                    installExporter(`consolidated-${resourceTypeLowered}-usage-png`, '', () => exportImage(chart, 'kopex-' + resourceTypeLowered + '-usage.png'));
+                    installExporter(`consolidated-${resourceTypeLowered}-usage-json`, 'kopex-' + resourceTypeLowered + '-usage.json', () => exportJSON(data));
+                    installExporter(`consolidated-${resourceTypeLowered}-usage-csv`, 'kopex-' + resourceTypeLowered + '-usage.csv', () => exportCSV(data));
 
                     updateStackedBarChart(
                         {"data": data},
@@ -672,8 +675,7 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             });
         }
 
-        function triggerRefreshUsageCharts()
-        {
+        function updateAllCharts() {
             $("#error-message-container").hide();
             $("#error-message").html('')
             loadBackendConfig();
@@ -682,30 +684,64 @@ define(['jquery', 'bootstrap', 'bootswatch',  'd3Selection', 'stackedAreaChart',
             updateNodeUsage();
         }
 
-        (function($)
-        {
-            $(document).ready(function()
-            {
+        function initDateFilters() {
+            const formatDatetimeFilter = (dt) => {
+                let dformat  = [dt.getFullYear(),
+                        (dt.getMonth() + 1).toString().padStart(2, 0),
+                        dt.getDate().toString().padStart(2, 0)].join('-') + 'T' +
+                    [dt.getHours().toString().padStart(2, 0),
+                        dt.getMinutes().toString().padStart(2, 0),
+                        dt.getSeconds().toString().padStart(2, 0)].join(':');
+                return dformat ;
+            }
+
+            let todayDatetime = new Date();
+            let sevenDayBefore = new Date();
+            sevenDayBefore.setDate(todayDatetime.getDate() - 7);
+            // $('#filter-start-date').setAttribute('min', sevenDayBefore);
+            // $('#filter-start-date').setAttribute('max',todayDatetime);
+            $('#filter-start-date').val(formatDatetimeFilter(sevenDayBefore));
+            // $('#filter-end-date').setAttribute('min', sevenDayBefore);
+            // $('#filter-end-date').setAttribute('max', todayDatetime);
+            $('#filter-end-date').val(formatDatetimeFilter(todayDatetime));
+
+            $('#filter-start-date')
+                .on("change", function () {
+                    showUsageTrendType();
+                });
+
+            $('#filter-end-date')
+                .on("change", function () {
+                    showUsageTrendType();
+                });
+        }
+
+        (function ($) {
+            $(document).ready(function () {
                 $.ajaxSetup(
                     {
                         cache: false,
-                        beforeSend: function() {
+                        beforeSend: function () {
                             $('#js-node-load-container').hide();
                         },
-                        complete: function() {
+                        complete: function () {
                             $('#js-node-load-container').show();
                         },
-                        success: function() {
+                        success: function () {
                             $('#js-node-load-container').show();
                         }
                     });
-                triggerRefreshUsageCharts(UsageTypes.CPU);
-                setInterval(function() {triggerRefreshUsageCharts();}, 300000); // update every 5 mins
+
+                initDateFilters();
+                updateAllCharts(UsageTypes.CPU);
+                setInterval(function () {
+                    updateAllCharts();
+                }, 300000); // update every 5 mins
             });
         })(jQuery);
 
         // export API
-        FrontendApi.refreshUsageCharts = triggerRefreshUsageCharts;
+        FrontendApi.refreshUsageCharts = updateAllCharts;
         FrontendApi.updateNodeUsage = updateNodeUsage;
         FrontendApi.showSelectedUsageTrendType = showUsageTrendType;
         FrontendApi.showCumulativeUsageByType = showCumulativeUsageByType;
