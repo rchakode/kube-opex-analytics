@@ -698,22 +698,20 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             let todayDatetime = new Date();
             let sevenDayBefore = new Date();
             sevenDayBefore.setDate(todayDatetime.getDate() - 7);
-            // $('#filter-start-date').setAttribute('min', sevenDayBefore);
-            // $('#filter-start-date').setAttribute('max',todayDatetime);
-            $('#filter-start-date').val(formatDatetimeFilter(sevenDayBefore));
-            // $('#filter-end-date').setAttribute('min', sevenDayBefore);
-            // $('#filter-end-date').setAttribute('max', todayDatetime);
-            $('#filter-end-date').val(formatDatetimeFilter(todayDatetime));
+            let startDateFormated = formatDatetimeFilter(sevenDayBefore);
+            let endDateFormated = formatDatetimeFilter(todayDatetime);
 
-            $('#filter-start-date')
-                .on("change", function () {
-                    showUsageTrendByType();
-                });
+            let startDateInput = document.getElementById("filter-start-date");
+            startDateInput.setAttribute("min", startDateFormated);
+            startDateInput.setAttribute("max", endDateFormated);
+            startDateInput.setAttribute("value", startDateFormated);
+            startDateInput.onchange = function () { showUsageTrendByType(); };
 
-            $('#filter-end-date')
-                .on("change", function () {
-                    showUsageTrendByType();
-                });
+            let endDateInput = document.getElementById("filter-end-date");
+            endDateInput.setAttribute("min", startDateFormated);
+            endDateInput.setAttribute("max", endDateFormated);
+            endDateInput.setAttribute("value", endDateFormated);
+            endDateInput.onchange = function () { showUsageTrendByType(); };
         }
 
         (function ($) {
