@@ -1,25 +1,31 @@
 # Quick tour of kube-opex-analytics built-in dashboards and charts
-This section describe the built-in dashboards and charts provided by `kube-opex-analytics`.
+This section describes the built-in dashboards and charts provided by `kube-opex-analytics`.
 
-You can also use Grafana dashboard based on the Prometheus exporter it natively enables. [Learn more](prometheus-exporter-grafana-dashboard.md).
+In addition, or alternatively, it's also possible to use Grafana for visualization thanks to the Prometheus exporter natively enabled by `kube-opex-analytics`. [Learn more](prometheus-exporter-grafana-dashboard.md).
 
-## Last Week Hourly Resource Usage Trends
-For the different namespaces discovered in the Kubernetes cluster, this section shows hourly usage trends for CPU and memory resources during the last week (last seven days).
+## Hourly Resource Usage Trends (7 last days)
+For the different namespaces discovered in the Kubernetes cluster, these charts show hourly usage trends for CPU and memory resources during the last week (7 days).
 
 ![](./screenshots/sample-one-week-hourly-usage.png)
 
-## Two-weeks Daily CPU and Memory Usage
-For the different namespaces discovered in the Kubernetes cluster, this section shows daily cumulated usage for CPU and memory resources during the last 2 weeks.
+## Hourly Usage/Requests Efficiency Trends (7 last days)
+For the different namespaces discovered in the Kubernetes cluster, these charts show hourly usage/requests efficiency trends for CPU and memory resources during the last week (7 days).
+
+![](./screenshots/sample-one-week-hourly-usage.png)
+
+
+## Daily CPU and Memory Usage (14 last days)
+For the different namespaces discovered in the Kubernetes cluster, these charts show daily cumulative usage for CPU and memory resources during the last 2 weeks.
 
 ![](./screenshots/sample-two-weeks-daily-usage.png)
 
-## One-year Monthly CPU and Memory Usage
-For the different namespaces discovered in the Kubernetes cluster, this section shows monthly cumulated usage for CPU and memory resources during the last 12 months.
+## Monthly CPU and Memory Usage (12 last months)
+For the different namespaces discovered in the Kubernetes cluster, these charts show monthly cumulative usage for CPU and memory resources during the last 12 months.
 
 ![](./screenshots/sample-one-year-monthly-usage.png)
 
 ## Nodes' Occupation by Pods
-For the different nodes discovered in the Kubernetes cluster, this section shows for each node the CPU and the memory resources currently consumed by running pods.
+For the different nodes discovered in the Kubernetes cluster, these charts show for each node the CPU and the memory resources currently consumed by running pods.
 
 ![](./screenshots/sample-last-nodes-occupation-by-pods.png)
 
