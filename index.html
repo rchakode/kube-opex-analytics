@@ -86,8 +86,8 @@
     </div>
 
 
-    <div class="row chart-container">
-        <div class="col-md-9">
+    <div class="row">
+        <div class="col-md-6">
             <legend>
                 Usage Trends - 7 days
                 <select id="selected-usage-trend-type" onchange="FrontendApi.showSelectedUsageTrendType()">
@@ -97,8 +97,9 @@
                 </select>
             </legend>
         </div>
-        <div class="col-md-1">
-            &nbsp;
+        <div class="col-md-4">
+            <input type="datetime-local" id="filter-start-date" name="filter-start-date">
+            <input type="datetime-local" id="filter-end-date" name="filter-end-date">
         </div>
         <div class="col-md-2">
             <div class="btn-group">
@@ -115,7 +116,9 @@
                 </ul>
             </div>
         </div>
+    </div>
 
+    <div class="row chart-container">
         <div id="chart-block-trends-rf">
             <div class="col-md-6">
                 <div class="js-chart-trends-cpu-rf"></div>
