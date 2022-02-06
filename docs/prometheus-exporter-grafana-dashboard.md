@@ -1,11 +1,11 @@
 # Promehtheus Exporter and Grafana dashboards
 This section describes how to set up custom Grafana dashboards based on the Prometheus exporter natively enabled by `kube-opex-analytics`.
 
-There is an official Grafana dashboard which can be downloaded [here](https://grafana.com/dashboards/10282) and bound to the built-in Prometheus exporter in a couple of minutes.
-
 - [Promehtheus Exporter and Grafana dashboards](#promehtheus-exporter-and-grafana-dashboards)
   - [Prometheus Exporter](#prometheus-exporter)
-  - [Grafana Dashboards](#grafana-dashboards)
+  - [Grafana Dashboard](#grafana-dashboard)
+    - [Importation and configuration](#importation-and-configuration)
+    - [Overview of the dashboard](#overview-of-the-dashboard)
 
 ## Prometheus Exporter
 `kube-opex-analytics` enables a Prometheus exporter through the endpoint `/metrics`.
@@ -29,17 +29,24 @@ scrape_configs:
 
 > When the option `prometheusOperator` is enabled during the deployment (see Helm [values.yaml](./helm/kube-opex-analytics/values.yaml) file), you have nothing to do as the scraping should be automatically configured by the deployed `Prometheus ServiceMonitor`.
 
-## Grafana Dashboards
-You can either build your own Grafana dashboard or use our [official one](https://grafana.com/dashboards/10282).
+## Grafana Dashboard
+There is an official Grafana dashboard which can be downloaded [here](https://grafana.com/dashboards/10282).
 
-This official Grafana dashboard looks as below and is designed to work out-of-the box with the `kube-opex-analytics`'s [Prometheus exporter](#prometheus-exporter). It requires to set a Grafana variable named `KOA_DS_PROMETHEUS`, which shall point to your Prometheus server data source.
+The dashboard looks as below and is designed to work out-of-the box with the [Prometheus exporter](#prometheus-exporter). It would just require a couple of minutes to make it work. 
 
-The dashboard currently provides the following reports:
+### Importation and configuration
+
+ * Download the dashboard and import it in Grafana.
+ * Create a Grafana variable named `KOA_DS_PROMETHEUS` and point to your Prometheus server data source.
+ * You're done.
+
+### Overview of the dashboard
+The dashboard currently provides the following charts (see screenshot below):
 
 * Hourly resource usage over time.
 * Current day's ongoing resource usage.
 * Current month's ongoing resource usage.
 
-> You should notice those reports are less rich compared against the ones enabled by the built-in `kube-opex-analytics` dashboard. In particular, the daily and the monthly usage for the different namespaces are not stacked, neither than there are not analytics for past days and months. These limitations are inherent to how Grafana handles timeseries and bar charts.
+> You should notice those charts are less rich compared against the ones enabled by the built-in `kube-opex-analytics` dashboard. In particular, the daily and the monthly usage for the different namespaces are not stacked, neither than there are not analytics for past days and months. These limitations are inherent to how Grafana handles timeseries and bar charts.
 
 ![](./screenshots/kube-opex-analytics-grafana.png)
