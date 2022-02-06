@@ -103,7 +103,7 @@ Read the documentation related to [design fundamentals](./docs/design-fundamenta
 # Getting Started
   * [Installation on Kubernetes](./docs/installation-on-kubernetes.md)
   * [Installation on Docker](./docs/installation-on-docker.md)
-  * [Quick tour of built-in dashboards and charts](./docs/built-in-dashboards-and-charts.md)
+  * [Built-in dashboards and charts](./docs/built-in-dashboards-and-charts.md)
   * [Prometheus Exporter and Grafana Dashboards](./docs/prometheus-exporter-grafana-dashboard.md)
   * [Configuration Settings](./docs/configuration-settings.md)
   * [Centralized multi Kubernetes clusters analytics](./docs/multi-cluster-analytics.md)
