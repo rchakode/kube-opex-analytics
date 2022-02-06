@@ -601,13 +601,18 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                     installExporter(`trends-${resourceTypeLowered}-json`, 'kopex-trends-' + chartCategory + '.json', () => exportJSON(data));
                     installExporter(`trends-${resourceTypeLowered}-csv`, 'kopex-trends-' + chartCategory + '.csv', () => exportCSV(data));
 
-                    let startDateFilter = $("#filter-start-date").val();
-                    let endDateFilter = $('#filter-end-date').val();
+                    let filterDate1 = $("#filter-start-date").val();
+                    let filterDate2 = $('#filter-end-date').val();
+                    if (filterDate1 > filterDate2) {
+                        let df = filterDate1;
+                        filterDate1 =  filterDate2;
+                        filterDate2 =  df;
+                    }
 
                     if (trendType === 'rf') {
                         const dataset = {
                             data:
-                                data.filter(item => (item.dateUTC >= startDateFilter && item.dateUTC <= endDateFilter))
+                                data.filter(item => (item.dateUTC >= filterDate1 && item.dateUTC <= filterDate2))
                                     .map(
                                         ({name, usage, dateUTC}) => ({
                                             topicName: name.substring(0, name.length - 4),
@@ -623,7 +628,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                             `${TREND_TYPE_LABELS[trendType]}`);
                     } else {
                         const dataset =
-                            data.filter(item => (item.dateUTC >= startDateFilter && item.dateUTC <= endDateFilter))
+                            data.filter(item => (item.dateUTC >= filterDate1 && item.dateUTC <= filterDate2))
                                 .map(
                                     ({name, usage, dateUTC}) => ({
                                         name: name,
@@ -698,20 +703,20 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             let todayDatetime = new Date();
             let sevenDayBefore = new Date();
             sevenDayBefore.setDate(todayDatetime.getDate() - 7);
-            let startDateFormated = formatDatetimeFilter(sevenDayBefore);
-            let endDateFormated = formatDatetimeFilter(todayDatetime);
+            let filterDate1 = formatDatetimeFilter(sevenDayBefore);
+            let filterDate2 = formatDatetimeFilter(todayDatetime);
 
-            let startDateInput = document.getElementById("filter-start-date");
-            startDateInput.setAttribute("min", startDateFormated);
-            startDateInput.setAttribute("max", endDateFormated);
-            startDateInput.setAttribute("value", startDateFormated);
-            startDateInput.onchange = function () { showUsageTrendByType(); };
+            let dateFilter1 = document.getElementById("filter-start-date");
+            dateFilter1.setAttribute("min", filterDate1);
+            dateFilter1.setAttribute("max", filterDate2);
+            dateFilter1.setAttribute("value", filterDate1);
+            dateFilter1.onchange = function () { showUsageTrendByType(); };
 
-            let endDateInput = document.getElementById("filter-end-date");
-            endDateInput.setAttribute("min", startDateFormated);
-            endDateInput.setAttribute("max", endDateFormated);
-            endDateInput.setAttribute("value", endDateFormated);
-            endDateInput.onchange = function () { showUsageTrendByType(); };
+            let dateFilter2 = document.getElementById("filter-end-date");
+            dateFilter2.setAttribute("min", filterDate1);
+            dateFilter2.setAttribute("max", filterDate2);
+            dateFilter2.setAttribute("value", filterDate2);
+            dateFilter2.onchange = function () { showUsageTrendByType(); };
         }
 
         (function ($) {
