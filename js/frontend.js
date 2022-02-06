@@ -576,7 +576,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
                     $(".accounting-cost-model").text('(%)');
-                    console.log('failed loading backend config (', xhr.status, ' error)')
+                    $("#error-message").append(`failed loading backend config (${xhr.status} error)`);
                 }
             });
         }
@@ -622,10 +622,13 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                                         })
                                     )
                         };
-                        updateLineOrAreaChart(dataset, chart,
-                            `js-chart-trends-${chartCategory}`,
-                            `${resourceType} ${TREND_TYPE_LABELS[trendType]}`,
-                            `${TREND_TYPE_LABELS[trendType]}`);
+                        if (dataset.data.length > 0) {
+                            updateLineOrAreaChart(dataset, chart, `js-chart-trends-${chartCategory}`, `${resourceType} ${TREND_TYPE_LABELS[trendType]}`, `${TREND_TYPE_LABELS[trendType]}`);
+                            $("#error-message-container").hide();
+                        } else {
+                            $("#error-message").html('<li>no trends data found in the selected range</li>');
+                            $("#error-message-container").show();
+                        }
                     } else {
                         const dataset =
                             data.filter(item => (item.dateUTC >= filterDate1 && item.dateUTC <= filterDate2))
@@ -636,10 +639,13 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                                         value: usage
                                     })
                                 );
-                        updateLineOrAreaChart(dataset, chart,
-                            `js-chart-trends-${chartCategory}`,
-                            `${resourceType} ${TREND_TYPE_LABELS[trendType]}`,
-                            `${TREND_TYPE_LABELS[trendType]}`);
+                        if (dataset.length > 0) {
+                            updateLineOrAreaChart(dataset, chart, `js-chart-trends-${chartCategory}`, `${resourceType} ${TREND_TYPE_LABELS[trendType]}`, `${TREND_TYPE_LABELS[trendType]}`);
+                            $("#error-message-container").hide();
+                        } else {
+                            $("#error-message").html('<li>no trends data found in the selected range</li>');
+                            $("#error-message-container").show();
+                        }
                     }
 
                 },
