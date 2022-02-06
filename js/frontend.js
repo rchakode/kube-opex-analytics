@@ -482,7 +482,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
         }
 
 
-        function showUsageTrendType() {
+        function showUsageTrendByType() {
             usageTrendType = $("#selected-usage-trend-type option:selected").val();
             if (usageTrendType === 'usage-efficiency') {
                 $('#chart-block-trends-hourly-usage').hide();
@@ -566,16 +566,16 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
         }
 
         function loadBackendConfig() {
-            $("#cost-model").text('');
+            $(".accounting-cost-model").text('');
             $.ajax({
                 type: "GET",
                 url: FrontendApi.DATA_DIR + '/backend.json',
                 dataType: 'json',
                 success: function (backend_config) {
-                    $("#cost-model").text(backend_config.cost_model + ' (' + backend_config.currency + ')');
+                    $(".accounting-cost-model").text('(' + backend_config.cost_model  + ' ' + backend_config.currency + ')');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
-                    $("#cost-model").text('%');
+                    $(".accounting-cost-model").text('(%)');
                     console.log('failed loading backend config (', xhr.status, ' error)')
                 }
             });
@@ -679,7 +679,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             $("#error-message-container").hide();
             $("#error-message").html('')
             loadBackendConfig();
-            showUsageTrendType();
+            showUsageTrendByType();
             showCumulativeUsageByType();
             updateNodeUsage();
         }
@@ -707,12 +707,12 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
 
             $('#filter-start-date')
                 .on("change", function () {
-                    showUsageTrendType();
+                    showUsageTrendByType();
                 });
 
             $('#filter-end-date')
                 .on("change", function () {
-                    showUsageTrendType();
+                    showUsageTrendByType();
                 });
         }
 
@@ -743,7 +743,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
         // export API
         FrontendApi.refreshUsageCharts = updateAllCharts;
         FrontendApi.updateNodeUsage = updateNodeUsage;
-        FrontendApi.showSelectedUsageTrendType = showUsageTrendType;
+        FrontendApi.showSelectedUsageTrendType = showUsageTrendByType;
         FrontendApi.showCumulativeUsageByType = showCumulativeUsageByType;
     }
 );
