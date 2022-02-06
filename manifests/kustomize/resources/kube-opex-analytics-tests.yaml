@@ -5,11 +5,7 @@ metadata:
   name: "kube-opex-analytics-test-connection"
   labels:
     app.kubernetes.io/name: kube-opex-analytics
-    helm.sh/chart: kube-opex-analytics-2022-02-02-740796d
     app.kubernetes.io/instance: kube-opex-analytics
-    app.kubernetes.io/managed-by: Helm
-  annotations:
-    "helm.sh/hook": test-success
 spec:
   containers:
     - name: wget
