@@ -1,7 +1,7 @@
-# Deploy kube-opex-analytics on Kubernetes
+# Deploying kube-opex-analytics on Kubernetes
 This section describes how to deploy `kube-opex-analytics` on a Kubernetes cluster.
 
-- [Deploy kube-opex-analytics on Kubernetes](#deploy-kube-opex-analytics-on-kubernetes)
+- [Deploying kube-opex-analytics on Kubernetes](#deploying-kube-opex-analytics-on-kubernetes)
   - [Requirements](#requirements)
   - [Deployment manifests](#deployment-manifests)
   - [Installation using kubectl and kustomize](#installation-using-kubectl-and-kustomize)
@@ -9,7 +9,7 @@ This section describes how to deploy `kube-opex-analytics` on a Kubernetes clust
   - [Get Access to UI Service](#get-access-to-ui-service)
 
 ## Requirements
-`kube-opex-analytics` needs read-only access to the following Kubernetes APIs.
+`kube-opex-analytics` requires read-only access to the following Kubernetes API endpoints.
 
 * `/api/v1`
 * `/apis/metrics.k8s.io/v1beta1` (provided by [Kubernetes Metrics Server](https://github.com/kubernetes-sigs/metrics-server), which shall be installed on the cluster if it's not yet the case).

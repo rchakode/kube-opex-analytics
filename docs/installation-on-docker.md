@@ -1,13 +1,13 @@
-# Deploy kube-opex-analytics using Docker
+# Deploying kube-opex-analytics using Docker
 This section describes how to deploy `kube-opex-analytics` on a Docker machine using the official container image.
 
-- [Deploy kube-opex-analytics using Docker](#deploy-kube-opex-analytics-using-docker)
+- [Deploying kube-opex-analytics using Docker](#deploying-kube-opex-analytics-using-docker)
   - [Requirements](#requirements)
   - [Deployment](#deployment)
   - [Access the web UI](#access-the-web-ui)
 
 ## Requirements
-`kube-opex-analytics` needs read-only access to the following Kubernetes APIs:
+`kube-opex-analytics` requires read-only access to the following Kubernetes API endpoints.
   * `/api/v1`
   * `/apis/metrics.k8s.io/v1beta1` (provided by [Kubernetes Metrics Server](https://github.com/kubernetes-sigs/metrics-server), which shall be installed on the cluster if it's not yet the case).
 

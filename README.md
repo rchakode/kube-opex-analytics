@@ -9,10 +9,12 @@
 
 - [Overview](#overview)
 - [Getting Started](#getting-started)
+- [Design Fundamentals](#design-fundamentals)
 - [License](#license)
 - [Support & Contributions](#support--contributions)
  
 # Overview
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 In a nutshell, `kube-opex-analytics` or literally *Kubernetes Opex Analytics* is a tool to help organizations track the resources being consumed by their Kubernetes clusters to prevent overpaying. To this end, it generates short-, mid- and long-term usage reports showing relevant insights on what amount of resources each project is consuming over time. The final **goal being to ease cost allocation and capacity planning decisions** with factual analytics.
@@ -76,40 +78,49 @@ In a nutshell `kube-opex-analytics` (literally *Kubernetes Opex Analytics*) is a
 =======
 `kube-opex-analytics` (literally *Kubernetes Opex Analytics*) is a Kubernetes usage analytics tool to help organizations track the resources being consumed by their Kubernetes clusters over time (hourly, daily, monthly). Doing so `kube-opex-analytics` aims to prevent overpaying by enabling each organization to understand how their Kubernetes resources are consumed over time, and hence be able to take appropriated decisions when applicable.
 >>>>>>> 3d78665 (Update README.md)
+=======
+`kube-opex-analytics` (literally *Kubernetes Opex Analytics*) is a Kubernetes usage analytics tool to help organizations track the resources being consumed by their Kubernetes clusters over time (hourly, daily, monthly). Doing so `kube-opex-analytics` aims to prevent overpaying by enabling each organization to understand how their Kubernetes resources are consumed over time, and hence be able to take appropriated cost optimization decisions.
+>>>>>>> 39d7a89 (reviewing the documentation)
 
- * **Usage accounting per namespace:** what capacities each namespace is consuming over time (hourly, daily, monthly).
- * **Accounting of `non-allocatable` capacities**: these are capacities dedicated to the operations of Kubernetes components on each node. From node to cluster level, `kube-opex-analytics` tracks and consolidates the share of non-allocatable capacities and highlights them against usable capacities (i.e. capacities used by actual application workloads). 
+ * **Usage accounting per namespace:** This allows assessing what capacities each namespace is consuming over time (hourly, daily, monthly).
+ * **Accounting of non-allocatable capacities**: At node and cluster level, `kube-opex-analytics` tracks and consolidates the share of non-allocatable capacities and highlights them against usable capacities (i.e. capacities used by actual application workloads). In contrary to usable capacities, non-allocatable capacities are dedicated to Kubernetes operations (OS, kubelets, etc).
  * **Cluster usage accounting and capacity planning:** This feature makes it easy to account and visualize capacities consumed on a cluster, globally, instantly and over time.
+<<<<<<< HEAD
  * **Usage/request efficiency per namespace:** Based on hourly-consolidated trends, this original feature help know how efficient resource requests set on Kubernetes are, compared against the actual resource usage over time.
  * **Cost allocation and charge back analytics:** automatic processing and visualization of resource usage accounting per namespace over various period of time (daily, monthly).
  * **Flexible visualization:** `kube-opex-analytics` enables built-in analytics dashboards, as well as a native Prometheus exporter that exposes its analytics metrics for third-party visualization tools like Grafana. 
  
 > **Multi-cluster analytics:** `kube-opex-analytics` tracks the usage for a single instance of Kubernetes. For a centralized multi-Kubernetes usage analytics, you may have to consider our [Krossboard](https://krossboard.app/) product. Watch a [demo video here](https://youtu.be/lfkUIREDYDY).
 >>>>>>> 831502b (reorganize docs in separated files)
+=======
+ * **Usage/request efficiency per namespace:** Based on hourly-consolidated trends, this functionality helps know how efficient resource requests set on Kubernetes workloads are, compared against the actual resource usage over time.
+ * **Cost allocation and charge back analytics:** automatic processing and visualization of resource usage accounting per namespace on daily and monthly periods.
+ * **Insightful and extensible visualization:** `kube-opex-analytics` enables built-in analytics dashboards, as well as a native Prometheus exporter that exposes its analytics metrics for third-party visualization tools like Grafana. 
+>>>>>>> 39d7a89 (reviewing the documentation)
 
-Read the [design fundamentals](./docs/design-fundamentals.md) to learn more.
+Read the documentation related to [design fundamentals](./docs/design-fundamentals.md) to learn more.
 
 # Getting Started
-  * [Design Fundamentals](./docs/design-fundamentals.md)
-  * [Installation on Kubernete](./docs/installation-on-kubernetes.md)
+  * [Installation on Kubernetes](./docs/installation-on-kubernetes.md)
   * [Installation on Docker](./docs/installation-on-docker.md)
-  * [Quick tour of built-in dashboards adn charts](./docs/built-in-dashboards-and-charts.md)
+  * [Quick tour of built-in dashboards and charts](./docs/built-in-dashboards-and-charts.md)
   * [Prometheus Exporter and Grafana Dashboards](./docs/prometheus-exporter-grafana-dashboard.md)
-  * [Centralized multi-cluster analytics](./docs/multi-cluster-analytics.md)
   * [Configuration Settings](./docs/configuration-settings.md)
+  * [Centralized multi Kubernetes clusters analytics](./docs/multi-cluster-analytics.md)
+
+# Design Fundamentals
+Checkout the [Design Fundamentals](./docs/design-fundamentals.md) documentation to learn more about `kube-opex-analytics` concepts and implementation decisions.
+ 
+> **Multi-cluster analytics:** `kube-opex-analytics` tracks the usage for a single instance of Kubernetes. For a centralized multi-Kubernetes usage analytics, you may have to consider our [Krossboard](https://krossboard.app/) product. Watch a [demo video here](https://youtu.be/lfkUIREDYDY).
 
 # License
-`kube-opex-analytics` (code and documentation) is licensed under the terms of Apache License 2.0. Read the [LICENSE](./LICENSE) terms for more details.
-
-Besides, `kube-opex-analytics` is bound to third-party libraries each with its specific license terms. Read the [NOTICE](./NOTICE) for additional information.
+`kube-opex-analytics` (code and documentation) is licensed under the terms of Apache License 2.0; read the [LICENSE](./LICENSE) terms for more details. Besides, it's bound to third-party libraries each with its specific license terms; read the [NOTICE](./NOTICE) for additional information.
 
 # Support & Contributions
-We encourage feedback and always make our best to handle any troubles you may encounter when using it.
+We encourage feedback and always make our best to handle any troubles you may encounter when using `kube-opex-analytics`.
 
-Here is the link to submit issues: https://github.com/rchakode/kube-opex-analytics/issues.
+Use this [link to submit issues or improvement ideas](https://github.com/rchakode/kube-opex-analytics/issues).
 
-New ideas are welcomed, if you have any idea to improve it please open an issue to submit it.
+To contribute bug patches or new features, please submit a [Pull Request](https://github.com/rchakode/kube-opex-analytics/pulls).
 
 Contributions are accepted subject that the code and documentation be released under the terms of Apache 2.0 License.
-
-To contribute bug patches or new features, please submit a Pull Request.
