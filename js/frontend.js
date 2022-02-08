@@ -144,7 +144,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
         function updateLineOrAreaChart(dataset, mychart, htmlContainerClass, yLabel, chartTitle) {
             let htmlContainer = d3Selection.select('.' + htmlContainerClass);
             let htmlContainerWidth = htmlContainer.node() ? htmlContainer.node().getBoundingClientRect().width : false;
-            let mychartTooltip = tooltip();
+            let chartTooltip = tooltip();
 
             if (!htmlContainerWidth) {
                 return;
@@ -162,21 +162,25 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 .width(htmlContainerWidth)
                 .margin({left: 75, top: 50, right: 25, bottom: 50})
                 .colorSchema(KoaColorSchema)
-                .on('customMouseOver', mychartTooltip.show)
+                .on('customMouseOver', chartTooltip.show)
                 .on('customMouseMove', function (dataPoint, topicColorMap, dataPointXPosition) {
-                    mychartTooltip.update(dataPoint, topicColorMap, dataPointXPosition);
+                    chartTooltip.update(dataPoint, topicColorMap, dataPointXPosition);
                 })
-                .on('customMouseOut', mychartTooltip.hide);
+                .on('customMouseOut', chartTooltip.hide);
 
             htmlContainer.datum(dataset).call(mychart);
 
-            mychartTooltip.title(chartTitle);
+            chartTooltip
+                .dateFormat('custom')
+                .dateCustomFormat('%b %d %H:%M')
+                .title(chartTitle);
+
             if (!dataset.hasOwnProperty('data')) {
-                mychartTooltip.topicLabel('values');
+                chartTooltip.topicLabel('values');
             }
 
             let tooltipContainer = d3Selection.select('.' + htmlContainerClass + ' .metadata-group .vertical-marker-container');
-            tooltipContainer.datum([]).call(mychartTooltip);
+            tooltipContainer.datum([]).call(chartTooltip);
         }
 
         function updateStackedBarChart(dataset, mychart, htmlContainerClass, yLabel, chartTitle) {
