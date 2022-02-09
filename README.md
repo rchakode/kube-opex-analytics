@@ -16,6 +16,8 @@
 # Overview
 `kube-opex-analytics` (literally *Kubernetes Opex Analytics*) is a Kubernetes usage analytics tool to help organizations track the resources being consumed by their Kubernetes clusters over time (hourly, daily, monthly). Doing so, `kube-opex-analytics` aims to prevent overpaying by enabling each organization to understand how their Kubernetes resources are consumed over time, and hence be able to take appropriated cost optimization decisions.
 
+Key features:
+
  * **Usage accounting and trends per namespace.** This allows assessing what capacities each namespace is consuming over various period of time (hourly, daily, monthly).
  * **Accounting of non-allocatable capacities.** At node and cluster levels, `kube-opex-analytics` tracks and consolidates the share of non-allocatable capacities and highlights them against usable capacities (i.e. capacities used by actual application workloads). In contrary to usable capacities, non-allocatable capacities are dedicated to Kubernetes operations (OS, kubelets, etc).
  * **Cluster usage accounting and capacity planning.** This feature makes it easy to account and visualize capacities consumed on a cluster, globally, instantly and over time.
@@ -23,9 +25,10 @@
  * **Cost allocation and charge back analytics:** automatic processing and visualization of resource usage accounting per namespace on daily and monthly periods.
  * **Insightful and extensible visualization.** `kube-opex-analytics` enables built-in analytics dashboards, as well as a native Prometheus exporter that exposes its analytics metrics for third-party visualization tools like Grafana.
 
-Read the [design fundamentals](./docs/design-fundamentals.md) documentation to learn more.
 
-![kube-opex-analytics-overview](screenshots/kube-opex-analytics-overview.gif)
+![kube-opex-analytics-overview](screenshots/kube-opex-analytics-demo.gif)
+
+Read the [design fundamentals](./docs/design-fundamentals.md) documentation to learn more concepts and implementation decisions.
 
 # Getting Started
   * [Installation on Kubernetes](./docs/installation-on-kubernetes.md)

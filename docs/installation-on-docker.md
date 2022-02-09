@@ -1,10 +1,8 @@
 # Deploying kube-opex-analytics using Docker
-This section describes how to deploy `kube-opex-analytics` on a Docker machine using the official container image.
 
-- [Deploying kube-opex-analytics using Docker](#deploying-kube-opex-analytics-using-docker)
-  - [Requirements](#requirements)
-  - [Deployment](#deployment)
-  - [Access the web UI](#access-the-web-ui)
+- [Requirements](#requirements)
+- [Deployment](#deployment)
+- [Access the web UI](#access-the-web-ui)
 
 ## Requirements
 `kube-opex-analytics` requires read-only access to the following Kubernetes API endpoints.
@@ -22,13 +20,13 @@ It assumes that you have a proxied access to your Kubernetes cluster from the lo
 As `kube-opex-analytics` is released as a Docker image, you can quickly start an instance of the service by running the following command:
 
 ```
-$ docker run -d \
-        --net="host" \
-        --name 'kube-opex-analytics' \
-        -v /var/lib/kube-opex-analytics:/data \
-        -e KOA_DB_LOCATION=/data/db \
-        -e KOA_K8S_API_ENDPOINT=http://127.0.0.1:8001 \
-        rchakode/kube-opex-analytics
+docker run -d \
+    --net="host" \
+    --name 'kube-opex-analytics' \
+    -v /var/lib/kube-opex-analytics:/data \
+    -e KOA_DB_LOCATION=/data/db \
+    -e KOA_K8S_API_ENDPOINT=http://127.0.0.1:8001 \
+    rchakode/kube-opex-analytics
 ```
 
 In this command:

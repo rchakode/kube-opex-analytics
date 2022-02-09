@@ -1,12 +1,10 @@
 # Deploying kube-opex-analytics on Kubernetes
-This section describes how to deploy `kube-opex-analytics` on a Kubernetes cluster.
 
-- [Deploying kube-opex-analytics on Kubernetes](#deploying-kube-opex-analytics-on-kubernetes)
-  - [Requirements](#requirements)
-  - [Deployment manifests](#deployment-manifests)
-  - [Installation using kubectl and kustomize](#installation-using-kubectl-and-kustomize)
-  - [Installation using Helm](#installation-using-helm)
-  - [Get Access to UI Service](#get-access-to-ui-service)
+- [Requirements](#requirements)
+- [Deployment manifests](#deployment-manifests)
+- [Installation using kubectl and kustomize](#installation-using-kubectl-and-kustomize)
+- [Installation using Helm](#installation-using-helm)
+- [Get Access to UI Service](#get-access-to-ui-service)
 
 ## Requirements
 `kube-opex-analytics` requires read-only access to the following Kubernetes API endpoints.
@@ -19,29 +17,29 @@ On a typical deployment inside the Kubernetes cluster, the following Kubernetes 
 ## Deployment manifests
 `kube-opex-analytics` can be installed using one of the following methods:
 * [kubectl + Kustomize](#installation-using-kubectl-and-kustomize) 
-* [Helm](#installation-using-helm).
+* [Helm](#installation-using-helm)
 
 > **Security Context:**
 > `kube-opex-analytics`'s pod is deployed with a unprivileged security context by default. However, if needed, it's possible to launch the pod in privileged mode by setting the Helm configuration value `securityContext.enabled` to `false`.
 
-## Installation using kubectl and kustomize
+## Installation using kubectl and Kustomize
 First review the default configuration settings in the deployment ConfigMap: `kustomize/kube-opex-analytics-config.yaml`.
 
 Then, perform the following command to submit the deployment.
 The target namespace (`kube-opex-analytics`) is assumed to exist. Otherwise, create it first.
 
 ```
-$ kubectl -n kube-opex-analytics apply -k ./manifests/kustomize
+kubectl -n kube-opex-analytics apply -k ./manifests/kustomize
 ```
 
 ## Installation using Helm
-First review the default configuration settings in the Helm values file: `manifests/helm/kube-opex-analytics/values.yaml`. In particular, review the sections related to the persistent data volume, the Prometheus exporter and security context.
+First review the default configuration settings in the Helm values file: `manifests/helm/values.yaml`. In particular, review the sections related to the persistent data volume, the Prometheus exporter and security context.
 
 Then, perform the following command to submit the deployment. 
 The target namespace (`kube-opex-analytics`) is assumed to exist. Otherwise, create it first.
 
 ```bash
-helm upgrade -n kube-opex-analytics --install kube-opex-analytics manifests/helm/kube-opex-analytics/
+helm upgrade -n kube-opex-analytics --install kube-opex-analytics manifests/helm/
 ```
 
 ## Get Access to UI Service
