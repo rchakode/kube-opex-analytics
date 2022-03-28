@@ -293,15 +293,14 @@ class K8sUsage:
         self.memCapacity = 0.0
         self.cpuAllocatable = 0.0
         self.memAllocatable = 0.0
-
-    def decode_memory_capacity(self, cap_input):
-        cap_factors = {
+        self.capacityQuantities = {
             'Ki': 1024,
             'Mi': 1048576,
             'Gi': 1073741824,
             'Ti': 1099511627776,
             'Pi': 1125899906842624,
             'Ei': 1152921504606847000,
+            'k': 1e3,
             'K': 1e3,
             'M': 1e6,
             'G': 1e9,
@@ -313,28 +312,19 @@ class K8sUsage:
             'n': 1e-9,
             'None': 1
         }
+
+    def decode_capacity(self, cap_input):
         data_length = len(cap_input)
         cap_unit = 'None'
         cap_value = cap_input
         if cap_input.endswith(("Ki", "Mi", "Gi", "Ti", "Pi", "Ei")):
             cap_unit = cap_input[data_length - 2:]
             cap_value = cap_input[0:data_length - 2]
-        elif cap_input.endswith(("n", "u", "m", "K", "M", "G", "T", "P", "E")):
+        elif cap_input.endswith(("n", "u", "m", "k", "K", "M", "G", "T", "P", "E")):
             cap_unit = cap_input[data_length - 1:]
             cap_value = cap_input[0:data_length - 1]
-        return cap_factors[cap_unit] * int(cap_value)
-
-    def decode_cpu_capacity(self, cap_input):
-        data_length = len(cap_input)
-        cap_unit = cap_input[data_length - 1:]
-        cap_value = cap_input[0:data_length - 1]
-        if cap_unit == 'n':
-            return 1e-9 * int(cap_value)
-        if cap_unit == 'u':
-            return 1e-6 * int(cap_value)
-        if cap_unit == 'm':
-            return 1e-3 * int(cap_value)
-        return int(cap_input)
+        KOA_LOGGER.debug(cap_value)
+        return self.capacityQuantities[cap_unit] * float(cap_value)
 
     def extract_namespaces_and_initialize_usage(self, data):
         # exit if not valid data
@@ -368,10 +358,10 @@ class K8sUsage:
             if status is not None:
                 node.containerRuntime = status['nodeInfo']['containerRuntimeVersion']
 
-                node.cpuCapacity = self.decode_cpu_capacity(status['capacity']['cpu'])
-                node.cpuAllocatable = self.decode_cpu_capacity(status['allocatable']['cpu'])
-                node.memCapacity = self.decode_memory_capacity(status['capacity']['memory'])
-                node.memAllocatable = self.decode_memory_capacity(status['allocatable']['memory'])
+                node.cpuCapacity = self.decode_capacity(status['capacity']['cpu'])
+                node.cpuAllocatable = self.decode_capacity(status['allocatable']['cpu'])
+                node.memCapacity = self.decode_capacity(status['capacity']['memory'])
+                node.memAllocatable = self.decode_capacity(status['allocatable']['memory'])
 
                 for _, cond in enumerate(status['conditions']):
                     node.message = cond['message']
@@ -404,8 +394,8 @@ class K8sUsage:
         for _, item in enumerate(data_json['items']):
             node = self.nodes.get(item['metadata']['name'], None)
             if node is not None:
-                node.cpuUsage = self.decode_cpu_capacity(item['usage']['cpu'])
-                node.memUsage = self.decode_memory_capacity(item['usage']['memory'])
+                node.cpuUsage = self.decode_capacity(item['usage']['cpu'])
+                node.memUsage = self.decode_capacity(item['usage']['memory'])
                 self.nodes[node.name] = node
 
     def extract_pods(self, data):
@@ -450,8 +440,8 @@ class K8sUsage:
                     if resources is not None:
                         resource_requests = resources.get('requests', None)
                         if resource_requests is not None:
-                            pod.cpuRequest += self.decode_cpu_capacity(resource_requests.get('cpu', '0'))
-                            pod.memRequest += self.decode_memory_capacity(resource_requests.get('memory', '0'))
+                            pod.cpuRequest += self.decode_capacity(resource_requests.get('cpu', '0'))
+                            pod.memRequest += self.decode_capacity(resource_requests.get('memory', '0'))
 
             self.pods[pod.name] = pod
 
@@ -468,8 +458,8 @@ class K8sUsage:
                 pod.cpuUsage = 0.0
                 pod.memUsage = 0.0
                 for _, container in enumerate(item['containers']):
-                    pod.cpuUsage += self.decode_cpu_capacity(container['usage']['cpu'])
-                    pod.memUsage += self.decode_memory_capacity(container['usage']['memory'])
+                    pod.cpuUsage += self.decode_capacity(container['usage']['cpu'])
+                    pod.memUsage += self.decode_capacity(container['usage']['memory'])
                 self.pods[pod.name] = pod
 
     def consolidate_ns_usage(self):
