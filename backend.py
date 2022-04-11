@@ -478,7 +478,9 @@ class K8sUsage:
                 self.requestByNamespace[pod.namespace].cpu += pod.cpuRequest
                 self.requestByNamespace[pod.namespace].mem += pod.memRequest
                 self.memUsageAllPods += pod.memUsage
-                self.nodes[pod.nodeName].podsRunning.append(pod)
+                pod_node = self.nodes.get(pod.nodeName, None)
+                if pod_node is not None:
+                    pod_node.podsRunning.append(pod)
         self.cpuCapacity += 0.0
         self.memCapacity += 0.0
         for node in self.nodes.values():
