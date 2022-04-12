@@ -14,7 +14,7 @@
 - [Support & Contributions](#support--contributions)
  
 # Overview
-`kube-opex-analytics` (literally *Kubernetes Opex Analytics*) is a Kubernetes usage accounting and analytics tool to help organizations track the resources being consumed by their Kubernetes clusters over time (hourly, daily, monthly). The purpose of `kube-opex-analytics` is to help prevent overpaying. Indeed, it provides insightful usage analytics metrics and charts, that an organization can use as key indicators to take appropriate cost optimization decisions.
+`kube-opex-analytics` (literally *Kubernetes Opex Analytics*) is a Kubernetes usage accounting and analytics tool to help organizations track the resources being consumed by their Kubernetes clusters over time (hourly, daily, monthly). The purpose of `kube-opex-analytics` is to help prevent overpaying. Indeed, it provides insightful usage analytics metrics and charts, that engineering and financial teams can use as key indicators to take appropriate cost optimization decisions.
 
 Key features:
 
