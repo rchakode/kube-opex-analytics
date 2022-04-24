@@ -3,7 +3,7 @@
 ![Apache License](https://img.shields.io/github/license/rchakode/kube-opex-analytics.svg?label=License&style=for-the-badge)
 [![GitHub Actions Status](<https://img.shields.io/github/workflow/status/rchakode/kube-opex-analytics/Build?logo=GitHub&style=for-the-badge>)](https://github.com/rchakode/kube-opex-analytics/actions)
 [![Calendar Versioning](https://img.shields.io/badge/calver-YY.MM.MICRO-bb8fce.svg?style=for-the-badge)](http://calver.org)
-![Docker pulls](https://img.shields.io/docker/pulls/rchakode/kube-opex-analytics.svg?style=for-the-badge)
+![Docker pulls](https://img.shields.io/docker/pulls/rchakode/kube-opex-analytics.svg?label=Docker%20Pulls&style=for-the-badge)
 
 ---
 
