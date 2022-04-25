@@ -3,7 +3,7 @@ This section describes how to set up Grafana dashboards thanks to `kube-opex-ana
 
 - [Promehtheus Exporter and Grafana dashboards](#promehtheus-exporter-and-grafana-dashboards)
   - [Prometheus Exporter](#prometheus-exporter)
-  - [Grafana Dashboard](#grafana-dashboard)
+  - [Default Grafana Dashboard](#default-grafana-dashboard)
     - [Importation and configuration](#importation-and-configuration)
     - [Overview of the dashboard](#overview-of-the-dashboard)
 
