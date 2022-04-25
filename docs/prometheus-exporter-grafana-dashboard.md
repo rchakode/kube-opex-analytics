@@ -1,11 +1,13 @@
 # Promehtheus Exporter and Grafana dashboards
-This section describes how to set up custom Grafana dashboards based on the Prometheus exporter natively enabled by `kube-opex-analytics`.
+This section describes how to set up Grafana dashboards thanks to `kube-opex-analytics`' Prometheus exporter.
 
 - [Promehtheus Exporter and Grafana dashboards](#promehtheus-exporter-and-grafana-dashboards)
   - [Prometheus Exporter](#prometheus-exporter)
   - [Grafana Dashboard](#grafana-dashboard)
     - [Importation and configuration](#importation-and-configuration)
     - [Overview of the dashboard](#overview-of-the-dashboard)
+
+![](../screenshots/kube-opex-analytics-grafana.png)
 
 ## Prometheus Exporter
 `kube-opex-analytics` enables a Prometheus exporter through the endpoint `/metrics`.
@@ -27,9 +29,9 @@ scrape_configs:
       - targets: ['kube-opex-analytics:5483']
 ```
 
-> When the option `prometheusOperator` is enabled during the deployment (see Helm [values.yaml](./helm/kube-opex-analytics/values.yaml) file), you have nothing to do as the scraping should be automatically configured by the deployed `Prometheus ServiceMonitor`.
+> When the paramater `prometheusOperator` is enabled during the deployment (see Helm [values.yaml](./helm/kube-opex-analytics/values.yaml) file), you have nothing to do as the scraping should be automatically configured by the deployed `Prometheus ServiceMonitor`.
 
-## Grafana Dashboard
+## Default Grafana Dashboard
 There is an official Grafana dashboard which can be downloaded [here](https://grafana.com/dashboards/10282).
 
 The dashboard looks as below and is designed to work out-of-the box with the [Prometheus exporter](#prometheus-exporter). It would just require a couple of minutes to make it work. 
@@ -40,13 +42,11 @@ The dashboard looks as below and is designed to work out-of-the box with the [Pr
  * Create a Grafana variable named `KOA_DS_PROMETHEUS` and point to your Prometheus server data source.
  * You're done.
 
-### Overview of the dashboard
+### Overview of the default dashboard
 The dashboard currently provides the following charts (see screenshot below):
 
 * Hourly resource usage over time.
 * Current day's ongoing resource usage.
 * Current month's ongoing resource usage.
 
-> You should notice those charts are less rich compared against the ones enabled by the built-in `kube-opex-analytics` dashboard. In particular, the daily and the monthly usage for the different namespaces are not stacked, neither than there are not analytics for past days and months. These limitations are inherent to how Grafana handles timeseries and bar charts.
-
-![](./screenshots/kube-opex-analytics-grafana.png)
+> This default Grafana dashboard has less features compared against the ones enabled by the built-in dashboards. In particular, the daily and the monthly usage for the different namespaces are not stacked, neither than we have no analytics charts for past days and months. These limitations are inherent to how Grafana handles timeseries and bar charts.
