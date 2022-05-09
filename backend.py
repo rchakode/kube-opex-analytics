@@ -473,20 +473,29 @@ class K8sUsage:
         for pod in self.pods.values():
             if pod.nodeName is not None and hasattr(pod, 'cpuUsage') and hasattr(pod, 'memUsage'):
                 self.cpuUsageAllPods += pod.cpuUsage
-                self.usageByNamespace[pod.namespace].cpu += pod.cpuUsage
-                self.usageByNamespace[pod.namespace].mem += pod.memUsage
-                self.requestByNamespace[pod.namespace].cpu += pod.cpuRequest
-                self.requestByNamespace[pod.namespace].mem += pod.memRequest
                 self.memUsageAllPods += pod.memUsage
+
+                ns_pod_usage = self.usageByNamespace.get(pod.namespace, None)
+                if ns_pod_usage is not None:
+                    ns_pod_usage.cpu += pod.cpuUsage
+                    ns_pod_usage.mem += pod.memUsage
+
+                ns_pod_request = self.requestByNamespace.get(pod.namespace, None)
+                if ns_pod_request is not None:
+                    ns_pod_request.cpu += pod.cpuRequest
+                    ns_pod_request.mem += pod.memRequest
+
                 pod_node = self.nodes.get(pod.nodeName, None)
                 if pod_node is not None:
                     pod_node.podsRunning.append(pod)
+
         self.cpuCapacity += 0.0
         self.memCapacity += 0.0
         for node in self.nodes.values():
             if hasattr(node, 'cpuCapacity') and hasattr(node, 'memCapacity'):
                 self.cpuCapacity += node.cpuCapacity
                 self.memCapacity += node.memCapacity
+
         self.cpuAllocatable += 0.0
         self.memAllocatable += 0.0
         for node in self.nodes.values():
