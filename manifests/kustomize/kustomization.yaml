@@ -12,4 +12,4 @@ resources:
 images:
   - name: kube-opex-analytics
     newName: rchakode/kube-opex-analytics
-    newTag: 22.02.2
+    newTag: 22.02.3
