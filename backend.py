@@ -68,6 +68,8 @@ class Config:
     k8s_ssl_cacert = os.getenv('KOA_K8S_CACERT', None)
     k8s_ssl_client_cert = os.getenv('KOA_K8S_AUTH_CLIENT_CERT', 'NO_ENV_CLIENT_CERT')
     k8s_ssl_client_cert_key = os.getenv('KOA_K8S_AUTH_CLIENT_CERT_KEY', 'NO_ENV_CLIENT_CERT_CERT')
+    
+
 
     def __init__(self):
         self.load_rbac_auth_token()
@@ -79,10 +81,18 @@ class Config:
             self.billing_hourly_rate = -1.0
 
         create_directory_if_not_exists(self.frontend_data_location)
+
         with open(str('%s/backend.json' % self.frontend_data_location), 'w') as fd:
-            if self.cost_model == 'CHARGE_BACK':
-                cost_model_label = 'costs'
+
+            if self.cost_model == 'CHARGE_BACK' :
+                cost_model_label = 'costs'               
                 cost_model_unit = self.billing_currency
+
+            # if cluster is an aks cluster then cost_model = 'AKS_CHARGE_BACK'
+            elif self.cost_model == 'AKS_CHARGE_BACK':
+                cost_model_label = 'aks_costs'               
+                cost_model_unit = self.billing_currency
+
             elif self.cost_model == 'RATIO':
                 cost_model_label = 'normalized'
                 cost_model_unit = '%'
@@ -91,7 +101,8 @@ class Config:
                 cost_model_unit = '%'
             fd.write('{"cost_model":"%s", "currency":"%s"}' % (cost_model_label, cost_model_unit))
 
-        # handle cacert file if applicable
+        # handle cacert file if applicable 
+       
         if self.k8s_verify_ssl and self.k8s_ssl_cacert and os.path.exists(self.k8s_ssl_cacert):
             self.koa_verify_ssl_option = self.k8s_ssl_cacert
         else:
@@ -117,7 +128,8 @@ def configure_logger(debug_enabled):
     if debug_enabled:
         log_level = logging.DEBUG
     else:
-        log_level = logging.WARN
+        log_level = logging.WARN 
+   
     logger = logging.getLogger('kube-opex-analytics')
     logger.setLevel(log_level)
     ch = logging.StreamHandler()
@@ -136,6 +148,7 @@ KOA_LOGGER = configure_logger(KOA_CONFIG.enable_debug)
 
 
 class RrdPeriod(enum.IntEnum):
+
     PERIOD_5_MINS_SEC = 300
     PERIOD_1_HOUR_SEC = 3600
     PERIOD_1_DAY_SEC = 86400
@@ -205,6 +218,15 @@ def render():
     return flask.render_template('index.html', koa_frontend_data_location=KOA_CONFIG.frontend_data_location,
                                  koa_version=KOA_CONFIG.version)
 
+# AKS price compute  
+def get_Azure_price(node):
+    price=0.0
+    api_endpoint= "https://prices.azure.com/api/retail/prices?$filter=armRegionName eq '"+ node.region +"' and skuName eq '"+node.instanceType[0].lower()+node.instanceType[1:]+"' and serviceName eq 'Virtual Machines' and unitOfMeasure eq '1 Hour'" 
+    while  api_endpoint is not None:
+        data_json=requests.get(api_endpoint).json()
+        item=data_json.get('Items')[0]
+        price=item.get('unitPrice')
+        return price 
 
 class Node:
     def __init__(self):
@@ -221,6 +243,11 @@ class Node:
         self.containerRuntime = ''
         self.podsRunning = []
         self.podsNotRunning = []
+        self.region = ''
+        self.instanceType = ''
+        self.aksCluster = None
+        self.HourlyPrice= 0.0
+
 
 
 class Pod:
@@ -312,6 +339,11 @@ class K8sUsage:
             'n': 1e-9,
             'None': 1
         }
+        self.managedControlPlanePrice = 0.10
+        # the pricing of the managed control plane is similar for all of AKS, EKS and  GKE at $0.10/hour
+        self.hourlyRate=0.0
+        
+        
 
     def decode_capacity(self, cap_input):
         data_length = len(cap_input)
@@ -353,6 +385,15 @@ class K8sUsage:
             if metadata is not None:
                 node.id = metadata.get('uid', None)
                 node.name = metadata.get('name', None)
+                # If cluster is an AKS cluster
+                node.aksCluster = metadata['labels'].get('kubernetes.azure.com/cluster', None)
+                if node.aksCluster != None :
+                    self.hourlyRate=self.managedControlPlanePrice
+                    node.region = metadata['labels']['topology.kubernetes.io/region']
+                    node.instanceType = metadata['labels']['node.kubernetes.io/instance-type']
+                    node.HourlyPrice= get_Azure_price(node)
+                    self.hourlyRate+=node.HourlyPrice
+
 
             status = item.get('status', None)
             if status is not None:
@@ -471,6 +512,7 @@ class K8sUsage:
         self.cpuUsageAllPods = 0.0
         self.memUsageAllPods = 0.0
         for pod in self.pods.values():
+
             if pod.nodeName is not None and hasattr(pod, 'cpuUsage') and hasattr(pod, 'memUsage'):
                 self.cpuUsageAllPods += pod.cpuUsage
                 self.memUsageAllPods += pod.memUsage
@@ -479,23 +521,19 @@ class K8sUsage:
                 if ns_pod_usage is not None:
                     ns_pod_usage.cpu += pod.cpuUsage
                     ns_pod_usage.mem += pod.memUsage
-
                 ns_pod_request = self.requestByNamespace.get(pod.namespace, None)
                 if ns_pod_request is not None:
                     ns_pod_request.cpu += pod.cpuRequest
                     ns_pod_request.mem += pod.memRequest
-
                 pod_node = self.nodes.get(pod.nodeName, None)
                 if pod_node is not None:
                     pod_node.podsRunning.append(pod)
-
         self.cpuCapacity += 0.0
         self.memCapacity += 0.0
         for node in self.nodes.values():
             if hasattr(node, 'cpuCapacity') and hasattr(node, 'memCapacity'):
                 self.cpuCapacity += node.cpuCapacity
                 self.memCapacity += node.memCapacity
-
         self.cpuAllocatable += 0.0
         self.memAllocatable += 0.0
         for node in self.nodes.values():
@@ -506,7 +544,6 @@ class K8sUsage:
     def dump_nodes(self):
         with open(str('%s/nodes.json' % KOA_CONFIG.frontend_data_location), 'w') as fd:
             fd.write(json.dumps(self.nodes, cls=JSONMarshaller))
-
 
 def compute_usage_percent_ratio(value, total):
     return round((100.0 * value) / total, KOA_CONFIG.db_round_decimals)
@@ -670,6 +707,11 @@ class Rrd:
         usage_export = collections.defaultdict(list)
         usage_per_type_date = {}
         sum_usage_per_type_date = {}
+
+        actual_cost_model = 'CUMULATIVE'
+        if KOA_CONFIG.cost_model in ['CHARGE_BACK', 'AKS_CHARGE_BACK']:
+            actual_cost_model = 'CHARGE_BACK'
+
         for _, db in enumerate(dbfiles):
             rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=db)
             current_periodic_usage = rrd.dump_histogram_data(period=period)
@@ -690,15 +732,19 @@ class Rrd:
         for res, usage_data_bundle in usage_per_type_date.items():
             for date_key, db_usage_item in usage_data_bundle.items():
                 for db, usage_value in db_usage_item.items():
+                    
                     if db != KOA_CONFIG.db_billing_hourly_rate:
                         usage_cost = round(usage_value, KOA_CONFIG.db_round_decimals)
-                        if KOA_CONFIG.cost_model == 'RATIO' or KOA_CONFIG.cost_model == 'CHARGE_BACK':
+
+                        if KOA_CONFIG.cost_model == 'RATIO' or actual_cost_model == 'CHARGE_BACK':
                             usage_ratio = usage_value / sum_usage_per_type_date[res][date_key]
                             usage_cost = round(100 * usage_ratio, KOA_CONFIG.db_round_decimals)
-                            if KOA_CONFIG.cost_model == 'CHARGE_BACK':
+
+                            if actual_cost_model == 'CHARGE_BACK':
                                 usage_cost = round(
                                     usage_ratio * usage_per_type_date[res][date_key][KOA_CONFIG.db_billing_hourly_rate],
                                     KOA_CONFIG.db_round_decimals)
+
                         usage_export[res].append('{"stack":"%s","usage":%f,"date":"%s"}' % (db, usage_cost, date_key))
                         if Rrd.get_date_group(now_gmtime, period) == date_key:
                             PROMETHEUS_PERIODIC_USAGE_EXPORTERS[period].labels(db, ResUsageType(res).name).set(
@@ -709,13 +755,13 @@ class Rrd:
         with open(str('%s/memory_usage_period_%d.json' % (KOA_CONFIG.frontend_data_location, period)), 'w') as fd:
             fd.write('[' + ','.join(usage_export[1]) + ']')
 
-
 def pull_k8s(api_context):
     data = None
     api_endpoint = '%s%s' % (KOA_CONFIG.k8s_api_endpoint, api_context)
     headers = {}
     client_cert = None
     endpoint_info = urllib.parse.urlparse(KOA_CONFIG.k8s_api_endpoint)
+
     if endpoint_info.hostname != '127.0.0.1' and endpoint_info.hostname != 'localhost':
         if KOA_CONFIG.k8s_auth_token != 'NO_ENV_AUTH_TOKEN':
             headers['Authorization'] = ('%s %s' % KOA_CONFIG.k8s_auth_token_type, KOA_CONFIG.k8s_auth_token)
@@ -734,7 +780,7 @@ def pull_k8s(api_context):
                                 headers=headers,
                                 cert=client_cert)
         if http_req.status_code == 200:
-            data = http_req.text
+            data = http_req.text 
         else:
             KOA_LOGGER.error("call to %s returned error (%s)", api_endpoint, http_req.text)
     except Exception as ex:
@@ -743,7 +789,6 @@ def pull_k8s(api_context):
         KOA_LOGGER.error("unknown exception requesting %s", api_endpoint)
 
     return data
-
 
 def create_metrics_puller():
     try:
@@ -773,9 +818,13 @@ def create_metrics_puller():
                 rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_non_allocatable, mem_usage=mem_non_allocatable)
 
                 # handle billing data
+                billing_hourly_rate = KOA_CONFIG.billing_hourly_rate
+                if KOA_CONFIG.cost_model == "AKS_CHARGE_BACK":
+                    billing_hourly_rate = k8s_usage.hourlyRate
+                    
                 rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.db_billing_hourly_rate)
-                rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=KOA_CONFIG.billing_hourly_rate,
-                               mem_usage=KOA_CONFIG.billing_hourly_rate)
+                rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=billing_hourly_rate,
+                               mem_usage=billing_hourly_rate)
 
                 # handle resource request and usage by pods
                 for ns, ns_usage in k8s_usage.usageByNamespace.items():
