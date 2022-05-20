@@ -87,19 +87,17 @@ class Config:
             self.billing_hourly_rate = -1.0
 
         # "frontend_data_location="static_content_location"/data =  /static/data
-        create_directory_if_not_exists(self.frontend_data_location)
-
-        # partie affichage dynamique "Usage Trends" en fonction du cost_model
-        # modifiication du fichier /static/data/backend.json
+        create_directory_if_not_exists(self.frontend_data_billingta_location)
 
         with open(str('%s/backend.json' % self.frontend_data_location), 'w') as fd:
+
             if self.cost_model == 'CHARGE_BACK' :
                 cost_model_label = 'costs'               
                 cost_model_unit = self.billing_currency
 
             # ask M. Rodrigue if this is correct
             # cost_model while using aks is called AKS_Billing
-            elif self.cost_model=='AKS_Billing':
+            elif self.cost_model=='AKS_CHARGE_BACK':
                 cost_model_label = 'aks_costs'               
                 cost_model_unit = self.billing_currency
 
@@ -355,7 +353,7 @@ class K8sUsage:
             'n': 1e-9,
             'None': 1
         }
-        self.managed_controlPlane_Price=0.10
+        self.managedControlPlanePrice = 0.10
         ### the pricing is similar for the managed control plane of all of AKS, EKS and  GKE at $0.10/hour
         self.hourlyRate=0.0
         
@@ -402,9 +400,9 @@ class K8sUsage:
                 node.id = metadata.get('uid', None)
                 node.name = metadata.get('name', None)
                 # If cluster is an AKS cluster
-                node.aksCluster= metadata['labels'].get('kubernetes.azure.com/cluster', None)
-                if node.aksCluster!=None :
-                    self.hourlyRate=self.managed_controlPlane_Price
+                node.aksCluster = metadata['labels'].get('kubernetes.azure.com/cluster', None)
+                if node.aksCluster != None :
+                    self.hourlyRate=self.managedControlPlanePrice
                     node.region = metadata['labels']['topology.kubernetes.io/region']
                     node.instanceType = metadata['labels']['node.kubernetes.io/instance-type']
                     node.HourlyPrice= get_Azure_price(node)
@@ -723,6 +721,11 @@ class Rrd:
         usage_export = collections.defaultdict(list)
         usage_per_type_date = {}
         sum_usage_per_type_date = {}
+
+        actual_cost_model = 'CUMULATIVE'
+        if KOA_CONFIG.cost_model in ['CHARGE_BACK', 'AKS_CHARGE_BACK']:
+            actual_cost_model = 'CHARGE_BACK'
+
         for _, db in enumerate(dbfiles):
             rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=db)
             current_periodic_usage = rrd.dump_histogram_data(period=period)
@@ -743,15 +746,19 @@ class Rrd:
         for res, usage_data_bundle in usage_per_type_date.items():
             for date_key, db_usage_item in usage_data_bundle.items():
                 for db, usage_value in db_usage_item.items():
+                    
                     if db != KOA_CONFIG.db_billing_hourly_rate:
                         usage_cost = round(usage_value, KOA_CONFIG.db_round_decimals)
-                        if KOA_CONFIG.cost_model == 'RATIO' or KOA_CONFIG.cost_model == 'CHARGE_BACK':
+
+                        if KOA_CONFIG.cost_model == 'RATIO' or actual_cost_model == 'CHARGE_BACK':
                             usage_ratio = usage_value / sum_usage_per_type_date[res][date_key]
                             usage_cost = round(100 * usage_ratio, KOA_CONFIG.db_round_decimals)
-                            if KOA_CONFIG.cost_model == 'CHARGE_BACK':
+
+                            if actual_cost_model == 'CHARGE_BACK':
                                 usage_cost = round(
                                     usage_ratio * usage_per_type_date[res][date_key][KOA_CONFIG.db_billing_hourly_rate],
                                     KOA_CONFIG.db_round_decimals)
+
                         usage_export[res].append('{"stack":"%s","usage":%f,"date":"%s"}' % (db, usage_cost, date_key))
                         if Rrd.get_date_group(now_gmtime, period) == date_key:
                             PROMETHEUS_PERIODIC_USAGE_EXPORTERS[period].labels(db, ResUsageType(res).name).set(
@@ -828,13 +835,13 @@ def create_metrics_puller():
                 rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_non_allocatable, mem_usage=mem_non_allocatable)
 
                 # handle billing data
-                if KOA_CONFIG.cost_model=="AKS_Billing":
-                    Billing_hourly_rate=k8s_usage.hourlyRate
-                else:
-                    Billing_hourly_rate=KOA_CONFIG.billing_hourly_rate
+                billing_hourly_rate = KOA_CONFIG.billing_hourly_rate
+                if KOA_CONFIG.cost_model == "AKS_CHARGE_BACK":
+                    billing_hourly_rate = k8s_usage.hourlyRate
+                    
                 rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.db_billing_hourly_rate)
-                rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=Billing_hourly_rate,
-                               mem_usage=Billing_hourly_rate)
+                rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=billing_hourly_rate,
+                               mem_usage=billing_hourly_rate)
 
                 # handle resource request and usage by pods
                 for ns, ns_usage in k8s_usage.usageByNamespace.items():
