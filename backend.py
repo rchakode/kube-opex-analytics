@@ -41,8 +41,6 @@ import werkzeug.middleware.dispatcher as wsgi
 
 def create_directory_if_not_exists(path):
     try:
-        # os.mkdir() method in Python is used to create a directory named path with the specified numeric mode.
-        # This method raises FileExistsError if the directory to be created already exists.
         os.makedirs(path)
     except OSError as e:
         if e.errno != errno.EEXIST:
@@ -60,9 +58,7 @@ class Config:
     k8s_verify_ssl = (lambda v: v.lower() in ("yes", "true"))(os.getenv('KOA_K8S_API_VERIFY_SSL', 'true'))
     db_location = os.getenv('KOA_DB_LOCATION', ('%s/.kube-opex-analytics/db') % os.getenv('HOME', '/tmp'))
     polling_interval_sec = int(os.getenv('KOA_POLLING_INTERVAL_SEC', '300'))
-    # default cost model is CUMULATIVE_RATIO
     cost_model = os.getenv('KOA_COST_MODEL', 'CUMULATIVE_RATIO')
-    # default currency is $
     billing_currency = os.getenv('KOA_BILLING_CURRENCY_SYMBOL', '$')
     enable_debug = (lambda v: v.lower() in ("yes", "true"))(os.getenv('KOA_ENABLE_DEBUG', 'false'))
     k8s_auth_token = os.getenv('KOA_K8S_AUTH_TOKEN', 'NO_ENV_AUTH_TOKEN')
@@ -74,10 +70,8 @@ class Config:
     k8s_ssl_client_cert_key = os.getenv('KOA_K8S_AUTH_CLIENT_CERT_KEY', 'NO_ENV_CLIENT_CERT_CERT')
     
 
-    # constructer of the class Config
-    def __init__(self):
 
-        # load token if exists
+    def __init__(self):
         self.load_rbac_auth_token()
 
         # handle billing rate and cost model
@@ -86,7 +80,6 @@ class Config:
         except:
             self.billing_hourly_rate = -1.0
 
-        # "frontend_data_location="static_content_location"/data =  /static/data
         create_directory_if_not_exists(self.frontend_data_billingta_location)
 
         with open(str('%s/backend.json' % self.frontend_data_location), 'w') as fd:
@@ -95,9 +88,8 @@ class Config:
                 cost_model_label = 'costs'               
                 cost_model_unit = self.billing_currency
 
-            # ask M. Rodrigue if this is correct
-            # cost_model while using aks is called AKS_Billing
-            elif self.cost_model=='AKS_CHARGE_BACK':
+            # if cluster is an aks cluster then cost_model = 'AKS_CHARGE_BACK'
+            elif self.cost_model == 'AKS_CHARGE_BACK':
                 cost_model_label = 'aks_costs'               
                 cost_model_unit = self.billing_currency
 
@@ -109,12 +101,9 @@ class Config:
                 cost_model_unit = '%'
             fd.write('{"cost_model":"%s", "currency":"%s"}' % (cost_model_label, cost_model_unit))
 
-        # handle cacert file if applicable (verification du certificat )
-        # if k8s_verify_ssl== True and k8s_ssl_cacert not None and k8s_ssl_cacert refers to an existing path:
+        # handle cacert file if applicable 
        
         if self.k8s_verify_ssl and self.k8s_ssl_cacert and os.path.exists(self.k8s_ssl_cacert):
-        # os.path.exists(path) Return True if path refers to an existing path or an open file descriptor.
-
             self.koa_verify_ssl_option = self.k8s_ssl_cacert
         else:
             self.koa_verify_ssl_option = self.k8s_verify_ssl
@@ -137,11 +126,9 @@ class Config:
 
 def configure_logger(debug_enabled):
     if debug_enabled:
-    # The logging module keeps a record of the events that occur within a program,
-    # making it possible to see output related to any of the events that occur throughout the runtime of a piece of software.
-        log_level = logging.DEBUG # level= 10
+        log_level = logging.DEBUG
     else:
-        log_level = logging.WARN # level=30
+        log_level = logging.WARN 
    
     logger = logging.getLogger('kube-opex-analytics')
     logger.setLevel(log_level)
@@ -161,7 +148,6 @@ KOA_LOGGER = configure_logger(KOA_CONFIG.enable_debug)
 
 
 class RrdPeriod(enum.IntEnum):
-# class enum.IntEnum: Classe de base pour créer une énumération de constantes qui sont également des sous-classes de int.
 
     PERIOD_5_MINS_SEC = 300
     PERIOD_1_HOUR_SEC = 3600
@@ -354,7 +340,7 @@ class K8sUsage:
             'None': 1
         }
         self.managedControlPlanePrice = 0.10
-        ### the pricing is similar for the managed control plane of all of AKS, EKS and  GKE at $0.10/hour
+        # the pricing of the managed control plane is similar for all of AKS, EKS and  GKE at $0.10/hour
         self.hourlyRate=0.0
         
         
@@ -526,7 +512,7 @@ class K8sUsage:
         self.cpuUsageAllPods = 0.0
         self.memUsageAllPods = 0.0
         for pod in self.pods.values():
-            # The hasattr() method returns true if an object has the given named attribute and false if it does not.
+
             if pod.nodeName is not None and hasattr(pod, 'cpuUsage') and hasattr(pod, 'memUsage'):
                 self.cpuUsageAllPods += pod.cpuUsage
                 self.memUsageAllPods += pod.memUsage
@@ -769,15 +755,13 @@ class Rrd:
         with open(str('%s/memory_usage_period_%d.json' % (KOA_CONFIG.frontend_data_location, period)), 'w') as fd:
             fd.write('[' + ','.join(usage_export[1]) + ']')
 
-# pull_k8s(api_context) returns the response to the api_endpoint'http://localhost:8001/"api_context"' after authentication
 def pull_k8s(api_context):
     data = None
     api_endpoint = '%s%s' % (KOA_CONFIG.k8s_api_endpoint, api_context)
-    # api_endpoint='http://localhost:8001/"api_context"'
     headers = {}
     client_cert = None
     endpoint_info = urllib.parse.urlparse(KOA_CONFIG.k8s_api_endpoint)
-    # Partie authentification si hostname diff de 127.0.0.1 et de localhost
+
     if endpoint_info.hostname != '127.0.0.1' and endpoint_info.hostname != 'localhost':
         if KOA_CONFIG.k8s_auth_token != 'NO_ENV_AUTH_TOKEN':
             headers['Authorization'] = ('%s %s' % KOA_CONFIG.k8s_auth_token_type, KOA_CONFIG.k8s_auth_token)
@@ -795,8 +779,8 @@ def pull_k8s(api_context):
                                 verify=KOA_CONFIG.koa_verify_ssl_option,
                                 headers=headers,
                                 cert=client_cert)
-        if http_req.status_code == 200: # if the request is successful and the server responds with the requested data
-            data = http_req.text # data stores the respond
+        if http_req.status_code == 200:
+            data = http_req.text 
         else:
             KOA_LOGGER.error("call to %s returned error (%s)", api_endpoint, http_req.text)
     except Exception as ex:
@@ -815,7 +799,6 @@ def create_metrics_puller():
 
             k8s_usage = K8sUsage()
             k8s_usage.extract_namespaces_and_initialize_usage(pull_k8s('/api/v1/namespaces'))
-            #  extract_namespaces_and_initialize_usage extrait tous les namespaces du cluster et initialise cpu et mem à 0
             k8s_usage.extract_nodes(pull_k8s('/api/v1/nodes'))
             k8s_usage.extract_node_metrics(pull_k8s('/apis/metrics.k8s.io/v1beta1/nodes'))
             k8s_usage.extract_pods(pull_k8s('/api/v1/pods'))
