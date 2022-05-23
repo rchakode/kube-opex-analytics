@@ -86,7 +86,7 @@ class Config:
         except:
             self.billing_hourly_rate = -1.0
 
-        create_directory_if_not_exists(self.frontend_data_billingta_location)
+        create_directory_if_not_exists(self.frontend_data_location)
 
         with open(str('%s/backend.json' % self.frontend_data_location), 'w') as fd:
 
