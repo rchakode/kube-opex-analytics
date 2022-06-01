@@ -92,6 +92,11 @@ class Config:
             elif self.cost_model == 'AKS_CHARGE_BACK':
                 cost_model_label = 'aks_costs'               
                 cost_model_unit = self.billing_currency
+            
+            # if cluster is a GKE cluster then cost_model = 'GKE_CHARGE_BACK'
+            elif self.cost_model == 'GKE_CHARGE_BACK':
+                cost_model_label = 'GKE_costs'               
+                cost_model_unit = self.billing_currency
 
             elif self.cost_model == 'RATIO':
                 cost_model_label = 'normalized'
@@ -241,6 +246,46 @@ def get_azure_price(node):
     return price
 
 
+# computing GKE node price 
+def gcp_search_price_per_page(node, data_json, instance_description):
+    price = 0.0
+    for _, sku in enumerate(data_json['skus']):
+            if sku.get("description").startswith(instance_description):
+                if node.region in sku.get("serviceRegions") and sku["category"]["usageType"]=="OnDemand":
+                    price_info = sku["pricingInfo"][0]["pricingExpression"]["tieredRates"][0]
+                    units = float( price_info["unitPrice"]["units"])
+                    nanos = float( price_info["unitPrice"]["nanos"])
+                    price = units + nanos * 10 ** (-9)
+    return price
+
+def get_GCP_price(node, memory, cpu):
+    cpu_price = 0.0
+    memory_price = 0.0
+    price= 0.0 
+    base_api_endpoint= "https://cloudbilling.googleapis.com/v1/services/6F81-5844-456A/skus?key="
+
+    data_json=requests.get(base_api_endpoint).json()
+    instance_description_for_cpu = node.instanceType[:2].upper()+" Instance Core"
+    instance_description_for_memory =  node.instanceType[:2].upper()+" Instance Ram"
+    next_page_token = data_json['nextPageToken']
+    cpu_price= cpu * gcp_search_price_per_page(node, data_json, instance_description_for_cpu)
+    memory_price = memory * gcp_search_price_per_page(node, data_json, instance_description_for_memory)
+    
+    while cpu_price == 0.0 or memory_price == 0 :
+        api_endpoint=base_api_endpoint+"&pageToken="+next_page_token
+        data_json=requests.get(api_endpoint).json()
+        
+        cpu_price= cpu * gcp_search_price_per_page(node, data_json, instance_description_for_cpu)
+        memory_price = memory * gcp_search_price_per_page(node, data_json, instance_description_for_memory)
+
+        if data_json['nextPageToken'] != "":
+            next_page_token = data_json['nextPageToken'] 
+        else : 
+            break
+    price = cpu_price + memory_price
+    return price
+
+
 class Node:
     def __init__(self):
         self.id = ''
@@ -260,7 +305,9 @@ class Node:
         self.os = ''
         self.instanceType = ''
         self.aksCluster = None
-        self.hourlyPrice = 0.0
+        self.gcpCluster = None
+        self.hourlyPrice= 0.0
+
 
 
 class Pod:
@@ -353,6 +400,7 @@ class K8sUsage:
             'None': 1
         }
         self.aksManagedControlPlanePrice = 0.10
+        self.gkeManagedControlPlanePrice = 0.10
         # the pricing of the managed control plane is similar for all of AKS, EKS and  GKE at $0.10/hour
         self.hourlyRate = 0.0
         
@@ -397,17 +445,6 @@ class K8sUsage:
                 node.id = metadata.get('uid', None)
                 node.name = metadata.get('name', None)
                 
-                node.aksCluster = metadata['labels'].get('kubernetes.azure.com/cluster', None)
-                node.region = metadata['labels']['topology.kubernetes.io/region']
-                node.instanceType = metadata['labels']['node.kubernetes.io/instance-type']
-                node.os = metadata['labels']["kubernetes.io/os"]
-                
-                # If cluster is an AKS cluster
-                if node.aksCluster is not None:
-                    self.hourlyRate = self.aksManagedControlPlanePrice
-                    node.hourlyPrice = get_azure_price(node)
-                    self.hourlyRate += node.hourlyPrice
-
             status = item.get('status', None)
             if status is not None:
                 node.containerRuntime = status['nodeInfo']['containerRuntimeVersion']
@@ -437,6 +474,29 @@ class K8sUsage:
                     if cond['type'] == 'DiskPressure' and cond['status'] == 'True':
                         node.state = 'DiskPressure'
                         break
+
+            # for managed clusters 
+                node.region = metadata['labels']['topology.kubernetes.io/region']
+                node.instanceType = metadata['labels']['node.kubernetes.io/instance-type']
+                node.aksCluster = metadata['labels'].get('kubernetes.azure.com/cluster', None)
+                node.gcpCluster= metadata['labels'].get("cloud.google.com/gke-boot-disk", None)
+
+                # AKS cluster processing
+                if node.aksCluster != None :
+                    self.hourlyRate = self.aksManagedControlPlanePrice
+                    node.hourlyPrice = get_azure_price(node)
+                    self.hourlyRate += node.hourlyPrice
+                
+                # GKE cluster processing
+                if node.aksCluster != None :
+                    self.hourlyRate=self.gkeManagedControlPlanePrice
+                    memory = status["capacity"]["memory"]
+                    memLengh = len(status["capacity"]["memory"])
+                    memoryInGibibytes = (float( memory[0:memLengh-2])*9.3132)*(10 ** (-7))
+                    cpu = float(status['capacity']['cpu'])
+                    node.hourlyPrice = get_GCP_price(node, memoryInGibibytes, cpu)
+                    self.hourlyRate += node.hourlyPrice
+
             self.nodes[node.name] = node
 
     def extract_node_metrics(self, data):
@@ -722,8 +782,8 @@ class Rrd:
         usage_per_type_date = {}
         sum_usage_per_type_date = {}
 
-        actual_cost_model = 'CUMULATIVE_RATIO'
-        if KOA_CONFIG.cost_model in ['CHARGE_BACK', 'AKS_CHARGE_BACK']:
+        actual_cost_model = 'CUMULATIVE'
+        if KOA_CONFIG.cost_model in ['CHARGE_BACK', 'AKS_CHARGE_BACK','GKE_CHARGE_BACK' ]:
             actual_cost_model = 'CHARGE_BACK'
 
         for _, db in enumerate(dbfiles):
