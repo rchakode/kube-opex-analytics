@@ -221,12 +221,23 @@ def render():
 # AKS price compute  
 def get_Azure_price(node):
     price=0.0
-    api_endpoint= "https://prices.azure.com/api/retail/prices?$filter=armRegionName eq '"+ node.region +"' and skuName eq '"+node.instanceType[0].lower()+node.instanceType[1:]+"' and serviceName eq 'Virtual Machines' and unitOfMeasure eq '1 Hour'" 
-    while  api_endpoint is not None:
+    api_endpoint = "https://prices.azure.com/api/retail/prices?$filter=armRegionName eq '"+ node.region +"' and skuName eq '"+node.instanceType+"' and serviceName eq 'Virtual Machines'" 
+    data_json=requests.get(api_endpoint).json()
+    if data_json.get("Count", None) == 0 :
+        api_endpoint = "https://prices.azure.com/api/retail/prices?$filter=armRegionName eq '"+ node.region +"' and skuName eq '"+node.instanceType[0].lower()+node.instanceType[1:]+"' and serviceName eq 'Virtual Machines'"     
+    while price == 0.0 :
         data_json=requests.get(api_endpoint).json()
-        item=data_json.get('Items')[0]
-        price=item.get('unitPrice')
-        return price 
+        for _, item in enumerate(data_json["Items"]):
+            if node.os == "windows" :
+                if item["type"] == "Consumption" and item["productName"].endswith('Windows'):
+                    price=item.get('unitPrice')
+            elif node.os == "linux" :
+                if item["type"] == "Consumption" and not (item["productName"].endswith('Windows')):
+                    price=item.get('unitPrice')
+        api_endpoint = data_json["NextPageLink"]
+        if api_endpoint is None :
+            break
+    return price
 
 class Node:
     def __init__(self):
@@ -244,6 +255,7 @@ class Node:
         self.podsRunning = []
         self.podsNotRunning = []
         self.region = ''
+        self.os = ''
         self.instanceType = ''
         self.aksCluster = None
         self.HourlyPrice= 0.0
@@ -339,7 +351,7 @@ class K8sUsage:
             'n': 1e-9,
             'None': 1
         }
-        self.managedControlPlanePrice = 0.10
+        self.aksManagedControlPlanePrice = 0.10
         # the pricing of the managed control plane is similar for all of AKS, EKS and  GKE at $0.10/hour
         self.hourlyRate=0.0
         
@@ -385,12 +397,16 @@ class K8sUsage:
             if metadata is not None:
                 node.id = metadata.get('uid', None)
                 node.name = metadata.get('name', None)
-                # If cluster is an AKS cluster
+                
                 node.aksCluster = metadata['labels'].get('kubernetes.azure.com/cluster', None)
+                node.region = metadata['labels']['topology.kubernetes.io/region']
+                node.instanceType = metadata['labels']['node.kubernetes.io/instance-type']
+                node.os = metadata['labels']["kubernetes.io/os"]
+                
+
+                # If cluster is an AKS cluster
                 if node.aksCluster != None :
-                    self.hourlyRate=self.managedControlPlanePrice
-                    node.region = metadata['labels']['topology.kubernetes.io/region']
-                    node.instanceType = metadata['labels']['node.kubernetes.io/instance-type']
+                    self.hourlyRate=self.aksManagedControlPlanePrice
                     node.HourlyPrice= get_Azure_price(node)
                     self.hourlyRate+=node.HourlyPrice
 
