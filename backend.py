@@ -68,6 +68,7 @@ class Config:
     k8s_ssl_cacert = os.getenv('KOA_K8S_CACERT', None)
     k8s_ssl_client_cert = os.getenv('KOA_K8S_AUTH_CLIENT_CERT', 'NO_ENV_CLIENT_CERT')
     k8s_ssl_client_cert_key = os.getenv('KOA_K8S_AUTH_CLIENT_CERT_KEY', 'NO_ENV_CLIENT_CERT_CERT')
+    k8s_google_api_key = os.getenv('KOA_K8S_GOOGLE_API_KEY', 'NO_GOOGLE_API_KEY')
     
 
 
@@ -262,7 +263,7 @@ def get_GCP_price(node, memory, cpu):
     cpu_price = 0.0
     memory_price = 0.0
     price= 0.0 
-    base_api_endpoint= "https://cloudbilling.googleapis.com/v1/services/6F81-5844-456A/skus?key="
+    base_api_endpoint= "https://cloudbilling.googleapis.com/v1/services/6F81-5844-456A/skus?key="+KOA_CONFIG.k8s_google_api_key
 
     data_json=requests.get(base_api_endpoint).json()
     instance_description_for_cpu = node.instanceType[:2].upper()+" Instance Core"
@@ -958,6 +959,9 @@ def dump_analytics():
 # validating configs
 if KOA_CONFIG.cost_model == 'CHARGE_BACK' and KOA_CONFIG.billing_hourly_rate <= 0.0:
     KOA_LOGGER.fatal('invalid billing hourly rate for CHARGE_BACK cost allocation')
+    sys.exit(1)
+if KOA_CONFIG.k8s_google_api_key == 'NO_GOOGLE_API_KEY':
+    KOA_LOGGER.fatal('no google API key provided, unable to calculate GKE cluster cost')
     sys.exit(1)
 
 if __name__ == '__main__':
