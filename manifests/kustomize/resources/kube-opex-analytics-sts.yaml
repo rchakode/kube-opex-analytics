@@ -62,6 +62,11 @@ spec:
                 configMapKeyRef:
                   key: KOA_COST_MODEL
                   name: kube-opex-analytics-config
+            - name: "KOA_K8S_GOOGLE_API_KEY"
+              valueFrom:
+                secretKeyRef:
+                  key: KOA_K8S_GOOGLE_API_KEY
+                  name: kube-opex-analytics-secret
           ports:
             - name: http
               containerPort: 5483
