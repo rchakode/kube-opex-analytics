@@ -292,12 +292,12 @@ def gcp_search_price_per_page(node, data_json, instance_description):
 def get_GCP_price(node, memory, cpu):
     cpu_price = 0.0
     memory_price = 0.0
-    price= 0.0 
-    base_api_endpoint= "https://cloudbilling.googleapis.com/v1/services/6F81-5844-456A/skus?key="+KOA_CONFIG.k8s_google_api_key
+    price = 0.0 
+    base_api_endpoint = "https://cloudbilling.googleapis.com/v1/services/6F81-5844-456A/skus?key=" + KOA_CONFIG.k8s_google_api_key
 
     data_json=requests.get(base_api_endpoint).json()
-    instance_description_for_cpu = node.instanceType[:2].upper()+" Instance Core"
-    instance_description_for_memory =  node.instanceType[:2].upper()+" Instance Ram"
+    instance_description_for_cpu = node.instanceType[:2].upper() + " Instance Core"
+    instance_description_for_memory =  node.instanceType[:2].upper() + " Instance Ram"
     next_page_token = data_json['nextPageToken']
     cpu_price= cpu * gcp_search_price_per_page(node, data_json, instance_description_for_cpu)
     memory_price = memory * gcp_search_price_per_page(node, data_json, instance_description_for_memory)
@@ -523,7 +523,7 @@ class K8sUsage:
                     self.hourlyRate += node.hourlyPrice
                 
                 # GKE cluster processing
-                if node.aksCluster != None :
+                if node.aksCluster is not None :
                     self.hourlyRate=self.gkeManagedControlPlanePrice
                     memory = status["capacity"]["memory"]
                     memLengh = len(status["capacity"]["memory"])
