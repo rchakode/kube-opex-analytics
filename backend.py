@@ -84,7 +84,7 @@ class Config:
 
         with open(str('%s/backend.json' % self.frontend_data_location), 'w') as fd:
 
-            if self.cost_model == 'CHARGE_BACK' :
+            if self.cost_model == 'CHARGE_BACK':
                 cost_model_label = 'costs'               
                 cost_model_unit = self.billing_currency
 
@@ -218,26 +218,28 @@ def render():
     return flask.render_template('index.html', koa_frontend_data_location=KOA_CONFIG.frontend_data_location,
                                  koa_version=KOA_CONFIG.version)
 
-# AKS price compute  
+
 def get_Azure_price(node):
-    price=0.0
-    api_endpoint = "https://prices.azure.com/api/retail/prices?$filter=armRegionName eq '"+ node.region +"' and skuName eq '"+node.instanceType+"' and serviceName eq 'Virtual Machines'" 
-    data_json=requests.get(api_endpoint).json()
-    if data_json.get("Count", None) == 0 :
-        api_endpoint = "https://prices.azure.com/api/retail/prices?$filter=armRegionName eq '"+ node.region +"' and skuName eq '"+node.instanceType[0].lower()+node.instanceType[1:]+"' and serviceName eq 'Virtual Machines'"     
-    while price == 0.0 :
-        data_json=requests.get(api_endpoint).json()
+    price = 0.0
+    api_base = "https://prices.azure.com/api/retail/prices?$filter=armRegionName eq '"
+    api_endpoint = api_base + node.region + "' and skuName eq '" + node.instanceType + "' and serviceName eq 'Virtual Machines'" 
+    data_json = requests.get(api_endpoint).json()
+    if data_json.get("Count", None) == 0:
+        api_endpoint = api_base + node.region + "' and skuName eq '" + node.instanceType[0].lower() + node.instanceType[1:] + "' and serviceName eq 'Virtual Machines'"     
+    while price == 0.0:
+        data_json = requests.get(api_endpoint).json()
         for _, item in enumerate(data_json["Items"]):
-            if node.os == "windows" :
+            if node.os == "windows":
                 if item["type"] == "Consumption" and item["productName"].endswith('Windows'):
-                    price=item.get('unitPrice')
-            elif node.os == "linux" :
+                    price = item.get('unitPrice')
+            elif node.os == "linux":
                 if item["type"] == "Consumption" and not (item["productName"].endswith('Windows')):
                     price=item.get('unitPrice')
         api_endpoint = data_json["NextPageLink"]
-        if api_endpoint is None :
+        if api_endpoint is None:
             break
     return price
+
 
 class Node:
     def __init__(self):
@@ -258,8 +260,7 @@ class Node:
         self.os = ''
         self.instanceType = ''
         self.aksCluster = None
-        self.HourlyPrice= 0.0
-
+        self.HourlyPrice = 0.0
 
 
 class Pod:
@@ -353,10 +354,8 @@ class K8sUsage:
         }
         self.aksManagedControlPlanePrice = 0.10
         # the pricing of the managed control plane is similar for all of AKS, EKS and  GKE at $0.10/hour
-        self.hourlyRate=0.0
+        self.hourlyRate = 0.0
         
-        
-
     def decode_capacity(self, cap_input):
         data_length = len(cap_input)
         cap_unit = 'None'
@@ -403,13 +402,11 @@ class K8sUsage:
                 node.instanceType = metadata['labels']['node.kubernetes.io/instance-type']
                 node.os = metadata['labels']["kubernetes.io/os"]
                 
-
                 # If cluster is an AKS cluster
-                if node.aksCluster != None :
-                    self.hourlyRate=self.aksManagedControlPlanePrice
-                    node.HourlyPrice= get_Azure_price(node)
-                    self.hourlyRate+=node.HourlyPrice
-
+                if node.aksCluster is not None:
+                    self.hourlyRate = self.aksManagedControlPlanePrice
+                    node.HourlyPrice = get_Azure_price(node)
+                    self.hourlyRate += node.HourlyPrice
 
             status = item.get('status', None)
             if status is not None:
@@ -560,6 +557,7 @@ class K8sUsage:
     def dump_nodes(self):
         with open(str('%s/nodes.json' % KOA_CONFIG.frontend_data_location), 'w') as fd:
             fd.write(json.dumps(self.nodes, cls=JSONMarshaller))
+
 
 def compute_usage_percent_ratio(value, total):
     return round((100.0 * value) / total, KOA_CONFIG.db_round_decimals)
@@ -771,6 +769,7 @@ class Rrd:
         with open(str('%s/memory_usage_period_%d.json' % (KOA_CONFIG.frontend_data_location, period)), 'w') as fd:
             fd.write('[' + ','.join(usage_export[1]) + ']')
 
+
 def pull_k8s(api_context):
     data = None
     api_endpoint = '%s%s' % (KOA_CONFIG.k8s_api_endpoint, api_context)
@@ -805,6 +804,7 @@ def pull_k8s(api_context):
         KOA_LOGGER.error("unknown exception requesting %s", api_endpoint)
 
     return data
+
 
 def create_metrics_puller():
     try:
