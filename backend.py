@@ -14,6 +14,7 @@ import calendar
 import collections
 import enum
 import errno
+import fnmatch
 import json
 import logging
 import os
@@ -69,6 +70,8 @@ class Config:
     k8s_ssl_cacert = os.getenv('KOA_K8S_CACERT', None)
     k8s_ssl_client_cert = os.getenv('KOA_K8S_AUTH_CLIENT_CERT', 'NO_ENV_CLIENT_CERT')
     k8s_ssl_client_cert_key = os.getenv('KOA_K8S_AUTH_CLIENT_CERT_KEY', 'NO_ENV_CLIENT_CERT_CERT')
+    included_namespaces = [ i for i in os.getenv('KOA_INCLUDED_NAMESPACES', '').replace(' ','').split(',') if i ]
+    excluded_namespaces = [ i for i in os.getenv('KOA_EXCLUDED_NAMESPACES', '').replace(' ','').split(',') if i ]
 
     def __init__(self):
         self.load_rbac_auth_token()
@@ -97,6 +100,19 @@ class Config:
             self.koa_verify_ssl_option = self.k8s_ssl_cacert
         else:
             self.koa_verify_ssl_option = self.k8s_verify_ssl
+
+    @staticmethod
+    def match(items, pattern):
+        return any([ fnmatch.fnmatch(i, pattern) for i in items ])
+
+    @staticmethod
+    def allow_namespace(namespace):
+        if KOA_CONFIG.match(KOA_CONFIG.excluded_namespaces, namespace):
+            return False
+
+        return len(KOA_CONFIG.included_namespaces) == 0 or \
+                '*' in KOA_CONFIG.included_namespaces or \
+                KOA_CONFIG.match(KOA_CONFIG.included_namespaces, namespace)
 
     def load_rbac_auth_token(self):
         try:
@@ -336,8 +352,12 @@ class K8sUsage:
         for _, item in enumerate(data_json['items']):
             metadata = item.get('metadata', None)
             if metadata is not None:
+                if not KOA_CONFIG.allow_namespace(metadata.get('name')):
+                    continue
                 self.usageByNamespace[metadata.get('name')] = ResourceCapacities(cpu=0.0, mem=0.0)
                 self.requestByNamespace[metadata.get('name')] = ResourceCapacities(cpu=0.0, mem=0.0)
+
+        KOA_LOGGER.debug("Found namespaces: %s", ', '.join(self.usageByNamespace.keys()))
 
     def extract_nodes(self, data):
         # exit if not valid data
@@ -407,6 +427,9 @@ class K8sUsage:
         # process likely valid data
         data_json = json.loads(data)
         for _, item in enumerate(data_json['items']):
+            if not KOA_CONFIG.allow_namespace(item['metadata']['namespace']):
+                continue
+
             pod = Pod()
             pod.namespace = item['metadata']['namespace']
             pod.name = '%s.%s' % (item['metadata']['name'], pod.namespace)
@@ -453,6 +476,8 @@ class K8sUsage:
         # process likely valid data
         data_json = json.loads(data)
         for _, item in enumerate(data_json['items']):
+            if not KOA_CONFIG.allow_namespace(item['metadata']['namespace']):
+                continue
             pod_name = '%s.%s' % (item['metadata']['name'], item['metadata']['namespace'])
             pod = self.pods.get(pod_name, None)
             if pod is not None:
