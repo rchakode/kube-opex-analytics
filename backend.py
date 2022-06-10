@@ -834,8 +834,9 @@ def create_metrics_puller():
                 rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_non_allocatable, mem_usage=mem_non_allocatable)
 
                 # handle billing data
-                billing_hourly_rate = KOA_CONFIG.billing_hourly_rate
-                if KOA_CONFIG.cost_model == "AKS_CHARGE_BACK":
+                if KOA_CONFIG.cost_model == "CHARGE_BACK":
+                    billing_hourly_rate = KOA_CONFIG.billing_hourly_rate
+                elif KOA_CONFIG.cost_model == "AKS_CHARGE_BACK":
                     billing_hourly_rate = k8s_usage.hourlyRate
                     
                 rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.db_billing_hourly_rate)
