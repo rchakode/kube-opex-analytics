@@ -503,16 +503,29 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
 
         function showCumulativeUsageByType() {
             cumulativeUsageType = $("#selected-cumulative-usage-type option:selected").val();
-            if (cumulativeUsageType === 'monthly') {
+            if (cumulativeUsageType === 'monthly-usage') {
                 $("#chart-block-daily").hide();
                 $("#chart-block-monthly").show();
-                refreshCumulativeChartByType(monthlyCpuUsageChart, 'CPU', 'monthly');
-                refreshCumulativeChartByType(monthlyMemoryUsageChart, 'Memory', 'monthly');
-            } else {
+                refreshCumulativeChartByType(monthlyCpuUsageChart, 'CPU', 'usage', 'monthly');
+                refreshCumulativeChartByType(monthlyMemoryUsageChart, 'Memory', 'usage', 'monthly');
+            } else if (cumulativeUsageType === 'monthly-requests') {
+                $("#chart-block-daily").hide();
+                $("#chart-block-monthly").show();
+                refreshCumulativeChartByType(monthlyCpuUsageChart, 'CPU', 'requests', 'monthly');
+                refreshCumulativeChartByType(monthlyMemoryUsageChart, 'Memory', 'requests', 'monthly');
+            } else if (cumulativeUsageType === 'daily-usage') {
                 $("#chart-block-monthly").hide();
                 $("#chart-block-daily").show();
-                refreshCumulativeChartByType(dailyCpuUsageChart, 'CPU', 'daily');
-                refreshCumulativeChartByType(dailyMemoryUsageChart, 'Memory', 'daily');
+                refreshCumulativeChartByType(dailyCpuUsageChart, 'CPU', 'usage', 'daily');
+                refreshCumulativeChartByType(dailyMemoryUsageChart, 'Memory', 'usage', 'daily');
+            } else if (cumulativeUsageType === 'daily-requests') {
+                $("#chart-block-monthly").hide();
+                $("#chart-block-daily").show();
+                refreshCumulativeChartByType(dailyCpuUsageChart, 'CPU', 'requests', 'daily');
+                refreshCumulativeChartByType(dailyMemoryUsageChart, 'Memory', 'requests', 'daily');
+            } else {
+                $("#error-message").append('<li>unknown usage type (' + cumulativeUsageType + ')</li>');
+                $("#error-message-container").show();
             }
         }
 
@@ -660,21 +673,24 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             });
         }
 
-        function refreshCumulativeChartByType(chart, resourceType, periodType) {
+        function refreshCumulativeChartByType(chart, resourceType, usageType, periodType) {
             let resourceTypeLowered = resourceType.toLowerCase();
             let DATASET_FILES = Object.freeze({
-                "daily": `${resourceTypeLowered}_usage_period_1209600.json`,
-                "monthly": `${resourceTypeLowered}_usage_period_31968000.json`,
+                "daily-usage": `${resourceTypeLowered}_usage_period_1209600.json`,
+                "daily-requests": `${resourceTypeLowered}_requests_period_1209600.json`,
+                "monthly-usage": `${resourceTypeLowered}_usage_period_31968000.json`,
+                "monthly-requests": `${resourceTypeLowered}_requests_period_31968000.json`,
             });
 
+            let dataSetKey = (periodType+'-'+usageType).toLowerCase();
             $.ajax({
                 type: "GET",
-                url: `${FrontendApi.DATA_DIR}/${DATASET_FILES[periodType]}`,
+                url: `${FrontendApi.DATA_DIR}/${DATASET_FILES[dataSetKey]}`,
                 dataType: 'json',
                 success: function (data) {
-                    installExporter(`consolidated-${resourceTypeLowered}-usage-png`, '', () => exportImage(chart, 'kopex-' + resourceTypeLowered + '-usage.png'));
-                    installExporter(`consolidated-${resourceTypeLowered}-usage-json`, 'kopex-' + resourceTypeLowered + '-usage.json', () => exportJSON(data));
-                    installExporter(`consolidated-${resourceTypeLowered}-usage-csv`, 'kopex-' + resourceTypeLowered + '-usage.csv', () => exportCSV(data));
+                    installExporter(`consolidated-${resourceTypeLowered}-png`, '', () => exportImage(chart, 'kopex-' + resourceTypeLowered + '.png'));
+                    installExporter(`consolidated-${resourceTypeLowered}-json`, 'kopex-' + resourceTypeLowered + '.json', () => exportJSON(data));
+                    installExporter(`consolidated-${resourceTypeLowered}-csv`, 'kopex-' + resourceTypeLowered  + '.csv', () => exportCSV(data));
 
                     updateStackedBarChart(
                         {"data": data},
