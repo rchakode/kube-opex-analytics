@@ -503,6 +503,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
 
         function showCumulativeUsageByType() {
             cumulativeUsageType = $("#selected-cumulative-usage-type option:selected").val();
+            console.log(cumulativeUsageType);
             if (cumulativeUsageType === 'monthly-usage') {
                 $("#chart-block-daily").hide();
                 $("#chart-block-monthly").show();
@@ -513,19 +514,16 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 $("#chart-block-monthly").show();
                 refreshCumulativeChartByType(monthlyCpuUsageChart, 'CPU', 'requests', 'monthly');
                 refreshCumulativeChartByType(monthlyMemoryUsageChart, 'Memory', 'requests', 'monthly');
-            } else if (cumulativeUsageType === 'daily-usage') {
-                $("#chart-block-monthly").hide();
-                $("#chart-block-daily").show();
-                refreshCumulativeChartByType(dailyCpuUsageChart, 'CPU', 'usage', 'daily');
-                refreshCumulativeChartByType(dailyMemoryUsageChart, 'Memory', 'usage', 'daily');
             } else if (cumulativeUsageType === 'daily-requests') {
                 $("#chart-block-monthly").hide();
                 $("#chart-block-daily").show();
                 refreshCumulativeChartByType(dailyCpuUsageChart, 'CPU', 'requests', 'daily');
                 refreshCumulativeChartByType(dailyMemoryUsageChart, 'Memory', 'requests', 'daily');
-            } else {
-                $("#error-message").append('<li>unknown usage type (' + cumulativeUsageType + ')</li>');
-                $("#error-message-container").show();
+            } else { // handle as daily-usage
+                $("#chart-block-monthly").hide();
+                $("#chart-block-daily").show();
+                refreshCumulativeChartByType(dailyCpuUsageChart, 'CPU', 'usage', 'daily');
+                refreshCumulativeChartByType(dailyMemoryUsageChart, 'Memory', 'usage', 'daily');
             }
         }
 
@@ -697,7 +695,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                         chart,
                         `js-chart-${periodType}-${resourceTypeLowered}-usage`,
                         `${resourceType} consumption`,
-                        `${periodType} ${resourceType} Usage`);
+                        `${periodType} ${resourceType} ${usageType}`);
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
                     $("#error-message").append(`<li>error ${xhr.status} downloading data file ${DATASET_FILES[periodType]}</li>`);
