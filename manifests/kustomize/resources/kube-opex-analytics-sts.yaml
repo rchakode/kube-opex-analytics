@@ -65,7 +65,7 @@ spec:
             - name: "KOA_K8S_GOOGLE_API_KEY"
               valueFrom:
                 secretKeyRef:
-                  key: KOA_K8S_GOOGLE_API_KEY
+                  key: KOA_GOOGLE_API_KEY
                   name: kube-opex-analytics-secret
           ports:
             - name: http

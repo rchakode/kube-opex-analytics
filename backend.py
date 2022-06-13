@@ -75,7 +75,7 @@ class Config:
     k8s_ssl_client_cert_key = os.getenv('KOA_K8S_AUTH_CLIENT_CERT_KEY', 'NO_ENV_CLIENT_CERT_CERT')
     included_namespaces = [i for i in os.getenv('KOA_INCLUDED_NAMESPACES', '').replace(' ', ',').split(',') if i]
     excluded_namespaces = [i for i in os.getenv('KOA_EXCLUDED_NAMESPACES', '').replace(' ', ',').split(',') if i]
-    k8s_google_api_key = os.getenv('KOA_K8S_GOOGLE_API_KEY', 'NO_GOOGLE_API_KEY')
+    google_api_key = os.getenv('KOA_GOOGLE_API_KEY', 'NO_GOOGLE_API_KEY')
 
 
     def __init__(self):
@@ -289,11 +289,11 @@ def gcp_search_price_per_page(node, data_json, instance_description):
                     price = units + nanos * 10 ** (-9)
     return price
 
-def get_GCP_price(node, memory, cpu):
+def get_gcp_price(node, memory, cpu):
     cpu_price = 0.0
     memory_price = 0.0
     price = 0.0 
-    base_api_endpoint = "https://cloudbilling.googleapis.com/v1/services/6F81-5844-456A/skus?key=" + KOA_CONFIG.k8s_google_api_key
+    base_api_endpoint = "https://cloudbilling.googleapis.com/v1/services/6F81-5844-456A/skus?key=" + KOA_CONFIG.google_api_key
 
     data_json=requests.get(base_api_endpoint).json()
     instance_description_for_cpu = node.instanceType[:2].upper() + " Instance Core"
@@ -529,8 +529,8 @@ class K8sUsage:
                     memLengh = len(status["capacity"]["memory"])
                     memoryInGibibytes = (float( memory[0:memLengh-2])*9.3132)*(10 ** (-7))
                     cpu = float(status['capacity']['cpu'])
-                    node.hourlyPrice = get_GCP_price(node, memoryInGibibytes, cpu)
-                    self.hourlyRate += node.hourlyPrice
+                    node.HourlyPrice = get_gcp_price(node, memoryInGibibytes, cpu)
+                    self.hourlyRate += node.HourlyPrice
 
             self.nodes[node.name] = node
 
@@ -1040,8 +1040,8 @@ def dump_analytics():
 if KOA_CONFIG.cost_model == 'CHARGE_BACK' and KOA_CONFIG.billing_hourly_rate <= 0.0:
     KOA_LOGGER.fatal('invalid billing hourly rate for CHARGE_BACK cost allocation')
     sys.exit(1)
-if KOA_CONFIG.k8s_google_api_key == 'NO_GOOGLE_API_KEY':
-    KOA_LOGGER.fatal('no google API key provided, unable to calculate GKE cluster cost')
+if KOA_CONFIG.google_api_key == 'NO_GOOGLE_API_KEY':
+    KOA_LOGGER.fatal('no google API key provided, unable to calculate GKE cluster hourly rate')
     sys.exit(1)
 
 if __name__ == '__main__':
