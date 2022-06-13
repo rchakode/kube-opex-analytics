@@ -21,7 +21,7 @@ import sys
 import threading
 import time
 import traceback
-import urllib, urllib3
+import urllib
 from typing import Any, List
 
 import flask
@@ -38,7 +38,6 @@ from waitress import serve as waitress_serve
 
 import werkzeug.middleware.dispatcher as wsgi
 
-urllib3.disable_warnings()
 
 def create_directory_if_not_exists(path):
     try:
@@ -717,9 +716,9 @@ def pull_k8s(api_context):
     headers = {}
     client_cert = None
     endpoint_info = urllib.parse.urlparse(KOA_CONFIG.k8s_api_endpoint)
-    if KOA_CONFIG.enable_debug or (endpoint_info.hostname != '127.0.0.1' and endpoint_info.hostname != 'localhost'):
+    if endpoint_info.hostname != '127.0.0.1' and endpoint_info.hostname != 'localhost':
         if KOA_CONFIG.k8s_auth_token != 'NO_ENV_AUTH_TOKEN':
-            headers['Authorization'] = '%s %s' % (KOA_CONFIG.k8s_auth_token_type, KOA_CONFIG.k8s_auth_token)
+            headers['Authorization'] = ('%s %s' % KOA_CONFIG.k8s_auth_token_type, KOA_CONFIG.k8s_auth_token)
         elif KOA_CONFIG.k8s_rbac_auth_token != 'NO_ENV_TOKEN_FILE':
             headers['Authorization'] = ('Bearer %s' % KOA_CONFIG.k8s_rbac_auth_token)
         elif KOA_CONFIG.k8s_auth_username != 'NO_ENV_AUTH_USERNAME' and \
@@ -749,7 +748,7 @@ def pull_k8s(api_context):
 def create_metrics_puller():
     try:
         while True:
-            KOA_LOGGER.debug('[puller] collecting new samples')
+            KOA_LOGGER.debug('{puller] collecting new samples')
 
             KOA_CONFIG.load_rbac_auth_token()
 
