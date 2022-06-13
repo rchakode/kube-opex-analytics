@@ -767,16 +767,16 @@ class Rrd:
                             PROMETHEUS_PERIODIC_USAGE_EXPORTERS[period].labels(db, ResUsageType(res).name).set(
                                 usage_cost)
 
-                        requests_value = requests_per_type_date[res][date_key][db]
-                        req_cost = round(requests_value, KOA_CONFIG.db_round_decimals)
+                        req_value = requests_per_type_date[res][date_key][db]
+                        req_cost = round(req_value, KOA_CONFIG.db_round_decimals)
                         if KOA_CONFIG.cost_model == 'RATIO' or KOA_CONFIG.cost_model == 'CHARGE_BACK':
-                            req_ratio = requests_value / sum_requests_per_type_date[res][date_key]
+                            req_ratio = req_value / sum_requests_per_type_date[res][date_key]
                             req_cost = round(100 * req_ratio, KOA_CONFIG.db_round_decimals)
                             if KOA_CONFIG.cost_model == 'CHARGE_BACK':
                                 req_cost = round(
                                     req_ratio * usage_per_type_date[res][date_key][KOA_CONFIG.db_billing_hourly_rate],
                                     KOA_CONFIG.db_round_decimals)
-                        requests_export[res].append('{"stack":"%s","requests":%f,"date":"%s"}'
+                        requests_export[res].append('{"stack":"%s","usage":%f,"date":"%s"}'
                                                     % (db, req_cost, date_key))
                         if Rrd.get_date_group(now_gmtime, period) == date_key:
                             PROMETHEUS_PERIODIC_REQUESTS_EXPORTERS[period].labels(db, ResUsageType(res).name).set(
