@@ -290,7 +290,7 @@ class Node:
         self.os = ''
         self.instanceType = ''
         self.aksCluster = None
-        self.HourlyPrice = 0.0
+        self.hourlyPrice = 0.0
 
 
 class Pod:
@@ -439,8 +439,8 @@ class K8sUsage:
                 # If cluster is an AKS cluster
                 if node.aksCluster is not None:
                     self.hourlyRate = self.aksManagedControlPlanePrice
-                    node.HourlyPrice = get_Azure_price(node)
-                    self.hourlyRate += node.HourlyPrice
+                    node.hourlyPrice = get_Azure_price(node)
+                    self.hourlyRate += node.hourlyPrice
 
             status = item.get('status', None)
             if status is not None:
@@ -765,7 +765,7 @@ class Rrd:
         requests_per_type_date = {}
         sum_requests_per_type_date = {}
 
-        actual_cost_model = 'CUMULATIVE'
+        actual_cost_model = 'CUMULATIVE_RATIO'
         if KOA_CONFIG.cost_model in ['CHARGE_BACK', 'AKS_CHARGE_BACK']:
             actual_cost_model = 'CHARGE_BACK'
             
