@@ -35,11 +35,14 @@ import requests
 
 import rrdtool
 
+import urllib3
+
 from waitress import serve as waitress_serve
 
 import werkzeug.middleware.dispatcher as wsgi
 
 urllib3.disable_warnings()
+
 
 def create_directory_if_not_exists(path):
     try:
@@ -70,8 +73,8 @@ class Config:
     k8s_ssl_cacert = os.getenv('KOA_K8S_CACERT', None)
     k8s_ssl_client_cert = os.getenv('KOA_K8S_AUTH_CLIENT_CERT', 'NO_ENV_CLIENT_CERT')
     k8s_ssl_client_cert_key = os.getenv('KOA_K8S_AUTH_CLIENT_CERT_KEY', 'NO_ENV_CLIENT_CERT_CERT')
-    included_namespaces = [ i for i in os.getenv('KOA_INCLUDED_NAMESPACES', '').replace(' ','').split(',') if i ]
-    excluded_namespaces = [ i for i in os.getenv('KOA_EXCLUDED_NAMESPACES', '').replace(' ','').split(',') if i ]
+    included_namespaces = [i for i in os.getenv('KOA_INCLUDED_NAMESPACES', '').replace(' ', ',').split(',') if i]
+    excluded_namespaces = [i for i in os.getenv('KOA_EXCLUDED_NAMESPACES', '').replace(' ', ',').split(',') if i]
 
     def __init__(self):
         self.load_rbac_auth_token()
@@ -103,16 +106,18 @@ class Config:
 
     @staticmethod
     def match(items, pattern):
-        return any([ fnmatch.fnmatch(i, pattern) for i in items ])
+        return any([fnmatch.fnmatch(i, pattern) for i in items])
 
     @staticmethod
     def allow_namespace(namespace):
         if KOA_CONFIG.match(KOA_CONFIG.excluded_namespaces, namespace):
             return False
 
-        return len(KOA_CONFIG.included_namespaces) == 0 or \
-                '*' in KOA_CONFIG.included_namespaces or \
-                KOA_CONFIG.match(KOA_CONFIG.included_namespaces, namespace)
+        no_namespace_included = len(KOA_CONFIG.included_namespaces) == 0
+        all_namespaces_enabled = '*' in KOA_CONFIG.included_namespaces
+        namespace_matched = KOA_CONFIG.match(KOA_CONFIG.included_namespaces, namespace)
+
+        return no_namespace_included or all_namespaces_enabled or namespace_matched
 
     def load_rbac_auth_token(self):
         try:
@@ -468,7 +473,7 @@ class K8sUsage:
                 pod.nodeName = item['spec']['nodeName']
                 pod.cpuRequest = 0.0
                 pod.memRequest = 0.0
-                #TODO: extract initContainers
+                # TODO: extract initContainers
                 for _, container in enumerate(item.get('spec').get('containers')):
                     resources = container.get('resources', None)
                     if resources is not None:
@@ -762,19 +767,20 @@ class Rrd:
                             PROMETHEUS_PERIODIC_USAGE_EXPORTERS[period].labels(db, ResUsageType(res).name).set(
                                 usage_cost)
 
-                        requests_value = requests_per_type_date[res][date_key][db]
-                        requests_cost = round(requests_value, KOA_CONFIG.db_round_decimals)
+                        req_value = requests_per_type_date[res][date_key][db]
+                        req_cost = round(req_value, KOA_CONFIG.db_round_decimals)
                         if KOA_CONFIG.cost_model == 'RATIO' or KOA_CONFIG.cost_model == 'CHARGE_BACK':
-                            requests_ratio = requests_value / sum_requests_per_type_date[res][date_key]
-                            requests_cost = round(100 * requests_ratio, KOA_CONFIG.db_round_decimals)
+                            req_ratio = req_value / sum_requests_per_type_date[res][date_key]
+                            req_cost = round(100 * req_ratio, KOA_CONFIG.db_round_decimals)
                             if KOA_CONFIG.cost_model == 'CHARGE_BACK':
-                                requests_cost = round(
-                                    requests_ratio * usage_per_type_date[res][date_key][KOA_CONFIG.db_billing_hourly_rate],
+                                req_cost = round(
+                                    req_ratio * usage_per_type_date[res][date_key][KOA_CONFIG.db_billing_hourly_rate],
                                     KOA_CONFIG.db_round_decimals)
-                        requests_export[res].append('{"stack":"%s","requests":%f,"date":"%s"}' % (db, requests_cost, date_key))
+                        requests_export[res].append('{"stack":"%s","usage":%f,"date":"%s"}'
+                                                    % (db, req_cost, date_key))
                         if Rrd.get_date_group(now_gmtime, period) == date_key:
                             PROMETHEUS_PERIODIC_REQUESTS_EXPORTERS[period].labels(db, ResUsageType(res).name).set(
-                                requests_cost)
+                                req_cost)
 
         with open(str('%s/cpu_usage_period_%d.json' % (KOA_CONFIG.frontend_data_location, period)), 'w') as fd:
             fd.write('[' + ','.join(usage_export[0]) + ']')
