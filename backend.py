@@ -176,15 +176,6 @@ PROMETHEUS_PERIODIC_USAGE_EXPORTERS = {
                                                        ['namespace', 'resource'])
 }
 
-PROMETHEUS_PERIODIC_REQUESTS_EXPORTERS = {
-    RrdPeriod.PERIOD_14_DAYS_SEC: prometheus_client.Gauge('koa_namespace_daily_requests',
-                                                          'Current daily resource reservation per namespace',
-                                                          ['namespace', 'resource']),
-    RrdPeriod.PERIOD_YEAR_SEC: prometheus_client.Gauge('koa_namespace_monthly_requests',
-                                                       'Current monthly resource reservation per namespace',
-                                                       ['namespace', 'resource'])
-}
-
 # create Flask application
 app = flask.Flask(__name__, static_url_path=KOA_CONFIG.static_content_location, template_folder='.')
 cors = CORS(app, resources={r"/dataset/*": {"origins": "127.0.0.1"}})
@@ -468,7 +459,6 @@ class K8sUsage:
                 pod.nodeName = item['spec']['nodeName']
                 pod.cpuRequest = 0.0
                 pod.memRequest = 0.0
-                #TODO: extract initContainers
                 for _, container in enumerate(item.get('spec').get('containers')):
                     resources = container.get('resources', None)
                     if resources is not None:
@@ -706,16 +696,9 @@ class Rrd:
         usage_export = collections.defaultdict(list)
         usage_per_type_date = {}
         sum_usage_per_type_date = {}
-        requests_export = collections.defaultdict(list)
-        requests_per_type_date = {}
-        sum_requests_per_type_date = {}
         for _, db in enumerate(dbfiles):
             rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=db)
             current_periodic_usage = rrd.dump_histogram_data(period=period)
-
-            rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.usage_efficiency_db(db))
-            current_periodic_rf = rrd.dump_histogram_data(period=period)
-
             for res in [ResUsageType.CPU, ResUsageType.MEMORY]:
                 for date_key, usage_value in current_periodic_usage[res].items():
                     if usage_value > 0.0:
@@ -725,25 +708,10 @@ class Rrd:
                             usage_per_type_date[res][date_key] = {}
                         usage_per_type_date[res][date_key][db] = usage_value
 
-                        if res not in requests_per_type_date:
-                            requests_per_type_date[res] = collections.defaultdict(lambda: 0.0)
-                        if date_key not in requests_per_type_date[res]:
-                            requests_per_type_date[res][date_key] = {}
-
-                        rf = current_periodic_rf[res][date_key]
-                        if rf > 0.0:
-                            requests_per_type_date[res][date_key][db] = usage_value / rf
-                        else:
-                            requests_per_type_date[res][date_key][db] = 0.0
-
                         if db != KOA_CONFIG.db_billing_hourly_rate:
                             if res not in sum_usage_per_type_date:
                                 sum_usage_per_type_date[res] = collections.defaultdict(lambda: 0.0)
                             sum_usage_per_type_date[res][date_key] += usage_value
-
-                            if res not in sum_requests_per_type_date:
-                                sum_requests_per_type_date[res] = collections.defaultdict(lambda: 0.0)
-                            sum_requests_per_type_date[res][date_key] += usage_value
 
         for res, usage_data_bundle in usage_per_type_date.items():
             for date_key, db_usage_item in usage_data_bundle.items():
@@ -762,28 +730,10 @@ class Rrd:
                             PROMETHEUS_PERIODIC_USAGE_EXPORTERS[period].labels(db, ResUsageType(res).name).set(
                                 usage_cost)
 
-                        requests_value = requests_per_type_date[res][date_key][db]
-                        requests_cost = round(requests_value, KOA_CONFIG.db_round_decimals)
-                        if KOA_CONFIG.cost_model == 'RATIO' or KOA_CONFIG.cost_model == 'CHARGE_BACK':
-                            requests_ratio = requests_value / sum_requests_per_type_date[res][date_key]
-                            requests_cost = round(100 * requests_ratio, KOA_CONFIG.db_round_decimals)
-                            if KOA_CONFIG.cost_model == 'CHARGE_BACK':
-                                requests_cost = round(
-                                    requests_ratio * usage_per_type_date[res][date_key][KOA_CONFIG.db_billing_hourly_rate],
-                                    KOA_CONFIG.db_round_decimals)
-                        requests_export[res].append('{"stack":"%s","requests":%f,"date":"%s"}' % (db, requests_cost, date_key))
-                        if Rrd.get_date_group(now_gmtime, period) == date_key:
-                            PROMETHEUS_PERIODIC_REQUESTS_EXPORTERS[period].labels(db, ResUsageType(res).name).set(
-                                requests_cost)
-
         with open(str('%s/cpu_usage_period_%d.json' % (KOA_CONFIG.frontend_data_location, period)), 'w') as fd:
             fd.write('[' + ','.join(usage_export[0]) + ']')
         with open(str('%s/memory_usage_period_%d.json' % (KOA_CONFIG.frontend_data_location, period)), 'w') as fd:
             fd.write('[' + ','.join(usage_export[1]) + ']')
-        with open(str('%s/cpu_requests_period_%d.json' % (KOA_CONFIG.frontend_data_location, period)), 'w') as fd:
-            fd.write('[' + ','.join(requests_export[0]) + ']')
-        with open(str('%s/memory_requests_period_%d.json' % (KOA_CONFIG.frontend_data_location, period)), 'w') as fd:
-            fd.write('[' + ','.join(requests_export[1]) + ']')
 
 
 def pull_k8s(api_context):
