@@ -22,7 +22,7 @@ import sys
 import threading
 import time
 import traceback
-import urllib, urllib3
+import urllib
 from typing import Any, List
 
 import flask
