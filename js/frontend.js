@@ -681,14 +681,15 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             });
 
             let dataSetKey = (periodType+'-'+usageType).toLowerCase();
+            let filenamePrefix = 'kopex-' + resourceTypeLowered + '-' + dataSetKey;
             $.ajax({
                 type: "GET",
                 url: `${FrontendApi.DATA_DIR}/${DATASET_FILES[dataSetKey]}`,
                 dataType: 'json',
                 success: function (data) {
-                    installExporter(`consolidated-${resourceTypeLowered}-png`, '', () => exportImage(chart, 'kopex-' + resourceTypeLowered + '.png'));
-                    installExporter(`consolidated-${resourceTypeLowered}-json`, 'kopex-' + resourceTypeLowered + '.json', () => exportJSON(data));
-                    installExporter(`consolidated-${resourceTypeLowered}-csv`, 'kopex-' + resourceTypeLowered  + '.csv', () => exportCSV(data));
+                    installExporter(`consolidated-${resourceTypeLowered}-usage-png`, '', () => exportImage(chart, filenamePrefix + '.png'));
+                    installExporter(`consolidated-${resourceTypeLowered}-usage-json`, filenamePrefix + '.json', () => exportJSON(data));
+                    installExporter(`consolidated-${resourceTypeLowered}-usage-csv`, filenamePrefix + '.csv', () => exportCSV(data));
 
                     updateStackedBarChart(
                         {"data": data},
