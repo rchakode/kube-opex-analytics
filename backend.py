@@ -523,7 +523,7 @@ class K8sUsage:
                     self.hourlyRate += node.hourlyPrice
                 
                 # GKE cluster processing
-                if node.aksCluster is not None :
+                if node.gcpCluster is not None :
                     self.hourlyRate=self.gkeManagedControlPlanePrice
                     memory = status["capacity"]["memory"]
                     memLengh = len(status["capacity"]["memory"])
