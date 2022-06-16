@@ -219,7 +219,7 @@ def render():
                                  koa_version=KOA_CONFIG.version)
 
 
-def get_Azure_price(node):
+def get_azure_price(node):
     price = 0.0
     api_base = "https://prices.azure.com/api/retail/prices?$filter=armRegionName eq '"
     api_endpoint = api_base + node.region + "' and skuName eq '" + node.instanceType + "' and serviceName eq 'Virtual Machines'" 
@@ -405,7 +405,7 @@ class K8sUsage:
                 # If cluster is an AKS cluster
                 if node.aksCluster is not None:
                     self.hourlyRate = self.aksManagedControlPlanePrice
-                    node.hourlyPrice = get_Azure_price(node)
+                    node.hourlyPrice = get_azure_price(node)
                     self.hourlyRate += node.hourlyPrice
 
             status = item.get('status', None)
@@ -834,14 +834,12 @@ def create_metrics_puller():
                 rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_non_allocatable, mem_usage=mem_non_allocatable)
 
                 # handle billing data
-                if KOA_CONFIG.cost_model == "CHARGE_BACK":
-                    billing_hourly_rate = KOA_CONFIG.billing_hourly_rate
-                elif KOA_CONFIG.cost_model == "AKS_CHARGE_BACK":
-                    billing_hourly_rate = k8s_usage.hourlyRate
+                if KOA_CONFIG.cost_model in ["AKS_CHARGE_BACK", "GKE_CHARGE_BACK"] :
+                    KOA_CONFIG.billing_hourly_rate = k8s_usage.hourlyRate
                     
                 rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.db_billing_hourly_rate)
-                rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=billing_hourly_rate,
-                               mem_usage=billing_hourly_rate)
+                rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=KOA_CONFIG.billing_hourly_rate,
+                               mem_usage=KOA_CONFIG.billing_hourly_rate)
 
                 # handle resource request and usage by pods
                 for ns, ns_usage in k8s_usage.usageByNamespace.items():
