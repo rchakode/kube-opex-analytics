@@ -1040,7 +1040,7 @@ def dump_analytics():
 if KOA_CONFIG.cost_model == 'CHARGE_BACK' and KOA_CONFIG.billing_hourly_rate <= 0.0:
     KOA_LOGGER.fatal('invalid billing hourly rate for CHARGE_BACK cost allocation')
     sys.exit(1)
-if KOA_CONFIG.google_api_key == 'NO_GOOGLE_API_KEY':
+if KOA_CONFIG.cost_model == 'GKE_CHARGE_BACK' and KOA_CONFIG.google_api_key == 'NO_GOOGLE_API_KEY':
     KOA_LOGGER.fatal('no google API key provided, unable to calculate GKE cluster hourly rate')
     sys.exit(1)
 
