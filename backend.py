@@ -96,7 +96,7 @@ class Config:
             
             # if cluster is a GKE cluster then cost_model = 'GKE_CHARGE_BACK'
             elif self.cost_model == 'GKE_CHARGE_BACK':
-                cost_model_label = 'GKE_costs'               
+                cost_model_label = 'gke_costs'               
                 cost_model_unit = self.billing_currency
 
             elif self.cost_model == 'RATIO':
