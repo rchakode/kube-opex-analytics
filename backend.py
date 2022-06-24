@@ -269,16 +269,23 @@ def get_gcp_price(node, memory, cpu):
     instance_description_for_cpu = node.instanceType[:2].upper() + " Instance Core"
     instance_description_for_memory =  node.instanceType[:2].upper() + " Instance Ram"
     next_page_token = data_json['nextPageToken']
+
     cpu_price= cpu * gcp_search_price_per_page(node, data_json, instance_description_for_cpu)
     memory_price = memory * gcp_search_price_per_page(node, data_json, instance_description_for_memory)
     
-    while cpu_price == 0.0 or memory_price == 0 :
+    while cpu_price == 0.0 :
         api_endpoint=base_api_endpoint+"&pageToken="+next_page_token
         data_json=requests.get(api_endpoint).json()
-        
         cpu_price= cpu * gcp_search_price_per_page(node, data_json, instance_description_for_cpu)
-        memory_price = memory * gcp_search_price_per_page(node, data_json, instance_description_for_memory)
+        if data_json['nextPageToken'] != "":
+            next_page_token = data_json['nextPageToken'] 
+        else : 
+            break
 
+    while memory_price == 0 :
+        api_endpoint=base_api_endpoint+"&pageToken="+next_page_token
+        data_json=requests.get(api_endpoint).json()
+        memory_price = memory * gcp_search_price_per_page(node, data_json, instance_description_for_memory)
         if data_json['nextPageToken'] != "":
             next_page_token = data_json['nextPageToken'] 
         else : 
@@ -493,7 +500,8 @@ class K8sUsage:
                     self.hourlyRate=self.gkeManagedControlPlanePrice
                     memory = status["capacity"]["memory"]
                     memLengh = len(status["capacity"]["memory"])
-                    memoryInGibibytes = (float( memory[0:memLengh-2])*9.3132)*(10 ** (-7))
+                    memoryInGibibytes = (float( memory[0:memLengh-2])*9.5367431640625)*(10 ** (-7))
+                    # 1 kiB = 9.5367431640625E-7 giB
                     cpu = float(status['capacity']['cpu'])
                     node.HourlyPrice = get_gcp_price(node, memoryInGibibytes, cpu)
                     self.hourlyRate += node.HourlyPrice
