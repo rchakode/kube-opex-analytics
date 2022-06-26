@@ -5,7 +5,7 @@ This section describes the built-in dashboards and charts provided by `kube-opex
   - [Hourly Consolidated Usage Trends (7 days)](#hourly-consolidated-usage-trends-7-days)
   - [Hourly Usage/Requests Efficiency (7 days)](#hourly-usagerequests-efficiency-7-days)
   - [Daily Consumption Accounting (14 days)](#daily-consumption-accounting-14-days)
-  - [Monthly CPU and Memory Usage (12 months)](#monthly-cpu-and-memory-usage-12-months)
+  - [Monthly Consumption Accounting (12 months)](#monthly-consumption-accounting-12-months)
   - [Nodes' Occupation by Pods](#nodes-occupation-by-pods)
   - [Export Charts and Datasets (PNG, CSV, JSON)](#export-charts-and-datasets-png-csv-json)
 - [Dashboards and Visualization with Grafana](#dashboards-and-visualization-with-grafana)
@@ -31,25 +31,29 @@ The date filter can be used to zoom out/in on a specific time range.
 These charts are based on data consolidated hourly thanks to sample metrics collected every five minutes from Kubernetes. 
 
 ## Daily Consumption Accounting (14 days)
-The daily accounting charts are provided per namespace for CPU and Memory resources and cover the last 14 days (2 weeks).
+The daily accounting charts are provided per namespace for CPU and Memory resources and cover the last 14 days (2 weeks). 
 
-According to the [selected accounting model (](design-fundamentals.md#usage-accounting-models), the charts display one of the following metrics :
+According to the [selected accounting model (](design-fundamentals.md#usage-accounting-models), the charts display the following metrics. The chart and the backed-data can be easily exported as an image or a CSV file (see [Export Charts and Datasets (PNG, CSV, JSON)](#export-charts-and-datasets-png-csv-json)).
 
 * Daily cumulative sum of actual hourly consumption per namespace.
 * Daily cumulative sum of the maximum between the actual hourly consumption and the requested capacities.
-* Daily cumulative sum of actual hourly computedd from an actual cluster cost set statically based on a fixed hourly rate, or determinated dynamically from allocated resources on public clouds (nodes, storage, etc.).
+* Daily cumulative sum of hourly cost computed from an actual cluster cost set statically based on a fixed hourly rate, or determinated dynamically from allocated resources on public clouds (nodes, storage, etc.).
   
 ![](../screenshots/sample-two-weeks-daily-usage.png)
 
 
-## Monthly CPU and Memory Usage (12 months)
-For the different namespaces discovered in the Kubernetes cluster, these charts show monthly cumulative usage for CPU and memory resources during the last 12 months. 
+## Monthly Consumption Accounting (12 months)
+
+The monthly accounting charts are provided per namespace for CPU and Memory resources and cover the last 12 months (1 year).
+
+According to the [selected accounting model (](design-fundamentals.md#usage-accounting-models), the charts display the following metrics. Each chart and/or the backed-data can be easily exported as an image or a CSV file (see [Export Charts and Datasets (PNG, CSV, JSON)](#export-charts-and-datasets-png-csv-json)).
+
+* Monthly cumulative sum of actual hourly consumption per namespace.
+* Monthly cumulative sum of the maximum between the actual hourly consumption and the requested capacities.
+* Monthly cumulative sum of hourly cost computed from an actual cluster cost set statically based on a fixed hourly rate, or determinated dynamically from allocated resources on public clouds (nodes, storage, etc.).
 
 ![](../screenshots/sample-one-year-monthly-usage.png)
 
-The charts are based on data consolidated hourly thanks to sample metrics collected every five minutes from Kubernetes. 
-
-Depending on the [selected accounting model](design-fundamentals.md#usage-accounting-models), the values on these charts can be actual costs (`CHARGE_BACK` model), cumulative usage (sum of hourly consolidated usage, `CUMULATIVE_RATIO` model), or a percentage of the global cluster usage (`CHARGE_BACK` model, `100%` means the total cluster capacity).
 
 ## Nodes' Occupation by Pods
 For each node discovered in the Kubernetes cluster, this dashboard section displays the CPU and the memory resources currently consumed by running pods. The data are refreshed every five minutes.
