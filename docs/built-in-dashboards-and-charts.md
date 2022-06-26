@@ -4,7 +4,7 @@ This section describes the built-in dashboards and charts provided by `kube-opex
 - [Built-in Dashboards and Charts of kube-opex-analytics](#built-in-dashboards-and-charts-of-kube-opex-analytics)
   - [Hourly Consolidated Usage Trends (7 days)](#hourly-consolidated-usage-trends-7-days)
   - [Hourly Usage/Requests Efficiency (7 days)](#hourly-usagerequests-efficiency-7-days)
-  - [Daily CPU and Memory Usage (14 days)](#daily-cpu-and-memory-usage-14-days)
+  - [Daily Consumption Accounting (14 days)](#daily-consumption-accounting-14-days)
   - [Monthly CPU and Memory Usage (12 months)](#monthly-cpu-and-memory-usage-12-months)
   - [Nodes' Occupation by Pods](#nodes-occupation-by-pods)
   - [Export Charts and Datasets (PNG, CSV, JSON)](#export-charts-and-datasets-png-csv-json)
@@ -30,14 +30,17 @@ The date filter can be used to zoom out/in on a specific time range.
 
 These charts are based on data consolidated hourly thanks to sample metrics collected every five minutes from Kubernetes. 
 
-## Daily CPU and Memory Usage (14 days)
-For the different namespaces discovered in the Kubernetes cluster, these charts show daily cumulative usage for CPU and memory resources during the last 2 weeks. 
+## Daily Consumption Accounting (14 days)
+The daily accounting charts are provided per namespace for CPU and Memory resources and cover the last 14 days (2 weeks).
 
+According to the [selected accounting model (](design-fundamentals.md#usage-accounting-models), the charts display one of the following metrics :
+
+* Daily cumulative sum of actual hourly consumption per namespace.
+* Daily cumulative sum of the maximum between the actual hourly consumption and the requested capacities.
+* Daily cumulative sum of actual hourly computedd from an actual cluster cost set statically based on a fixed hourly rate, or determinated dynamically from allocated resources on public clouds (nodes, storage, etc.).
+  
 ![](../screenshots/sample-two-weeks-daily-usage.png)
 
-These charts are based on data consolidated hourly thanks to sample metrics collected every five minutes from Kubernetes. 
-
-Depending on the [selected accounting model](design-fundamentals.md#usage-accounting-models), the values on these charts can be actual costs (`CHARGE_BACK` model), cumulative usage (sum of hourly consolidated usage, `CUMULATIVE_RATIO` model), or a percentage of the global cluster usage (`CHARGE_BACK` model, `100%` means the global cluster usage).
 
 ## Monthly CPU and Memory Usage (12 months)
 For the different namespaces discovered in the Kubernetes cluster, these charts show monthly cumulative usage for CPU and memory resources during the last 12 months. 
