@@ -18,7 +18,7 @@
 
 Key features:
 
-* **Consumption hourly trends, daily and monthly accounting per namespace.** This feature provides analytics metrics _tracking both actual usage and requested capacities_ over time. Metrics are namespaced-based, collected every 5 minutes, consolidated on a hourly basis for trends, from which daily and monthly accounting is processed.
+* **Hourly consumption trends, daily and monthly accounting per namespace.** This feature provides analytics metrics _tracking both actual usage and requested capacities_ over time. Metrics are namespaced-based, collected every 5 minutes, consolidated on a hourly basis for trends, from which daily and monthly accounting is processed.
 * **Accounting of non-allocatable capacities.** At node and cluster levels, `kube-opex-analytics` tracks and consolidates the share of non-allocatable capacities and highlights them against usable capacities (i.e. capacities used by actual application workloads). In contrary to usable capacities, non-allocatable capacities are dedicated to Kubernetes operations (OS, kubelets, etc).
 * **Cluster usage accounting and capacity planning.** This feature makes it easy to account and visualize capacities consumed on a cluster, globally, instantly and over time.
 * **Usage/requests efficiency.** Based on hourly-consolidated trends, this functionality helps know how efficient resource requests set on Kubernetes workloads are, compared against the actual resource usage over time.
