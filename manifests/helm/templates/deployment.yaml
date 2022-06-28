@@ -45,6 +45,20 @@ spec:
               value: {{ $val | quote }}
           {{- end }}
         {{- end }}
+        {{- if .Values.includedNamespaces }}
+          {{- if not .Values.envs }}
+          env:
+          {{- end }}
+            - name: INCLUDED_NAMESPACES
+              value: {{ join "," $.Values.includedNamespaces }}
+        {{- end }}
+        {{- if .Values.excludedNamespaces }}
+          {{- if not .Values.envs }}
+          env:
+          {{- end }}
+            - name: EXCLUDED_NAMESPACES
+              value: {{ join "," $.Values.excludedNamespaces }}
+        {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.service.targetPort }}

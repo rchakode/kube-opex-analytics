@@ -16,6 +16,12 @@ dataVolume:
   capacity: 4Gi
 #  storageClass: default
 
+# overrides envs.INCLUDED_NAMESPACES
+includedNamespaces: []
+
+# overrides envs.EXCLUDED_NAMESPACES
+excludedNamespaces: []
+
 prometheusOperator:
   enabled: false
   labels:
