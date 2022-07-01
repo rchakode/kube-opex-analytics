@@ -9,3 +9,7 @@ updates:
     - rchakode
   reviewers:
     - rchakode
+- package-ecosystem: "docker"
+  directory: "/"
+  schedule:
+    interval: "daily"
