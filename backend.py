@@ -77,7 +77,6 @@ class Config:
     excluded_namespaces = [i for i in os.getenv('KOA_EXCLUDED_NAMESPACES', '').replace(' ', ',').split(',') if i]
     google_api_key = os.getenv('KOA_GOOGLE_API_KEY', 'NO_GOOGLE_API_KEY')
 
-
     def __init__(self):
         self.load_rbac_auth_token()
 
@@ -92,17 +91,17 @@ class Config:
         with open(str('%s/backend.json' % self.frontend_data_location), 'w') as fd:
 
             if self.cost_model == 'CHARGE_BACK':
-                cost_model_label = 'costs'               
+                cost_model_label = 'costs'
                 cost_model_unit = self.billing_currency
 
             # if cluster is an aks cluster then cost_model = 'AKS_CHARGE_BACK'
             elif self.cost_model == 'AKS_CHARGE_BACK':
-                cost_model_label = 'aks_costs'               
+                cost_model_label = 'aks_costs'
                 cost_model_unit = self.billing_currency
-            
+
             # if cluster is a GKE cluster then cost_model = 'GKE_CHARGE_BACK'
             elif self.cost_model == 'GKE_CHARGE_BACK':
-                cost_model_label = 'gke_costs'               
+                cost_model_label = 'gke_costs'
                 cost_model_unit = self.billing_currency
 
             elif self.cost_model == 'RATIO':
@@ -113,8 +112,8 @@ class Config:
                 cost_model_unit = '%'
             fd.write('{"cost_model":"%s", "currency":"%s"}' % (cost_model_label, cost_model_unit))
 
-        # handle cacert file if applicable 
-       
+        # handle cacert file if applicable
+
         if self.k8s_verify_ssl and self.k8s_ssl_cacert and os.path.exists(self.k8s_ssl_cacert):
             self.koa_verify_ssl_option = self.k8s_ssl_cacert
         else:
@@ -155,8 +154,8 @@ def configure_logger(debug_enabled):
     if debug_enabled:
         log_level = logging.DEBUG
     else:
-        log_level = logging.WARN 
-   
+        log_level = logging.WARN
+
     logger = logging.getLogger('kube-opex-analytics')
     logger.setLevel(log_level)
     ch = logging.StreamHandler()
@@ -258,10 +257,10 @@ def render():
 def get_azure_price(node):
     price = 0.0
     api_base = "https://prices.azure.com/api/retail/prices?$filter=armRegionName eq '"
-    api_endpoint = api_base + node.region + "' and skuName eq '" + node.instanceType + "' and serviceName eq 'Virtual Machines'" 
+    api_endpoint = api_base + node.region + "' and skuName eq '" + node.instanceType + "' and serviceName eq 'Virtual Machines'"    # noqa: E501
     data_json = requests.get(api_endpoint).json()
     if data_json.get("Count", None) == 0:
-        api_endpoint = api_base + node.region + "' and skuName eq '" + node.instanceType[0].lower() + node.instanceType[1:] + "' and serviceName eq 'Virtual Machines'"     
+        api_endpoint = api_base + node.region + "' and skuName eq '" + node.instanceType[0].lower() + node.instanceType[1:] + "' and serviceName eq 'Virtual Machines'"     # noqa: E501
     while price == 0.0:
         data_json = requests.get(api_endpoint).json()
         for _, item in enumerate(data_json["Items"]):
@@ -270,55 +269,56 @@ def get_azure_price(node):
                     price = item.get('unitPrice')
             elif node.os == "linux":
                 if item["type"] == "Consumption" and not (item["productName"].endswith('Windows')):
-                    price=item.get('unitPrice')
+                    price = item.get('unitPrice')
         api_endpoint = data_json["NextPageLink"]
         if api_endpoint is None:
             break
     return price
 
 
-# computing GKE node price 
+# computing GKE node price
 def gcp_search_price_per_page(node, data_json, instance_description):
     price = 0.0
     for _, sku in enumerate(data_json['skus']):
-            if sku.get("description").startswith(instance_description):
-                if node.region in sku.get("serviceRegions") and sku["category"]["usageType"]=="OnDemand":
-                    price_info = sku["pricingInfo"][0]["pricingExpression"]["tieredRates"][0]
-                    units = float( price_info["unitPrice"]["units"])
-                    nanos = float( price_info["unitPrice"]["nanos"])
-                    price = units + nanos * 10 ** (-9)
+        if sku.get("description").startswith(instance_description):
+            if node.region in sku.get("serviceRegions") and sku["category"]["usageType"] == "OnDemand":
+                price_info = sku["pricingInfo"][0]["pricingExpression"]["tieredRates"][0]
+                units = float(price_info["unitPrice"]["units"])
+                nanos = float(price_info["unitPrice"]["nanos"])
+                price = units + nanos * 1e-9
     return price
+
 
 def get_gcp_price(node, memory, cpu):
     cpu_price = 0.0
     memory_price = 0.0
-    price = 0.0 
-    base_api_endpoint = "https://cloudbilling.googleapis.com/v1/services/6F81-5844-456A/skus?key=" + KOA_CONFIG.google_api_key
+    price = 0.0
+    base_api_endpoint = "https://cloudbilling.googleapis.com/v1/services/6F81-5844-456A/skus?key=" + KOA_CONFIG.google_api_key      # noqa: E501
 
-    data_json=requests.get(base_api_endpoint).json()
+    data_json = requests.get(base_api_endpoint).json()
     instance_description_for_cpu = node.instanceType[:2].upper() + " Instance Core"
-    instance_description_for_memory =  node.instanceType[:2].upper() + " Instance Ram"
+    instance_description_for_memory = node.instanceType[:2].upper() + " Instance Ram"
     next_page_token = data_json['nextPageToken']
 
-    cpu_price= cpu * gcp_search_price_per_page(node, data_json, instance_description_for_cpu)
+    cpu_price = cpu * gcp_search_price_per_page(node, data_json, instance_description_for_cpu)
     memory_price = memory * gcp_search_price_per_page(node, data_json, instance_description_for_memory)
-    
-    while cpu_price == 0.0 :
-        api_endpoint=base_api_endpoint+"&pageToken="+next_page_token
-        data_json=requests.get(api_endpoint).json()
-        cpu_price= cpu * gcp_search_price_per_page(node, data_json, instance_description_for_cpu)
+
+    while cpu_price == 0.0:
+        api_endpoint = base_api_endpoint + "&pageToken=" + next_page_token
+        data_json = requests.get(api_endpoint).json()
+        cpu_price = cpu * gcp_search_price_per_page(node, data_json, instance_description_for_cpu)
         if data_json['nextPageToken'] != "":
-            next_page_token = data_json['nextPageToken'] 
-        else : 
+            next_page_token = data_json['nextPageToken']
+        else:
             break
 
-    while memory_price == 0 :
-        api_endpoint=base_api_endpoint+"&pageToken="+next_page_token
-        data_json=requests.get(api_endpoint).json()
+    while memory_price == 0:
+        api_endpoint = base_api_endpoint + "&pageToken=" + next_page_token
+        data_json = requests.get(api_endpoint).json()
         memory_price = memory * gcp_search_price_per_page(node, data_json, instance_description_for_memory)
         if data_json['nextPageToken'] != "":
-            next_page_token = data_json['nextPageToken'] 
-        else : 
+            next_page_token = data_json['nextPageToken']
+        else:
             break
     price = cpu_price + memory_price
     return price
@@ -344,8 +344,7 @@ class Node:
         self.instanceType = ''
         self.aksCluster = None
         self.gcpCluster = None
-        self.hourlyPrice= 0.0
-
+        self.hourlyPrice = 0.0
 
 
 class Pod:
@@ -441,7 +440,7 @@ class K8sUsage:
         self.gkeManagedControlPlanePrice = 0.10
         # the pricing of the managed control plane is similar for all of AKS, EKS and  GKE at $0.10/hour
         self.hourlyRate = 0.0
-        
+
     def decode_capacity(self, cap_input):
         data_length = len(cap_input)
         cap_unit = 'None'
@@ -486,7 +485,7 @@ class K8sUsage:
             if metadata is not None:
                 node.id = metadata.get('uid', None)
                 node.name = metadata.get('name', None)
-                
+
             status = item.get('status', None)
             if status is not None:
                 node.containerRuntime = status['nodeInfo']['containerRuntimeVersion']
@@ -517,24 +516,24 @@ class K8sUsage:
                         node.state = 'DiskPressure'
                         break
 
-            # for managed clusters 
+            # for managed clusters
                 node.region = metadata['labels']['topology.kubernetes.io/region']
                 node.instanceType = metadata['labels']['node.kubernetes.io/instance-type']
                 node.aksCluster = metadata['labels'].get('kubernetes.azure.com/cluster', None)
-                node.gcpCluster= metadata['labels'].get("cloud.google.com/gke-boot-disk", None)
+                node.gcpCluster = metadata['labels'].get("cloud.google.com/gke-boot-disk", None)
 
                 # AKS cluster processing
-                if node.aksCluster != None :
+                if node.aksCluster is not None:
                     self.hourlyRate = self.aksManagedControlPlanePrice
                     node.hourlyPrice = get_azure_price(node)
                     self.hourlyRate += node.hourlyPrice
-                
+
                 # GKE cluster processing
-                if node.gcpCluster is not None :
-                    self.hourlyRate=self.gkeManagedControlPlanePrice
+                if node.gcpCluster is not None:
+                    self.hourlyRate = self.gkeManagedControlPlanePrice
                     memory = status["capacity"]["memory"]
                     memLengh = len(status["capacity"]["memory"])
-                    memoryInGibibytes = (float( memory[0:memLengh-2])*9.5367431640625)*(10 ** (-7))
+                    memoryInGibibytes = (float(memory[0:(memLengh - 2)]) * 9.5367431640625) * 1e-7
                     # 1 kiB = 9.5367431640625E-7 giB
                     cpu = float(status['capacity']['cpu'])
                     node.HourlyPrice = get_gcp_price(node, memoryInGibibytes, cpu)
@@ -835,9 +834,9 @@ class Rrd:
         sum_requests_per_type_date = {}
 
         actual_cost_model = 'CUMULATIVE'
-        if KOA_CONFIG.cost_model in ['CHARGE_BACK', 'AKS_CHARGE_BACK','GKE_CHARGE_BACK' ]:
+        if KOA_CONFIG.cost_model in ['CHARGE_BACK', 'AKS_CHARGE_BACK', 'GKE_CHARGE_BACK']:
             actual_cost_model = 'CHARGE_BACK'
-            
+
         for _, db in enumerate(dbfiles):
             rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=db)
             current_periodic_usage = rrd.dump_histogram_data(period=period)
@@ -877,7 +876,7 @@ class Rrd:
         for res, usage_data_bundle in usage_per_type_date.items():
             for date_key, db_usage_item in usage_data_bundle.items():
                 for db, usage_value in db_usage_item.items():
-                    
+
                     if db != KOA_CONFIG.db_billing_hourly_rate:
                         usage_cost = round(usage_value, KOA_CONFIG.db_round_decimals)
 
@@ -944,7 +943,7 @@ def pull_k8s(api_context):
                                 headers=headers,
                                 cert=client_cert)
         if http_req.status_code == 200:
-            data = http_req.text 
+            data = http_req.text
         else:
             KOA_LOGGER.error("call to %s returned error (%s)", api_endpoint, http_req.text)
     except Exception as ex:
@@ -983,9 +982,9 @@ def create_metrics_puller():
                 rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_non_allocatable, mem_usage=mem_non_allocatable)
 
                 # handle billing data
-                if KOA_CONFIG.cost_model in ["AKS_CHARGE_BACK", "GKE_CHARGE_BACK"] :
+                if KOA_CONFIG.cost_model in ["AKS_CHARGE_BACK", "GKE_CHARGE_BACK"]:
                     KOA_CONFIG.billing_hourly_rate = k8s_usage.hourlyRate
-                    
+
                 rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.db_billing_hourly_rate)
                 rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=KOA_CONFIG.billing_hourly_rate,
                                mem_usage=KOA_CONFIG.billing_hourly_rate)
