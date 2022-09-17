@@ -11,4 +11,3 @@ data:
   KOA_K8S_CACERT: '/run/secrets/kubernetes.io/serviceaccount/ca.crt'
   KOA_INCLUDED_NAMESPACES: ''
   KOA_EXCLUDED_NAMESPACES: ''
-  KOA_GOOGLE_API_KEY: 'NO_GOOGLE_API_KEY'
