@@ -44,6 +44,11 @@ spec:
             - name: {{ $key | quote }}
               value: {{ $val | quote }}
           {{- end }}
+            - name: "KOA_GOOGLE_API_KEY"
+              valueFrom:
+                secretKeyRef:
+                  name: kube-opex-analytics-secrets
+                  key: KOA_GOOGLE_API_KEY     
         {{- end }}
         {{- if .Values.includedNamespaces }}
           {{- if not .Values.envs }}

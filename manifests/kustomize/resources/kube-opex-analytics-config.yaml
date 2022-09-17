@@ -9,3 +9,5 @@ data:
   KOA_K8S_API_ENDPOINT: 'https://kubernetes.default'
   KOA_K8S_API_VERIFY_SSL: 'true'
   KOA_K8S_CACERT: '/run/secrets/kubernetes.io/serviceaccount/ca.crt'
+  KOA_INCLUDED_NAMESPACES: ''
+  KOA_EXCLUDED_NAMESPACES: ''

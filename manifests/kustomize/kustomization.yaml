@@ -6,10 +6,11 @@ namespace: kube-opex-analytics
 resources:
   - resources/kube-opex-analytics-rbac.yaml
   - resources/kube-opex-analytics-config.yaml
+  - resources/kube-opex-analytics-secrets.yaml
   - resources/kube-opex-analytics-sts.yaml
   - resources/kube-opex-analytics-service.yaml
   - resources/kube-opex-analytics-tests.yaml
 images:
   - name: kube-opex-analytics
     newName: rchakode/kube-opex-analytics
-    newTag: 22.02.3
+    newTag: 2022-09-17-33a3620
