@@ -250,78 +250,124 @@ def download_dataset(path):
 
 @app.route('/')
 def render():
+    """Render the index.html page based on Flash template"""
     return flask.render_template('index.html', koa_frontend_data_location=KOA_CONFIG.frontend_data_location,
                                  koa_version=KOA_CONFIG.version)
 
 
+def get_http_resource_or_return_none_on_error(url):
+    """Get a HTTP resource on its URL and return none on error"""
+    
+    data = None
+    try:
+        req = requests.get(url, params=None)
+    except requests.exceptions.Timeout:
+        
+        KOA_LOGGER.error("Timeout while querying {}".format(url))
+    except requests.exceptions.TooManyRedirects:
+        KOA_LOGGER.error("TooManyRedirects while querying {}".format(url))
+    except requests.exceptions.RequestException as ex:
+        exception_type = type(ex).__name__
+        KOA_LOGGER.error("HTTP error ({}) => {}".format(exception_type, traceback.format_exc()))
+
+    if req.status_code != 200:
+        KOA_LOGGER.error("Call to URL {} returned error => {} ".format(url, req.content))
+    else:
+        data = req.content
+
+    return data
+
 def get_azure_price(node):
+    """Query Azure pricing API to compute node price based on its computing resources (e.g. vCPU, RAM)"""
+
+    api_base = "https://prices.azure.com/api/retail/prices?$filter=armRegionName"
+    api_endpoint = "{} eq '{}' and skuName eq '{}' and serviceName eq 'Virtual Machines'".format(api_base, node.region,  node.instanceType) # noqa: E501
+    
+    pricing_data = get_http_resource_or_return_none_on_error(api_endpoint)
+    if pricing_data is None:
+        return 0.0
+
+    pricing_json = pricing_data.json()
+    if pricing_json.get("Count", 0) == 0:
+        api_endpoint = "{} eq '{}' and skuName eq '{}{}' and serviceName eq 'Virtual Machines'".format(api_base, node.region, node.instanceType[0].lower(), node.instanceType[1:]) # noqa: E501
+    
     price = 0.0
-    api_base = "https://prices.azure.com/api/retail/prices?$filter=armRegionName eq '"
-    api_endpoint = api_base + node.region + "' and skuName eq '" + node.instanceType + "' and serviceName eq 'Virtual Machines'"    # noqa: E501
-    data_json = requests.get(api_endpoint).json()
-    if data_json.get("Count", None) == 0:
-        api_endpoint = api_base + node.region + "' and skuName eq '" + node.instanceType[0].lower() + node.instanceType[1:] + "' and serviceName eq 'Virtual Machines'"     # noqa: E501
     while price == 0.0:
-        data_json = requests.get(api_endpoint).json()
-        for _, item in enumerate(data_json["Items"]):
+        pricing_data = get_http_resource_or_return_none_on_error(api_endpoint)
+        if pricing_data is None:
+            break
+
+        pricing_json = pricing_data.json()
+        for _, item in enumerate(pricing_json["Items"]):
             if node.os == "windows":
                 if item["type"] == "Consumption" and item["productName"].endswith('Windows'):
                     price = item.get('unitPrice')
             elif node.os == "linux":
                 if item["type"] == "Consumption" and not (item["productName"].endswith('Windows')):
                     price = item.get('unitPrice')
-        api_endpoint = data_json["NextPageLink"]
+
+        api_endpoint = pricing_json.get("NextPageLink", None)
         if api_endpoint is None:
             break
+
     return price
 
 
-# computing GKE node price
-def gcp_search_price_per_page(node, data_json, instance_description):
+
+def gcp_search_price_per_page(node, skus, instance_description):
+    """Computing GKE node price"""
+
     price = 0.0
-    for _, sku in enumerate(data_json['skus']):
+    for _, sku in skus:
         if sku.get("description").startswith(instance_description):
             if node.region in sku.get("serviceRegions") and sku["category"]["usageType"] == "OnDemand":
                 price_info = sku["pricingInfo"][0]["pricingExpression"]["tieredRates"][0]
                 units = float(price_info["unitPrice"]["units"])
                 nanos = float(price_info["unitPrice"]["nanos"])
                 price = units + nanos * 1e-9
+
     return price
 
 
 def get_gcp_price(node, memory, cpu):
+    """Query GCE pricing API to compute node price based on its computing capacities (e.g. vCPU, RAM)"""
     cpu_price = 0.0
     memory_price = 0.0
-    price = 0.0
-    base_api_endpoint = "https://cloudbilling.googleapis.com/v1/services/6F81-5844-456A/skus?key=" + KOA_CONFIG.google_api_key      # noqa: E501
+    instance_cpu_desc = node.instanceType[:2].upper() + " Instance Core"
+    instance_memory_desc = node.instanceType[:2].upper() + " Instance Ram"
 
-    data_json = requests.get(base_api_endpoint).json()
-    instance_description_for_cpu = node.instanceType[:2].upper() + " Instance Core"
-    instance_description_for_memory = node.instanceType[:2].upper() + " Instance Ram"
-    next_page_token = data_json['nextPageToken']
+    base_api_endpoint = "https://cloudbilling.googleapis.com/v1/services/6F81-5844-456A/skus?key={}".format(KOA_CONFIG.google_api_key)      # noqa: E501
+    
+    pricing_data = get_http_resource_or_return_none_on_error(base_api_endpoint)
+    if pricing_data is None:
+        return 0.0
 
-    cpu_price = cpu * gcp_search_price_per_page(node, data_json, instance_description_for_cpu)
-    memory_price = memory * gcp_search_price_per_page(node, data_json, instance_description_for_memory)
+    pricing_json = pricing_data.json()
+    skus = pricing_json.get('skus', None)
+    if skus is not None:
+        cpu_price = cpu * gcp_search_price_per_page(node, skus, instance_cpu_desc)
+        memory_price = memory * gcp_search_price_per_page(node, skus, instance_memory_desc)
 
-    while cpu_price == 0.0:
-        api_endpoint = base_api_endpoint + "&pageToken=" + next_page_token
-        data_json = requests.get(api_endpoint).json()
-        cpu_price = cpu * gcp_search_price_per_page(node, data_json, instance_description_for_cpu)
-        if data_json['nextPageToken'] != "":
-            next_page_token = data_json['nextPageToken']
-        else:
+    next_page_token = pricing_json.get('nextPageToken', None)
+    while next_page_token is not None and next_page_token != "":
+        api_endpoint = "{}&pageToken={}".format(base_api_endpoint, next_page_token)
+
+        pricing_data = get_http_resource_or_return_none_on_error(api_endpoint)
+        if pricing_data is None:
             break
 
-    while memory_price == 0:
-        api_endpoint = base_api_endpoint + "&pageToken=" + next_page_token
-        data_json = requests.get(api_endpoint).json()
-        memory_price = memory * gcp_search_price_per_page(node, data_json, instance_description_for_memory)
-        if data_json['nextPageToken'] != "":
-            next_page_token = data_json['nextPageToken']
-        else:
+        pricing_json = pricing_data.json()
+        skus = pricing_json.get('skus', None)
+        if skus is not None:
+            cpu_price += cpu * gcp_search_price_per_page(node, skus, instance_cpu_desc)
+            memory_price += memory * gcp_search_price_per_page(node, skus, instance_memory_desc)
+
+        if cpu_price != 0.0 and memory_price != 0.0:
             break
-    price = cpu_price + memory_price
-    return price
+            
+        next_page_token = pricing_json.get('nextPageToken', None)
+
+    return cpu_price + memory_price
 
 
 class Node:
@@ -529,12 +575,11 @@ class K8sUsage:
                     self.hourlyRate += node.hourlyPrice
 
                 # GKE cluster processing
-                if node.gcpCluster is not None:
+                if node.gcpCluster is not None and KOA_CONFIG.google_api_key != "NO_GOOGLE_API_KEY":
                     self.hourlyRate = self.gkeManagedControlPlanePrice
                     memory = status["capacity"]["memory"]
                     memLengh = len(status["capacity"]["memory"])
-                    memoryInGibibytes = (float(memory[0:(memLengh - 2)]) * 9.5367431640625) * 1e-7
-                    # 1 kiB = 9.5367431640625E-7 giB
+                    memoryInGibibytes = (float(memory[0:(memLengh - 2)]) * 9.5367431640625) * 1e-7 # 1 kiB = 9.5367431640625E-7 giB
                     cpu = float(status['capacity']['cpu'])
                     node.HourlyPrice = get_gcp_price(node, memoryInGibibytes, cpu)
                     self.hourlyRate += node.HourlyPrice
@@ -594,6 +639,7 @@ class K8sUsage:
                 pod.nodeName = item['spec']['nodeName']
                 pod.cpuRequest = 0.0
                 pod.memRequest = 0.0
+ 
                 # TODO: extract initContainers
                 for _, container in enumerate(item.get('spec').get('containers')):
                     resources = container.get('resources', None)
