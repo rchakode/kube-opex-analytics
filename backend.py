@@ -80,6 +80,12 @@ class Config:
     def __init__(self):
         self.load_rbac_auth_token()
 
+        # check listener port
+        try:
+            self.listener_port = int(os.getenv('KOA_LISTENER_PORT'))
+        except:
+            self.listener_port = 5483
+
         # handle billing rate and cost model
         try:
             self.billing_hourly_rate = float(os.getenv('KOA_BILLING_HOURLY_RATE'))
@@ -1104,6 +1110,6 @@ if __name__ == '__main__':
     th_exporter.start()
 
     if not KOA_CONFIG.enable_debug:
-        waitress_serve(wsgi_dispatcher, listen='0.0.0.0:5483')
+        waitress_serve(wsgi_dispatcher, listen='0.0.0.0:{}'.format(KOA_CONFIG.listener_port))
     else:
-        app.run(host='0.0.0.0', port=5483)
+        app.run(host='0.0.0.0', port=KOA_CONFIG.listener_port)
