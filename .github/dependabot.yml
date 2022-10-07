@@ -13,3 +13,12 @@ updates:
   directory: "/"
   schedule:
     interval: "daily"
+- package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 5
+  assignees:
+    - rchakode
+  reviewers:
+    - rchakode
