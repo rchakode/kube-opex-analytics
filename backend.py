@@ -104,7 +104,7 @@ class Config:
         cost_model_label, cost_model_unit = self.process_cost_model_config()
         with open(str('%s/backend.json' % self.frontend_data_location), 'w') as fd:
             fd.write('{"cost_model":"%s", "currency":"%s"}' % (cost_model_label, cost_model_unit))
- 
+
         # check listener port
         try:
             self.listener_port = int(os.getenv('KOA_LISTENER_PORT'))
