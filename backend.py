@@ -1096,7 +1096,7 @@ def dump_analytics(cost_model_by_user=None):
 if __name__ == '__main__':
     if KOA_CONFIG.cost_model == 'CHARGE_BACK' and KOA_CONFIG.billing_hourly_rate <= 0.0:
         KOA_LOGGER.warning('Unexpected hourly rate for CHARGE_BACK => %f', KOA_CONFIG.billing_hourly_rate)
-        
+
     parser = argparse.ArgumentParser(description='Kubernetes Opex Analytics Backend')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s {}'.format(KOA_CONFIG.version))
     args = parser.parse_args()
