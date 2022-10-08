@@ -87,8 +87,7 @@ class Config:
         elif self.cost_model == 'RATIO':
             cost_model_label = 'normalized'
             cost_model_unit = '%'
-
-        return cost_model_label, cost_model_unit
+        return cost_model_label, cost_model_uni
 
     def process_billing_hourly_rate_config(self):
         """Process KOA_BILLING_HOURLY_RATE config setting."""
@@ -105,7 +104,13 @@ class Config:
         cost_model_label, cost_model_unit = self.process_cost_model_config()
         with open(str('%s/backend.json' % self.frontend_data_location), 'w') as fd:
             fd.write('{"cost_model":"%s", "currency":"%s"}' % (cost_model_label, cost_model_unit))
-
+            
+        # check listener port
+        try:
+            self.listener_port = int(os.getenv('KOA_LISTENER_PORT'))
+        except:
+            self.listener_port = 5483
+ 
         # handle cacert file if applicable
         if self.k8s_verify_ssl and self.k8s_ssl_cacert and os.path.exists(self.k8s_ssl_cacert):
             self.koa_verify_ssl_option = self.k8s_ssl_cacert
@@ -1104,6 +1109,6 @@ if __name__ == '__main__':
     th_exporter.start()
 
     if not KOA_CONFIG.enable_debug:
-        waitress_serve(wsgi_dispatcher, listen='0.0.0.0:5483')
+        waitress_serve(wsgi_dispatcher, listen='0.0.0.0:{}'.format(KOA_CONFIG.listener_port))
     else:
-        app.run(host='0.0.0.0', port=5483)
+        app.run(host='0.0.0.0', port=KOA_CONFIG.listener_port)
