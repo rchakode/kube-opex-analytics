@@ -87,7 +87,7 @@ class Config:
         elif self.cost_model == 'RATIO':
             cost_model_label = 'normalized'
             cost_model_unit = '%'
-        return cost_model_label, cost_model_uni
+        return cost_model_label, cost_model_unit
 
     def process_billing_hourly_rate_config(self):
         """Process KOA_BILLING_HOURLY_RATE config setting."""
