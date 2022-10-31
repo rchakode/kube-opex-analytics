@@ -66,6 +66,7 @@ class Config:
     cost_model = os.getenv('KOA_COST_MODEL', 'CUMULATIVE_RATIO')
     billing_currency = os.getenv('KOA_BILLING_CURRENCY_SYMBOL', '$')
     enable_debug = (lambda v: v.lower() in ("yes", "true"))(os.getenv('KOA_ENABLE_DEBUG', 'false'))
+    k8s_auth_token_file = os.getenv('KOA_K8S_AUTH_TOKEN_FILE', '/var/run/secrets/kubernetes.io/serviceaccount/token')
     k8s_auth_token = os.getenv('KOA_K8S_AUTH_TOKEN', 'NO_ENV_AUTH_TOKEN')
     k8s_auth_token_type = os.getenv('KOA_K8S_AUTH_TOKEN_TYPE', 'Bearer')
     k8s_auth_username = os.getenv('KOA_K8S_AUTH_USERNAME', 'NO_ENV_AUTH_USERNAME')
@@ -134,7 +135,7 @@ class Config:
     def load_rbac_auth_token(self):
         """Load the service account token when applicable."""
         try:
-            with open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'r', encoding=None) as rbac_token_file:
+            with open(KOA_CONFIG.k8s_auth_token_file, 'r', encoding=None) as rbac_token_file:
                 self.k8s_rbac_auth_token = rbac_token_file.read()
         except:
             self.k8s_rbac_auth_token = 'NO_ENV_TOKEN_FILE'
