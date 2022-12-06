@@ -41,7 +41,7 @@ Read the [design fundamentals](./docs/design-fundamentals.md) documentation to l
 # Design Fundamentals
 Checkout the [Design Fundamentals](./docs/design-fundamentals.md) documentation to learn more about `kube-opex-analytics`, it introduces concepts and implementation decisions.
 
-> **Multi-cluster analytics:** `kube-opex-analytics` tracks the usage for a single instance of Kubernetes. For a centralized multi-Kubernetes usage analytics, you may have to consider our [Krossboard](https://krossboard.app/) product. Watch a [demo video](https://youtu.be/lfkUIREDYDY).
+> **Multi-cluster analytics:** `kube-opex-analytics` tracks the usage for a single Kubernetes cluster. For a centralized multi-Kubernetes usage analytics, use our [Krossboard Kubernetes Operator](https://github.com/2-alchemists/krossboard-kubernetes-operator) product. Watch a [demo video](https://youtu.be/lfkUIREDYDY).
 
 # License
 `kube-opex-analytics` (code and documentation) is licensed under the terms of Apache License 2.0; read the [LICENSE](./LICENSE). Besides, it's bound to third-party libraries each with its specific license terms; read the [NOTICE](./NOTICE) for additional information.
