@@ -5,7 +5,7 @@ This section describes how to set up Grafana dashboards thanks to `kube-opex-ana
   - [Prometheus Exporter](#prometheus-exporter)
   - [Default Grafana Dashboard](#default-grafana-dashboard)
     - [Importation and configuration](#importation-and-configuration)
-    - [Overview of the dashboard](#overview-of-the-dashboard)
+    - [Overview of the default dashboard](#overview-of-the-default-dashboard)
 
 ![](../screenshots/kube-opex-analytics-grafana.png)
 
@@ -32,7 +32,7 @@ scrape_configs:
 > When the paramater `prometheusOperator` is enabled during the deployment (see Helm [values.yaml](./helm/kube-opex-analytics/values.yaml) file), you have nothing to do as the scraping should be automatically configured by the deployed `Prometheus ServiceMonitor`.
 
 ## Default Grafana Dashboard
-There is an official Grafana dashboard which can be downloaded [here](https://grafana.com/dashboards/10282).
+There is an official Grafana dashboard available in the [./third-parties/grafana/](https://github.com/rchakode/kube-opex-analytics/tree/main/third-parties/grafana) folder.
 
 The dashboard looks as below and is designed to work out-of-the box with the [Prometheus exporter](#prometheus-exporter). It would just require a couple of minutes to make it work. 
 
