@@ -38,7 +38,6 @@ Read the [design fundamentals](./docs/design-fundamentals.md) documentation to l
 * [Built-in dashboards and charts](./docs/built-in-dashboards-and-charts.md)
 * [Prometheus Exporter and Grafana Dashboards](./docs/prometheus-exporter-grafana-dashboard.md)
 * [Configuration Settings](./docs/configuration-settings.md)
-* [Centralized multi Kubernetes clusters analytics](./docs/multi-cluster-analytics.md)
 
 # Design Fundamentals
 Checkout the [Design Fundamentals](./docs/design-fundamentals.md) documentation to learn more about `kube-opex-analytics`, it introduces concepts and implementation decisions.
