@@ -97,7 +97,7 @@ class Config:
             self.billing_hourly_rate = float(-1.0)
 
     def __init__(self):
-        self.billing_hourly_rate = 0.0
+        self.process_billing_hourly_rate_config()
         self.load_rbac_auth_token()
         self.process_cost_model_config()
         create_directory_if_not_exists(self.frontend_data_location)
