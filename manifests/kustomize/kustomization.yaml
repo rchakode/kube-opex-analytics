@@ -4,6 +4,7 @@ kind: Kustomization
 namespace: kube-opex-analytics
 
 resources:
+  - resources/kube-opex-analytics-namespace.yaml
   - resources/kube-opex-analytics-rbac.yaml
   - resources/kube-opex-analytics-config.yaml
   - resources/kube-opex-analytics-secrets.yaml
