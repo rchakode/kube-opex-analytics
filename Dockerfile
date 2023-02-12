@@ -3,6 +3,7 @@ FROM ubuntu:18.04
 ARG RUNTIME_USER="koa"
 ARG RUNTIME_USER_UID=4583
 ARG APP_HOME="/koa"
+ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt update && \
     apt install -y python3 librrd-dev libpython3-dev python3-pip && \
