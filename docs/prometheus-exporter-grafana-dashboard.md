@@ -38,7 +38,7 @@ The dashboard looks as below and is designed to work out-of-the box with the [Pr
 
 ### Importation and configuration
 
- * Download the dashboard and import it in Grafana.
+ * [Download](https://grafana.com/grafana/dashboards/10282-kube-opex-analytics/) the dashboard and import it in Grafana.
  * Create a Grafana variable named `KOA_DS_PROMETHEUS` and point to your Prometheus server data source.
  * You're done.
 
