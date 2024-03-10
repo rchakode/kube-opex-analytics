@@ -10,9 +10,14 @@
 `kube-opex-analytics` requires read-only access to the following Kubernetes API endpoints.
 
 * `/api/v1`
-* `/apis/metrics.k8s.io/v1beta1` (provided by [Kubernetes Metrics Server](https://github.com/kubernetes-sigs/metrics-server), which shall be installed on the cluster if it's not yet the case).
+* `/apis/metrics.k8s.io/v1beta1` (provided by [Kubernetes Metrics Server](https://github.com/kubernetes-sigs/metrics-server)).
 
-On a typical deployment inside the Kubernetes cluster, the following Kubernetes API base URL shall be used: `https://kubernetes.default`.
+Command to install Kubernetes Metrics Server
+```shell
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+```
+
+> For a deployment inside the Kubernetes cluster, use `https://kubernetes.default` as API base URL.
 
 ## Deployment manifests
 `kube-opex-analytics` can be installed using one of the following methods:
@@ -28,7 +33,7 @@ First review the default configuration settings in the deployment ConfigMap: `ku
 Then, perform the following command to submit the deployment.
 The target namespace (`kube-opex-analytics`) is assumed to exist. Otherwise, create it first.
 
-```
+```shell
 kubectl -n kube-opex-analytics apply -k ./manifests/kustomize
 ```
 
@@ -38,7 +43,7 @@ First review the default configuration settings in the Helm values file: `manife
 Then, perform the following command to submit the deployment. 
 The target namespace (`kube-opex-analytics`) is assumed to exist. Otherwise, create it first.
 
-```bash
+```shell
 helm upgrade -n kube-opex-analytics --install kube-opex-analytics manifests/helm/
 ```
 
