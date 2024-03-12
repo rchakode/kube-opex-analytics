@@ -318,8 +318,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             for (let nname in data) {
                 if (data.hasOwnProperty(nname)) {
                     let node = data[nname];
-                    let nname4Css = nname.replace('.', '_');
-                    nodeHtmlList += '<li><a href="#" data-toggle="modal" data-target="#' + node.id + '">' + nname4Css + '</a></li>';
+                    nodeHtmlList += '<li><a href="#" data-toggle="modal" data-target="#' + node.id + '">' + nname + '</a></li>';
                     popupContent += createPopupContent(node);
                 }
             }
@@ -464,7 +463,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                     let dynHtml = '';
                     let donuts = new Map();
                     for (let [nname, _] of dataset.data) {
-                        let nname4Css = nname.replace('.', '_');
+                        let nname4Css = nname.replaceAll('.', '_');
                         donuts[nname] = donut();
                         dynHtml += '<div class="col-md-4">';
                         dynHtml += '  <h4>' + nname + '</h4>';
@@ -474,7 +473,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                     }
                     $("#js-nodes-load-container").html(dynHtml);
                     for (let [nname, ndata] of dataset.data) {
-                        let nname4Css = nname.replace('.', '_');
+                        let nname4Css = nname.replaceAll('.', '_');
                         updateDonutChart(ndata['chartData'],
                             donuts[nname],
                             'js-' + nname4Css,
