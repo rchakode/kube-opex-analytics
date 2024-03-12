@@ -318,7 +318,8 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             for (let nname in data) {
                 if (data.hasOwnProperty(nname)) {
                     let node = data[nname];
-                    nodeHtmlList += '<li><a href="#" data-toggle="modal" data-target="#' + node.id + '">' + node.name + '</a></li>';
+                    let nname4Css = nname.replace('.', '_');
+                    nodeHtmlList += '<li><a href="#" data-toggle="modal" data-target="#' + node.id + '">' + nname4Css + '</a></li>';
                     popupContent += createPopupContent(node);
                 }
             }
@@ -463,19 +464,21 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                     let dynHtml = '';
                     let donuts = new Map();
                     for (let [nname, _] of dataset.data) {
+                        let nname4Css = nname.replace('.', '_');
                         donuts[nname] = donut();
                         dynHtml += '<div class="col-md-4">';
                         dynHtml += '  <h4>' + nname + '</h4>';
-                        dynHtml += '  <div class="js-' + nname + '"></div>';
-                        dynHtml += '  <div class="js-' + nname + '-legend" britechart-legend"></div>';
+                        dynHtml += '  <div class="js-' + nname4Css + '"></div>';
+                        dynHtml += '  <div class="js-' + nname4Css + '-legend" britechart-legend"></div>';
                         dynHtml += '</div>';
                     }
                     $("#js-nodes-load-container").html(dynHtml);
                     for (let [nname, ndata] of dataset.data) {
+                        let nname4Css = nname.replace('.', '_');
                         updateDonutChart(ndata['chartData'],
                             donuts[nname],
-                            'js-' + nname,
-                            'js-' + nname + '-legend');
+                            'js-' + nname4Css,
+                            'js-' + nname4Css + '-legend');
                     }
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
@@ -503,7 +506,6 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
 
         function showCumulativeUsageByType() {
             cumulativeUsageType = $("#selected-cumulative-usage-type option:selected").val();
-            console.log(cumulativeUsageType);
             if (cumulativeUsageType === 'monthly-usage') {
                 $("#chart-block-daily").hide();
                 $("#chart-block-monthly").show();
