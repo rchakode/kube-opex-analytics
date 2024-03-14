@@ -463,7 +463,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                     let dynHtml = '';
                     let donuts = new Map();
                     for (let [nname, _] of dataset.data) {
-                        let nname4Css = nname.replaceAll('.', '_');
+                        let nname4Css = 'kn-' + nname.replaceAll('.', '_');
                         donuts[nname] = donut();
                         dynHtml += '<div class="col-md-4">';
                         dynHtml += '  <h4>' + nname + '</h4>';
@@ -473,7 +473,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                     }
                     $("#js-nodes-load-container").html(dynHtml);
                     for (let [nname, ndata] of dataset.data) {
-                        let nname4Css = nname.replaceAll('.', '_');
+                        let nname4Css = 'kn-' + nname.replaceAll('.', '_');
                         updateDonutChart(ndata['chartData'],
                             donuts[nname],
                             'js-' + nname4Css,
