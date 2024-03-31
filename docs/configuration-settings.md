@@ -5,6 +5,7 @@ This section provides an exhaustive list of configuration variables used by `kub
 
 * `KOA_DB_LOCATION` sets the path to use to store internal data. Typically when you consider to set a volume to store those data, you should also take care to set this path to belong to the mounting point.
 * `KOA_K8S_API_ENDPOINT` sets the endpoint to the Kubernetes API.
+* `KOA_K8S_API_VERIFY_SSL` boolean to set whether to check validate Kubernetes certificate (defaut is `true`).
 * `KOA_K8S_CACERT` sets the path to CA file for a self-signed certificate.
 * `KOA_K8S_AUTH_TOKEN` sets a Bearer token to authenticate against the Kubernetes API.
 * `KOA_K8S_AUTH_CLIENT_CERT` sets the path to the X509 client certificate to authenticate against the Kubernetes API.
