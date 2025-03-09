@@ -561,8 +561,8 @@ class K8sUsage:
                         break
 
                 # check managed cluster settings
-                node.region = metadata['labels']['topology.kubernetes.io/region']
-                node.instanceType = metadata['labels']['node.kubernetes.io/instance-type']
+                node.region = metadata['labels'].get('topology.kubernetes.io/region', None)
+                node.instanceType = metadata['labels'].get('node.kubernetes.io/instance-type', None)
                 node.aksCluster = metadata['labels'].get('kubernetes.azure.com/cluster', None)
                 node.gcpCluster = metadata['labels'].get("cloud.google.com/gke-boot-disk", None)
 
