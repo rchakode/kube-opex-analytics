@@ -85,3 +85,6 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+pricing:
+  gcp: false
