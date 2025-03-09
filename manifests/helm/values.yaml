@@ -30,6 +30,7 @@ prometheusOperator:
 
 securityContext:
   enabled: true
+  openshift: false
   uid: 4583
   gid: 4583
 
