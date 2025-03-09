@@ -48,10 +48,10 @@ kubectl -n kube-opex-analytics apply -k ./manifests/kustomize
 ## Installation using Helm
 First review the default configuration settings in the Helm values file: `manifests/helm/values.yaml`. In particular, review the sections related to the persistent data volume, the Prometheus exporter and security context.
 
-Then, perform the following command to submit the deployment. 
-The target namespace (`kube-opex-analytics`) is assumed to exist. Otherwise, create it first.
+Then, perform the following commands to install `kube-opex-analytics` components. The first command creates the installation namespace (`kube-opex-analytics`) if it do not exist. 
 
 ```shell
+kubectl create ns kube-opex-analytics
 helm upgrade -n kube-opex-analytics --install kube-opex-analytics manifests/helm/
 ```
 
