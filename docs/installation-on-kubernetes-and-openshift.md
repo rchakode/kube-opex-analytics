@@ -19,7 +19,7 @@
 To install the Kubernetes Metrics Server, run the following command:
 
 ```shell
-# This step not needed if using OpenShift. 
+# This step is not needed if using OpenShift. 
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 ```
 
