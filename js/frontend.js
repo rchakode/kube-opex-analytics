@@ -468,7 +468,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                         dynHtml += '<div class="col-md-4">';
                         dynHtml += '  <h4>' + nname + '</h4>';
                         dynHtml += '  <div class="js-' + nname4Css + '"></div>';
-                        dynHtml += '  <div class="js-' + nname4Css + '-legend" britechart-legend"></div>';
+                        dynHtml += '  <div class="js-' + nname4Css + '-legend britechart-legend"></div>';
                         dynHtml += '</div>';
                     }
                     $("#js-nodes-load-container").html(dynHtml);
