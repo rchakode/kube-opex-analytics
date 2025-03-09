@@ -32,7 +32,7 @@ Read the [design fundamentals](./docs/design-fundamentals.md) documentation to l
 > **Multi-cluster Integration:** `kube-opex-analytics` tracks the usage for a single Kubernetes cluster. For a centralized multi-Kubernetes usage analytics, use our [Krossboard Kubernetes Operator](https://github.com/2-alchemists/krossboard-kubernetes-operator) product. Watch a [demo video](https://youtu.be/lfkUIREDYDY).
 
 # Getting Started
-* [Installation on Kubernetes](./docs/installation-on-kubernetes.md)
+* [Installation on Kubernetes and OpenShift](./docs/installation-on-kubernetes-and-openshift.md)
 * [Installation on Docker](./docs/installation-on-docker.md)
 * [Built-in dashboards and charts](./docs/built-in-dashboards-and-charts.md)
 * [Prometheus Exporter and Grafana Dashboards](./docs/prometheus-exporter-grafana-dashboard.md)
