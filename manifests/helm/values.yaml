@@ -15,7 +15,7 @@ envs:
 
 dataVolume:
   persist: true
-  capacity: 4Gi
+  capacity: 1Gi
 #  storageClass: default
 
 # overrides envs.INCLUDED_NAMESPACES
