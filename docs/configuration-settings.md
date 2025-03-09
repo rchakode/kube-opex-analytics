@@ -1,4 +1,4 @@
-# Configuration Variables
+#  kube-opex-analytics Configuration Variables
 This section provides an exhaustive list of configuration variables used by `kube-opex-analytics`. 
 
 > These are **startup environment variables** that require to restart the service when they are updated. 

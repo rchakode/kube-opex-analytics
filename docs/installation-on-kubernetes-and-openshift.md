@@ -19,6 +19,7 @@
 To install the Kubernetes Metrics Server, run the following command:
 
 ```shell
+# This step not needed if using OpenShift. 
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 ```
 
@@ -38,9 +39,9 @@ cd kube-opex-analytics
 
 ## Installing with Kustomize (Default Settings)
 
-This approach provides a quick way to deploy kube-opex-analytics using the default settings (see [`kustomize/kube-opex-analytics-config.yaml`](kustomize/kube-opex-analytics-config.yaml)).
+This approach provides a quick way to deploy kube-opex-analytics using the default settings (You can review the Kustomize resources located in the `./manifests/kustomize/resources/` folder).
 
-If these default settings do not meet your requirements, consider using the [Helm-based installation]((#customizing-the-installation-with-helm)) described below, which offers greater customization options.
+If these default settings do not meet your requirements, consider using the [Helm-based installation](#customizing-the-installation-with-helm) described below, which offers greater customization options.
 
 ### Default Settings:
 - A persistent volume with a `1Gi`  storage request.
@@ -68,7 +69,7 @@ kubectl -n kube-opex-analytics get ev
 
 This approach is recommended when deploying on **OpenShift** or when advanced configuration is required.
 
-Customization is done by modifying the Helm values file: [`./manifests/helm/values.yaml`](./manifests/helm/values.yaml).
+Customization is done by modifying the Helm values file at the following location `./manifests/helm/values.yaml`.
 
 ### Common Customizations
 
@@ -85,7 +86,7 @@ Below are some frequently used customizations:
   Adjust `.resources.requests.cpu` and `.resources.requests.memory` as needed.
 
 - **Customize the integration with Kubernetes**
-Set the different environment variables under the value `.envs`. See the [documentation of available configuration variables](./configuration-settings.md)
+Set the different environment variables under the value `.envs` section. See [kube-opex-analytics configuration variables](./configuration-settings.md)
 
 ### Installation Steps
 
