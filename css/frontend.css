@@ -34,6 +34,7 @@ legend {
 }
 
 .britechart-legend {
+    max-height: 400px;
     overflow-y: auto;
   }
 
