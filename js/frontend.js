@@ -124,12 +124,11 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
 
             let containerWidth = legendContainer.node() ? legendContainer.node().getBoundingClientRect().width : false;
 
-            console.log(dataset);
             if (containerWidth) {
                 d3Selection.select('.' + targetDivContainer + ' .britechart-legend').remove();
                 legendChart
                     .width(containerWidth * 0.8)
-                    .height(dataset.data.size * 12)
+                    .height(dataset.length * 12)
                     .marginRatio(2)
                     .markerSize(10)
                     .numberFormat('.2s');
