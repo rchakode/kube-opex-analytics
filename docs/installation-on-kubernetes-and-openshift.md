@@ -76,7 +76,12 @@ Customization is done by modifying the Helm values file at the following locatio
 Below are some frequently used customizations:
 
 - **Use `emptyDir` for local testing**  
-  Set `.dataVolume.persist` to `false`.
+  Set `.dataVolume.persist` to `false` (it's set to `true` by default).
+
+- **Set specific persistent volume**  
+  * Set `.dataVolume.persist` to `true` (default value). 
+  * Set `.dataVolume.capacity` with the persistent volume size (it's set to `1Gi` by default).  
+  * Set `.dataVolume.storageClass` with the storage class name (if not set, the default storage class of the cluster will be used).  
 
 - **Enable deployment on OpenShift**  
   Set `.securityContext.openshift` to `true`. This binds the SCC `nonroot-v2` to the `kube-opex-analytics` service account.  
