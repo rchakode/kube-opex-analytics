@@ -32,3 +32,8 @@ legend {
     margin-top: .5rem;
     color: rgba(0, 0, 0, 0.65);
 }
+
+.britecharts-tooltip {
+    width: 64rem !important;  /* Adjust the value as needed */
+    max-width: 100rem;
+  }
