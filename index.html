@@ -192,12 +192,14 @@
 
     <div class="row chart-container">
         <div class="col-md-9">
-            <legend>Nodes - Occupation by pods
+            <legend>Nodes Usage
                 <span>
                     <select id="node-usage-type" onchange="FrontendApi.updateNodeUsage()">
-                        <option value="cpu" disabled selected style="display:none;">CPU</option>
-                        <option value="cpu">CPU</option>
-                        <option value="memory">Memory</option>
+                        <option value="cpu" disabled selected style="display:none;">CPU / Pods usage</option>
+                        <option value="cpu">CPU / Pods usage</option>
+                        <option value="cpu">CPU / Load heatmap</option>
+                        <option value="memory">Memory / Pods usage</option>
+                        <option value="memory">Memory / Load heatmap</option>
                     </select>
                 </span>
             </legend>

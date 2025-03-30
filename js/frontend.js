@@ -18,7 +18,7 @@
 'use strict';
 
 
-var currentUsageType = '';
+var selectedUsageType = '';
 var usageTrendType = 'usage-trend-type-default';
 var cumulativeUsageType = 'daily';
 
@@ -245,13 +245,13 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
         }
 
 
-        function updateDonutChart(dataset, myDonutChart, targetDivContainer, legendContainer, chartTitle) {
+        function updateDonutChart(dataset, givenDonotChart, targetDivContainer, legendContainer, chartTitle) {
             let legendChart = renderLegend(dataset, legendContainer);
             let donutContainer = d3Selection.select('.' + targetDivContainer);
             let containerWidth = donutContainer.node() ? donutContainer.node().getBoundingClientRect().width : false;
 
             if (containerWidth) {
-                myDonutChart
+                givenDonotChart
                     .isAnimated(true)
                     .highlightSliceById(2)
                     .width(containerWidth)
@@ -266,10 +266,10 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                     });
 
                 if (KoaColorSchema) {
-                    myDonutChart.colorSchema(KoaColorSchema);
+                    givenDonotChart.colorSchema(KoaColorSchema);
                 }
 
-                donutContainer.datum(dataset).call(myDonutChart);
+                donutContainer.datum(dataset).call(givenDonotChart);
             }
         }
 
@@ -282,11 +282,11 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             tooltip += '<tr><td>Container Runtime</td><td>' + node.containerRuntime + '</td></tr>';
             tooltip += '<tr><td>State</td><td>' + node.state + '</td></tr>';
             tooltip += '<tr><td>CPU</td><td>' + node.cpuCapacity + '</td></tr>';
-            tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>' + computeLoad(node.cpuAllocatable, node.cpuCapacity) + '</td></tr>';
-            tooltip += '<tr><td>&nbsp;&nbsp;Usage</td><td>' + computeLoad(node.cpuUsage, node.cpuCapacity) + '</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>' + computeLoadPercent(node.cpuAllocatable, node.cpuCapacity) + '</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Usage</td><td>' + computeLoadPercent(node.cpuUsage, node.cpuCapacity) + '</td></tr>';
             tooltip += '<tr><td>Memory</td><td>' + node.memCapacity + '</td></tr>';
-            tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>' + computeLoad(node.memAllocatable, node.memAllocatable) + '</td></tr>';
-            tooltip += '<tr><td>&nbsp;&nbsp;Usage</td><td>' + computeLoad(node.memUsage, node.memCapacity) + '</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>' + computeLoadPercent(node.memAllocatable, node.memAllocatable) + '</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Usage</td><td>' + computeLoadPercent(node.memUsage, node.memCapacity) + '</td></tr>';
             tooltip += '<tr><td>Pods Running</td><td>' + node.podsRunning.length + '</td></tr>';
 
             tooltip += '</tbody></table>';
@@ -294,7 +294,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
         }
 
 
-        function createPopupContent(nodeInfo) {
+        function computeNodePopupHtml(nodeInfo) {
             return ('<div class="modal fade" id="' + nodeInfo.id + '" tabindex="-1" role="dialog" aria-labelledby="' + nodeInfo.name + '" aria-hidden="true">'
                 + '<div class="modal-dialog">'
                 + '<div class="modal-content">'
@@ -313,22 +313,23 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 + '</div>');
         }
 
-
         function buildNodesDataSet(data, usageType) {
             let dataset = {"data": new Map()};
 
             let nodeHtmlList = '';
-            let popupContent = '';
+            let nodePopupHtml = '';
             for (let nname in data) {
                 if (data.hasOwnProperty(nname)) {
                     let node = data[nname];
                     nodeHtmlList += '<li><a href="#" data-toggle="modal" data-target="#' + node.id + '">' + nname + '</a></li>';
-                    popupContent += createPopupContent(node);
+                    nodePopupHtml += computeNodePopupHtml(node);
                 }
             }
             $("#host-list-container").html('<ul>' + nodeHtmlList + "</ul>");
-            $("#popup-container").html(popupContent);
+            $("#popup-container").html(nodePopupHtml);
 
+            let $errorMessage = $("#error-message");
+            let $errorContainer = $("#error-message-container");
             for (let nname in data) {
                 if (!data.hasOwnProperty(nname)) {
                     continue;
@@ -349,21 +350,21 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                         resAllocatable = 'cpuAllocatable';
                         break;
                     default:
-                        $("#error-message").append('<li>unknown load type: ' + encodeURIComponent(usageType) + '</li>');
-                        $("#error-message-container").show();
+                        $errorMessage.append('<li>unknown load type: ' + encodeURIComponent(usageType) + '</li>');
+                        $errorContainer.show();
                         return;
                 }
 
                 let node = data[nname];
                 if (typeof node[resUsage] === "undefined" || node[resUsage] === 0) {
-                    $("#error-message").append('<li>No ' + resUsage + ' metric on node ' + encodeURIComponent(node.name) + '</li>');
-                    $("#error-message-container").show();
+                    $errorMessage.append('<li>No ' + resUsage + ' metric on node ' + encodeURIComponent(node.name) + '</li>');
+                    $errorContainer.show();
                     continue;
                 }
 
                 if (node[resUsage] === 0) {
-                    $("#error-message").append('<li>Node ' + node.name + ' has ' + encodeURIComponent(resUsage) + ' equals to zero' + '</li>');
-                    $("#error-message-container").show();
+                    $errorMessage.append('<li>Node ' + node.name + ' has ' + encodeURIComponent(resUsage) + ' equals to zero' + '</li>');
+                    $errorContainer.show();
                     continue;
                 }
 
@@ -383,22 +384,22 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 let loadColors = [];
                 for (let pid = 0; pid < node.podsRunning.length; pid++) {
                     let pod = node.podsRunning[pid];
-                    let podLoad = computeLoad(pod[resUsage], node[resCapacity]);
-                    let podLoadRel = computeLoad(pod[resUsage], node[resUsage]);
-                    loadColors.push(computeLoadHeatMapColor(podLoadRel));
-                    sumLoad += podLoad;
+                    let podUsageLoadOverNodeCapacity = computeLoadPercent(pod[resUsage], node[resCapacity]);
+                    let podUsageLoadOverNodeUsage = computeLoadPercent(pod[resUsage], node[resUsage]);
+                    loadColors.push(computeLoadPercentHeatColor(podUsageLoadOverNodeUsage));
+                    sumLoad += podUsageLoadOverNodeCapacity;
                     if (pod[resUsage] > 0.0) {
                         chartData.push({
                             "name": truncateText(pod.name, 25, '...'),
                             "id": pid,
                             "quantity": pod[resUsage],
-                            "percentage": podLoad
+                            "percentage": podUsageLoadOverNodeCapacity
                         });
                     }
                 }
 
                 let nonAllocatableCapacity = node[resCapacity] - node[resAllocatable]
-                let nonAllocatableRatio = computeLoad(nonAllocatableCapacity, node[resCapacity])
+                let nonAllocatableRatio = computeLoadPercent(nonAllocatableCapacity, node[resCapacity])
                 sumLoad += nonAllocatableRatio;
 
                 chartData.push({
@@ -408,25 +409,27 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                     "percentage": nonAllocatableRatio
                 });
 
+                let unusedCapacity = node[resCapacity] * (1 - sumLoad / 100) ;
                 chartData.push({
                     "name": 'unused',
                     "id": 9999,
-                    "quantity": node[resCapacity] * (1 - sumLoad / 100),
+                    "quantity": unusedCapacity,
                     "percentage": (100.0 - sumLoad)
                 });
-                loadColors.push(computeLoadHeatMapColor(0));
+
+                loadColors.push(computeLoadPercentHeatColor(0));
                 dataset.data.set(nname, {'chartData': chartData, 'colorSchema': loadColors})
             }
             return dataset;
         }
 
 
-        function computeLoad(used, capacity) {
+        function computeLoadPercent(used, capacity) {
             return Math.ceil(1e4 * used / capacity) / 100
         }
 
 
-        function computeLoadHeatMapColor(load) {
+        function computeLoadPercentHeatColor(load) {
             const NUM_COLORS = 4;
             const HeatMapColors = Object.freeze({
                 '0': [0, 0, 255],
@@ -456,35 +459,53 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             return 'rgb(' + r + ',' + g + ',' + b + ')';
         }
 
+        function getNodeCssId(nodeName) {
+            return 'kn-' + nname.replaceAll('.', '_');
+        }
+
+        function getNodeCssClass(nodeCssId) {
+            return "js-" + nodeCssId ;
+        }
+
+        function getNodeLegendCssClass(nodeCssId) {
+            return "js-" + nodeCssId + "-legend" ;
+        }
 
         function updateNodeUsage() {
-            currentUsageType = $("#node-usage-type option:selected").val();
+            selectedUsageType = $("#node-usage-type option:selected").val();
             $.ajax({
                 type: "GET",
                 url: `${FrontendApi.DATA_DIR}/nodes.json`,
                 dataType: 'json',
+
                 success: function (data) {
-                    let dataset = buildNodesDataSet(data, currentUsageType, 'donut');
+                    let dataset = buildNodesDataSet(data, selectedUsageType, 'donut');
                     let dynHtml = '';
                     let donuts = new Map();
+
                     for (let [nname, _] of dataset.data) {
-                        let nname4Css = 'kn-' + nname.replaceAll('.', '_');
+                        let nodeCssId = getNodeCssId(nname);
                         donuts[nname] = donut();
                         dynHtml += '<div class="col-md-4">';
                         dynHtml += '  <h4>' + nname + '</h4>';
-                        dynHtml += '  <div class="js-' + nname4Css + '"></div>';
-                        dynHtml += '  <div class="js-' + nname4Css + '-legend britechart-legend"></div>';
+                        dynHtml += '  <div class="' + getNodeCssClass(nodeCssId) + '"></div>';
+                        dynHtml += '  <div class="' + getNodeLegendCssClass(nodeCssId) + ' britechart-legend"></div>';
                         dynHtml += '</div>';
                     }
+
                     $("#js-nodes-load-container").html(dynHtml);
+
                     for (let [nname, ndata] of dataset.data) {
-                        let nname4Css = 'kn-' + nname.replaceAll('.', '_');
-                        updateDonutChart(ndata['chartData'],
+                        let nodeCssId = getNodeCssId(nname);
+                        updateDonutChart(
+                            ndata['chartData'],
                             donuts[nname],
-                            'js-' + nname4Css,
-                            'js-' + nname4Css + '-legend');
+                            getNodeCssClass(nodeCssId),
+                            getNodeLegendCssClass(nodeCssId)
+                        );
                     }
                 },
+
                 error: function (xhr, ajaxOptions, thrownError) {
                     $("#error-message").append('<li>download node data' + ' (' + xhr.status + ')</li>');
                     $("#error-message-container").show();
@@ -719,6 +740,52 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             });
         }
 
+
+        function updateNodeHeatMap(dataset){
+            let $nodesContainer = $("#js-nodes-load-container" );
+            $nodesContainer.empty();
+            let nodeNbRow = Math.ceil( Math.sqrt(nodeInfo.nbCpu) );
+            let nodeNbCol = Math.ceil(nodeInfo.nbCpu / nodeNbRow);
+            let gridCelNbRow = Math.max(gridCelNbRow, nodeNbRow)
+            let gridCelNbCol = Math.max(gridCelNbCol, nodeNbCol)
+
+            // now draw map
+            let DRAWING_AREA = {width: 750, height: "100%"};
+            let BASE_SHAPE_INFO = {unit: 10, margin: 2, node_margin: 4};
+            let raphaelPaper = new Raphael("load-map-container", DRAWING_AREA.width, DRAWING_AREA.height);
+
+            let nodeShapeSize = {
+                width: gridCelNbCol * BASE_SHAPE_INFO.unit + (gridCelNbCol - 1) * BASE_SHAPE_INFO.margin,
+                height: gridCelNbRow * BASE_SHAPE_INFO.unit + (gridCelNbRow - 1) * BASE_SHAPE_INFO.margin
+            };
+
+            // iterate and render heat map of each node
+            let curPos = {x: BASE_SHAPE_INFO.node_margin, y : BASE_SHAPE_INFO.node_margin};
+            $.each(dataset.data, function(_, nodeInfo){
+                // check if we can draw the node without overflowing the canvas
+                if (curPos.x + nodeShapeSize.width > DRAWING_AREA.width) {
+                    curPos.y += nodeShapeSize.height + 2 * BASE_SHAPE_INFO.node_margin;
+                    curPos.x = BASE_SHAPE_INFO.node_margin;
+                }
+
+                // draw the node core per core
+                nodeInfo.shape = raphaelPaper.set();
+                for (var cpuIndex=0; cpuIndex < nodeInfo.nbCpu; ++cpuIndex) {
+                    var curShape = raphaelPaper.rect(curPos.x + Math.floor(cpuIndex / gridCelNbCol) * (BASE_SHAPE_INFO.unit + BASE_SHAPE_INFO.margin),
+                        curPos.y + (cpuIndex % gridCelNbCol) * (BASE_SHAPE_INFO.unit + BASE_SHAPE_INFO.margin),
+                        BASE_SHAPE_INFO.unit,
+                        BASE_SHAPE_INFO.unit);
+                    curShape.attr({fill: nodeInfo.color, 'stroke-width': 0});
+                    curShape.attr({title: nodeInfo.tooltip});
+                    nodeInfo.shape.push(curShape);
+                }
+                curPos.x += nodeShapeSize.width + 2 * BASE_SHAPE_INFO.node_margin;            // TODO
+            });
+
+            // set dynamic HTML content
+            $nodesContainer.height(curPos.y + nodeShapeSize.height + BASE_SHAPE_INFO.node_margin);
+            // $("#popup-container").html(popupContent);
+        }
 
         function updateAllCharts() {
             $("#error-message-container").hide();
