@@ -83,7 +83,8 @@ requirejs.config({
         lineChart: './britecharts/umd/line.min',
         legend: './britecharts/umd/legend.min',
         colors: './britecharts/umd/colors.min',
-        tooltip: './britecharts/umd/tooltip.min'
+        tooltip: './britecharts/umd/tooltip.min',
+        raphael: './lib/raphael.min'
     },
     shim: {
         "bootstrap": ["jquery"],
@@ -141,6 +142,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             }
         }
 
+
         function updateLineOrAreaChart(dataset, mychart, htmlContainerClass, yLabel, chartTitle) {
             let htmlContainer = d3Selection.select('.' + htmlContainerClass);
             let htmlContainerWidth = htmlContainer.node() ? htmlContainer.node().getBoundingClientRect().width : false;
@@ -182,6 +184,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             let tooltipContainer = d3Selection.select('.' + htmlContainerClass + ' .metadata-group .vertical-marker-container');
             tooltipContainer.datum([]).call(chartTooltip);
         }
+
 
         function updateStackedBarChart(dataset, mychart, htmlContainerClass, yLabel, chartTitle) {
             let chartTooltip = tooltip();
@@ -290,6 +293,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             return tooltip;
         }
 
+
         function createPopupContent(nodeInfo) {
             return ('<div class="modal fade" id="' + nodeInfo.id + '" tabindex="-1" role="dialog" aria-labelledby="' + nodeInfo.name + '" aria-hidden="true">'
                 + '<div class="modal-dialog">'
@@ -345,20 +349,20 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                         resAllocatable = 'cpuAllocatable';
                         break;
                     default:
-                        $("#error-message").append('<li>unknown load type: ' + escape(usageType) + '</li>');
+                        $("#error-message").append('<li>unknown load type: ' + encodeURIComponent(usageType) + '</li>');
                         $("#error-message-container").show();
                         return;
                 }
 
                 let node = data[nname];
-                if (typeof node[resUsage] === "undefined" || node[resUsage] == 0) {
-                    $("#error-message").append('<li>No ' + resUsage + ' metric on node ' + escape(node.name) + '</li>');
+                if (typeof node[resUsage] === "undefined" || node[resUsage] === 0) {
+                    $("#error-message").append('<li>No ' + resUsage + ' metric on node ' + encodeURIComponent(node.name) + '</li>');
                     $("#error-message-container").show();
                     continue;
                 }
 
-                if (node[resUsage] == 0) {
-                    $("#error-message").append('<li>Node ' + node.name + ' has ' + escape(resUsage) + ' equals to zero' + '</li>');
+                if (node[resUsage] === 0) {
+                    $("#error-message").append('<li>Node ' + node.name + ' has ' + encodeURIComponent(resUsage) + ' equals to zero' + '</li>');
                     $("#error-message-container").show();
                     continue;
                 }
@@ -420,6 +424,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
         function computeLoad(used, capacity) {
             return Math.ceil(1e4 * used / capacity) / 100
         }
+
 
         function computeLoadHeatMapColor(load) {
             const NUM_COLORS = 4;
@@ -503,6 +508,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             }
         }
 
+
         function showCumulativeUsageByType() {
             cumulativeUsageType = $("#selected-cumulative-usage-type option:selected").val();
             if (cumulativeUsageType === 'monthly-usage') {
@@ -528,11 +534,13 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             }
         }
 
+
         function exportJSON(data) {
             return new Blob(
                 [JSON.stringify(data)],
                 {type: 'application/json'})
         }
+
 
         function exportCSV(data) {
             data = JSON.parse(JSON.stringify(data));
@@ -556,12 +564,14 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             );
         }
 
+
         function exportImage(chartElt, filename) {
             return new Blob(
                 [chartElt.exportChart(filename)],
                 {type: 'image/png'}
             );
         }
+
 
         function installExporter(targetDivId, filename, exporterFunc) {
             $(`#${targetDivId}`)
@@ -581,6 +591,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 .removeClass('disabled')
         }
 
+
         function loadBackendConfig() {
             $(".accounting-cost-model").text('');
             $.ajax({
@@ -596,6 +607,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 }
             });
         }
+
 
         function refreshTrendsChartByType(chart, resourceType, trendType) {
             let resourceTypeLowered = resourceType.toLowerCase();
@@ -672,6 +684,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             });
         }
 
+
         function refreshCumulativeChartByType(chart, resourceType, usageType, periodType) {
             let resourceTypeLowered = resourceType.toLowerCase();
             let DATASET_FILES = Object.freeze({
@@ -706,6 +719,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             });
         }
 
+
         function updateAllCharts() {
             $("#error-message-container").hide();
             $("#error-message").html('')
@@ -715,9 +729,11 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             updateNodeUsage();
         }
 
+
         function initDateFilters() {
             const formatDatetimeFilter = (dt) => {
-                let dformat  = [dt.getFullYear(),
+                let dformat;
+                dformat = [dt.getFullYear(),
                         (dt.getMonth() + 1).toString().padStart(2, 0),
                         dt.getDate().toString().padStart(2, 0)].join('-') + 'T' +
                     [dt.getHours().toString().padStart(2, 0),
@@ -745,6 +761,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             dateFilter2.onchange = function () { showUsageTrendByType(); };
         }
 
+
         (function ($) {
             $(document).ready(function () {
                 $.ajaxSetup(
@@ -768,6 +785,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 }, 300000); // update every 5 mins
             });
         })(jQuery);
+
 
         // export API
         FrontendApi.refreshUsageCharts = updateAllCharts;
