@@ -3,7 +3,7 @@ set -u
 set -e
 
 if [ $# -ne 2 ]; then
-    echo -e "usage: \n\t`basename $0` <cluster_name> <docker_image>\n"
+    echo -e "usage: \n\t`basename $0` <cluster_name> <image>\n"
     exit 1
 fi
 
@@ -17,7 +17,7 @@ else
 fi
 
 if [ "$KOA_K8S_AUTH_TOKEN" != "" ]; then
-    fuser -k 5483/tcp || true
+    # fuser -k 5483/tcp || true
     
     export KOA_K8S_API_ENDPOINT
     export KOA_K8S_AUTH_TOKEN
@@ -27,7 +27,7 @@ if [ "$KOA_K8S_AUTH_TOKEN" != "" ]; then
     export KOA_BILLING_CURRENCY_SYMBOL='$'
     export KOA_COST_MODEL='CHARGE_BACK'
 
-    docker run -d \
+    podman run -d \
     --net="host" \
     --name 'kube-opex-analytics'  \
     -v /var/lib/kube-opex-analytics:/data \
