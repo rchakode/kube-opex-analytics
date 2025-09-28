@@ -1,6 +1,6 @@
 flask
 flask_cors
 requests
-rrdtool
+#rrdtool
 prometheus_client
 waitress

@@ -854,6 +854,161 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
         })(jQuery);
 
 
+        // Node Heatmap Functionality
+        function getUsageColor(percentage) {
+            if (percentage <= 50) return '#2ecc71';      // Green - Low usage
+            if (percentage <= 80) return '#f39c12';      // Orange - Medium usage
+            return '#e74c3c';                            // Red - High usage
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function createNodeHeatmap(nodes, resourceType) {
+            const container = d3Selection.select('#node-heatmap-chart');
+            container.selectAll('*').remove(); // Clear previous heatmap
+
+            if (!nodes || nodes.length === 0) {
+                container.append('div')
+                    .attr('class', 'no-data-message')
+                    .html('<p>No node data available for heatmap visualization.</p>');
+                return;
+            }
+
+            const margin = {top: 20, right: 20, bottom: 60, left: 20};
+            const containerWidth = container.node().getBoundingClientRect().width;
+            const width = containerWidth - margin.left - margin.right;
+            const height = 400 - margin.top - margin.bottom;
+
+            const svg = container.append('svg')
+                .attr('width', containerWidth)
+                .attr('height', 400);
+
+            const g = svg.append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            // Calculate grid layout
+            const nodesPerRow = Math.ceil(Math.sqrt(nodes.length));
+            const rectPadding = 10;
+            const maxRectSize = Math.min((width - (nodesPerRow * rectPadding)) / nodesPerRow,
+                                        (height - (Math.ceil(nodes.length / nodesPerRow) * rectPadding)) / Math.ceil(nodes.length / nodesPerRow));
+
+            // Create tooltip
+            const tooltip = d3Selection.select('body').selectAll('.heatmap-tooltip')
+                .data([0]);
+
+            const tooltipEnter = tooltip.enter().append('div')
+                .attr('class', 'heatmap-tooltip')
+                .style('opacity', 0);
+
+            const tooltipDiv = tooltip.merge(tooltipEnter);
+
+            // Create nodes
+            const nodeGroups = g.selectAll('.node-group')
+                .data(nodes)
+                .enter().append('g')
+                .attr('class', 'node-group')
+                .attr('transform', (d, i) => {
+                    const row = Math.floor(i / nodesPerRow);
+                    const col = i % nodesPerRow;
+                    const x = col * (maxRectSize + rectPadding);
+                    const y = row * (maxRectSize + rectPadding);
+                    return `translate(${x},${y})`;
+                });
+
+            // Add rectangles
+            nodeGroups.append('rect')
+                .attr('class', 'node-rect')
+                .attr('width', d => Math.min(d.rectSize || maxRectSize, maxRectSize))
+                .attr('height', d => Math.min(d.rectSize || maxRectSize, maxRectSize))
+                .attr('fill', d => {
+                    const percentage = resourceType === 'cpu' ? d.cpuUsagePercent : d.memoryUsagePercent;
+                    return percentage > 0 ? getUsageColor(percentage) : '#95a5a6';
+                })
+                .on('mouseover', function(event, d) {
+                    const percentage = resourceType === 'cpu' ? d.cpuUsagePercent : d.memoryUsagePercent;
+                    const capacity = resourceType === 'cpu' ? d.cpuCapacity + ' cores' : formatBytes(d.memoryCapacity);
+                    const usage = resourceType === 'cpu' ? d.cpuUsage.toFixed(2) + ' cores' : formatBytes(d.memoryUsage);
+
+                    tooltipDiv.transition()
+                        .duration(200)
+                        .style('opacity', .9);
+
+                    tooltipDiv.html(`
+                        <strong>${d.name}</strong><br/>
+                        ${resourceType.toUpperCase()} Usage: ${percentage.toFixed(1)}%<br/>
+                        Used: ${usage}<br/>
+                        Capacity: ${capacity}<br/>
+                        State: ${d.state}<br/>
+                        Pods: ${d.podsRunning}
+                    `)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 28) + 'px');
+                })
+                .on('mouseout', function(d) {
+                    tooltipDiv.transition()
+                        .duration(500)
+                        .style('opacity', 0);
+                });
+
+            // Add node labels
+            nodeGroups.append('text')
+                .attr('class', 'node-label')
+                .attr('x', d => (Math.min(d.rectSize || maxRectSize, maxRectSize)) / 2)
+                .attr('y', d => (Math.min(d.rectSize || maxRectSize, maxRectSize)) / 2 - 5)
+                .text(d => d.name.length > 8 ? d.name.substring(0, 6) + '...' : d.name);
+
+            // Add usage percentage text
+            nodeGroups.append('text')
+                .attr('class', 'node-usage-text')
+                .attr('x', d => (Math.min(d.rectSize || maxRectSize, maxRectSize)) / 2)
+                .attr('y', d => (Math.min(d.rectSize || maxRectSize, maxRectSize)) / 2 + 8)
+                .text(d => {
+                    const percentage = resourceType === 'cpu' ? d.cpuUsagePercent : d.memoryUsagePercent;
+                    return percentage > 0 ? percentage.toFixed(1) + '%' : 'N/A';
+                });
+        }
+
+        function updateNodeUsage() {
+            const usageType = document.getElementById('node-usage-type').value;
+            const heatmapContainer = document.getElementById('js-nodes-heatmap-container');
+            const podsContainer = document.getElementById('js-nodes-pods-container');
+
+            if (usageType.includes('heatmap')) {
+                heatmapContainer.style.display = 'block';
+                podsContainer.style.display = 'none';
+
+                const resourceType = usageType.includes('cpu') ? 'cpu' : 'memory';
+
+                // Fetch heatmap data
+                fetch('/api/nodes/heatmap')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            console.error('Error fetching heatmap data:', data.error);
+                            document.getElementById('node-heatmap-chart').innerHTML =
+                                '<p class="error-message">Error loading heatmap data: ' + data.error + '</p>';
+                        } else {
+                            createNodeHeatmap(data.nodes, resourceType);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching heatmap data:', error);
+                        document.getElementById('node-heatmap-chart').innerHTML =
+                            '<p class="error-message">Error loading heatmap data</p>';
+                    });
+            } else {
+                heatmapContainer.style.display = 'none';
+                podsContainer.style.display = 'block';
+                // Handle existing pods usage display
+            }
+        }
+
         // export API
         FrontendApi.refreshUsageCharts = updateAllCharts;
         FrontendApi.updateNodeUsage = updateNodeUsage;
