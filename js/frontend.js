@@ -202,29 +202,6 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             };
         }
 
-/*        function renderLegend(dataset, targetDivContainer) {
-            let legendChart = legend();
-            let legendContainer = d3Selection.select('.' + targetDivContainer);
-
-            let containerWidth = legendContainer.node() ? legendContainer.node().getBoundingClientRect().width : false;
-
-            if (containerWidth) {
-                d3Selection.select('.' + targetDivContainer + ' .britechart-legend').remove();
-                legendChart
-                    .width(containerWidth * 0.8)
-                    .height(400)
-                    .marginRatio(2)
-                    .markerSize(10)
-                    .numberFormat('.2s');
-
-                if (KoaColorSchema) {
-                    legendChart.colorSchema(KoaColorSchema);
-                }
-                legendContainer.datum(dataset).call(legendChart);
-                return legendChart;
-            }
-        }    */
-
 
         function updateLineOrAreaChart(dataset, mychart, htmlContainerClass, yLabel, chartTitle) {
             let htmlContainer = d3Selection.select('.' + htmlContainerClass);
