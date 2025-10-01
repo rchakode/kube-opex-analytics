@@ -83,8 +83,7 @@ requirejs.config({
         lineChart: './britecharts/umd/line.min',
         legend: './britecharts/umd/legend.min',
         colors: './britecharts/umd/colors.min',
-        tooltip: './britecharts/umd/tooltip.min',
-        raphael: './lib/raphael.min'
+        tooltip: './britecharts/umd/tooltip.min'
     },
     shim: {
         "bootstrap": ["jquery"],
@@ -120,6 +119,90 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
 
 
         function renderLegend(dataset, targetDivContainer) {
+            const legendContainer = d3Selection.select('.' + targetDivContainer);
+            const containerWidth = legendContainer.node() ? legendContainer.node().getBoundingClientRect().width : false;
+
+            if (!containerWidth) return null;
+
+            // Clear previous legend
+            legendContainer.selectAll('*').remove();
+
+            // Enable scrollbar when content exceeds height
+            legendContainer.style('max-height', '400px')
+                .style('overflow-y', 'auto')
+                .style('overflow-x', 'hidden');
+
+            // Create SVG for legend (single column layout)
+            const legendWidth = containerWidth * 0.8;
+            const markerSize = 10;
+            const itemHeight = 25;
+
+            // Calculate height based on number of items (single column)
+            const legendHeight = (dataset.length * itemHeight) + 20; // 20px padding
+
+            const svg = legendContainer.append('svg')
+                .attr('width', legendWidth)
+                .attr('height', legendHeight)
+                .attr('class', 'britechart-legend');
+
+            const g = svg.append('g')
+                .attr('transform', 'translate(10, 10)');
+
+            // Sort dataset by percentage in descending order
+            const sortedDataset = dataset.slice().sort((a, b) => {
+                const percentA = a.percentage !== undefined ? a.percentage : 0;
+                const percentB = b.percentage !== undefined ? b.percentage : 0;
+                return percentB - percentA;
+            });
+
+            // Create legend items (two columns)
+            const legendItems = g.selectAll('.legend-item')
+                .data(sortedDataset)
+                .enter().append('g')
+                .attr('class', 'legend-item')
+                .attr('transform', (d, i) => `translate(0, ${i * itemHeight})`)
+                .style('cursor', 'pointer');
+
+            // Add colored markers
+            legendItems.append('rect')
+                .attr('width', markerSize)
+                .attr('height', markerSize)
+                .attr('fill', (d, i) => KoaColorSchema[i % KoaColorSchema.length]);
+
+            // Add text labels (name)
+            legendItems.append('text')
+                .attr('x', markerSize + 5)
+                .attr('y', markerSize / 2)
+                .attr('dy', '0.35em')
+                .style('font-size', '12px')
+                .text(d => d.name);
+
+            // Add resource usage column (quantity and percentage) - right aligned
+            legendItems.append('text')
+                .attr('x', legendWidth - 20)
+                .attr('y', markerSize / 2)
+                .attr('dy', '0.35em')
+                .style('font-size', '12px')
+                .style('text-anchor', 'end')
+                .text(d => {
+                    if (d.quantity !== undefined && d.percentage !== undefined) {
+                        return `${d.quantity.toFixed(2)} (${d.percentage.toFixed(1)}%)`;
+                    }
+                    return '';
+                });
+
+            // Return legend API for compatibility
+            return {
+                highlight: function(id) {
+                    legendItems.style('opacity', (d, i) => d.id === id ? 1 : 0.3);
+                },
+                clearHighlight: function() {
+                    legendItems.style('opacity', 1);
+                }
+            };
+        }
+
+/*        function renderLegend(dataset, targetDivContainer) {
             let legendChart = legend();
             let legendContainer = d3Selection.select('.' + targetDivContainer);
 
@@ -140,7 +223,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 legendContainer.datum(dataset).call(legendChart);
                 return legendChart;
             }
-        }
+        }    */
 
 
         function updateLineOrAreaChart(dataset, mychart, htmlContainerClass, yLabel, chartTitle) {
@@ -245,13 +328,13 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
         }
 
 
-        function updateDonutChart(dataset, givenDonotChart, targetDivContainer, legendContainer, chartTitle) {
+        function updateDonutChart(dataset, selectedChart, targetDivContainer, legendContainer, chartTitle) {
             let legendChart = renderLegend(dataset, legendContainer);
             let donutContainer = d3Selection.select('.' + targetDivContainer);
             let containerWidth = donutContainer.node() ? donutContainer.node().getBoundingClientRect().width : false;
 
             if (containerWidth) {
-                givenDonotChart
+                selectedChart
                     .isAnimated(true)
                     .highlightSliceById(2)
                     .width(containerWidth)
@@ -266,10 +349,10 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                     });
 
                 if (KoaColorSchema) {
-                    givenDonotChart.colorSchema(KoaColorSchema);
+                    selectedChart.colorSchema(KoaColorSchema);
                 }
 
-                donutContainer.datum(dataset).call(givenDonotChart);
+                donutContainer.datum(dataset).call(selectedChart);
             }
         }
 
@@ -460,7 +543,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
         }
 
         function getNodeCssId(nodeName) {
-            return 'kn-' + nname.replaceAll('.', '_');
+            return 'kn-' + nodeName.replaceAll('.', '_');
         }
 
         function getNodeCssClass(nodeCssId) {
@@ -470,49 +553,6 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
         function getNodeLegendCssClass(nodeCssId) {
             return "js-" + nodeCssId + "-legend" ;
         }
-
-        function updateNodeUsage() {
-            selectedUsageType = $("#node-usage-type option:selected").val();
-            $.ajax({
-                type: "GET",
-                url: `${FrontendApi.DATA_DIR}/nodes.json`,
-                dataType: 'json',
-
-                success: function (data) {
-                    let dataset = buildNodesDataSet(data, selectedUsageType, 'donut');
-                    let dynHtml = '';
-                    let donuts = new Map();
-
-                    for (let [nname, _] of dataset.data) {
-                        let nodeCssId = getNodeCssId(nname);
-                        donuts[nname] = donut();
-                        dynHtml += '<div class="col-md-4">';
-                        dynHtml += '  <h4>' + nname + '</h4>';
-                        dynHtml += '  <div class="' + getNodeCssClass(nodeCssId) + '"></div>';
-                        dynHtml += '  <div class="' + getNodeLegendCssClass(nodeCssId) + ' britechart-legend"></div>';
-                        dynHtml += '</div>';
-                    }
-
-                    $("#js-nodes-load-container").html(dynHtml);
-
-                    for (let [nname, ndata] of dataset.data) {
-                        let nodeCssId = getNodeCssId(nname);
-                        updateDonutChart(
-                            ndata['chartData'],
-                            donuts[nname],
-                            getNodeCssClass(nodeCssId),
-                            getNodeLegendCssClass(nodeCssId)
-                        );
-                    }
-                },
-
-                error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append('<li>download node data' + ' (' + xhr.status + ')</li>');
-                    $("#error-message-container").show();
-                }
-            });
-        }
-
 
         function showUsageTrendByType() {
             usageTrendType = $("#selected-usage-trend-type option:selected").val();
@@ -740,53 +780,6 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             });
         }
 
-
-        function updateNodeHeatMap(dataset){
-            let $nodesContainer = $("#js-nodes-load-container" );
-            $nodesContainer.empty();
-            let nodeNbRow = Math.ceil( Math.sqrt(nodeInfo.nbCpu) );
-            let nodeNbCol = Math.ceil(nodeInfo.nbCpu / nodeNbRow);
-            let gridCelNbRow = Math.max(gridCelNbRow, nodeNbRow)
-            let gridCelNbCol = Math.max(gridCelNbCol, nodeNbCol)
-
-            // now draw map
-            let DRAWING_AREA = {width: 750, height: "100%"};
-            let BASE_SHAPE_INFO = {unit: 10, margin: 2, node_margin: 4};
-            let raphaelPaper = new Raphael("load-map-container", DRAWING_AREA.width, DRAWING_AREA.height);
-
-            let nodeShapeSize = {
-                width: gridCelNbCol * BASE_SHAPE_INFO.unit + (gridCelNbCol - 1) * BASE_SHAPE_INFO.margin,
-                height: gridCelNbRow * BASE_SHAPE_INFO.unit + (gridCelNbRow - 1) * BASE_SHAPE_INFO.margin
-            };
-
-            // iterate and render heat map of each node
-            let curPos = {x: BASE_SHAPE_INFO.node_margin, y : BASE_SHAPE_INFO.node_margin};
-            $.each(dataset.data, function(_, nodeInfo){
-                // check if we can draw the node without overflowing the canvas
-                if (curPos.x + nodeShapeSize.width > DRAWING_AREA.width) {
-                    curPos.y += nodeShapeSize.height + 2 * BASE_SHAPE_INFO.node_margin;
-                    curPos.x = BASE_SHAPE_INFO.node_margin;
-                }
-
-                // draw the node core per core
-                nodeInfo.shape = raphaelPaper.set();
-                for (var cpuIndex=0; cpuIndex < nodeInfo.nbCpu; ++cpuIndex) {
-                    var curShape = raphaelPaper.rect(curPos.x + Math.floor(cpuIndex / gridCelNbCol) * (BASE_SHAPE_INFO.unit + BASE_SHAPE_INFO.margin),
-                        curPos.y + (cpuIndex % gridCelNbCol) * (BASE_SHAPE_INFO.unit + BASE_SHAPE_INFO.margin),
-                        BASE_SHAPE_INFO.unit,
-                        BASE_SHAPE_INFO.unit);
-                    curShape.attr({fill: nodeInfo.color, 'stroke-width': 0});
-                    curShape.attr({title: nodeInfo.tooltip});
-                    nodeInfo.shape.push(curShape);
-                }
-                curPos.x += nodeShapeSize.width + 2 * BASE_SHAPE_INFO.node_margin;            // TODO
-            });
-
-            // set dynamic HTML content
-            $nodesContainer.height(curPos.y + nodeShapeSize.height + BASE_SHAPE_INFO.node_margin);
-            // $("#popup-container").html(popupContent);
-        }
-
         function updateAllCharts() {
             $("#error-message-container").hide();
             $("#error-message").html('')
@@ -870,7 +863,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
         }
 
         function createNodeHeatmap(nodes, resourceType) {
-            const container = d3Selection.select('#node-heatmap-chart');
+            const container = d3Selection.select('#js-node-heatmap-chart');
             container.selectAll('*').remove(); // Clear previous heatmap
 
             if (!nodes || nodes.length === 0) {
@@ -880,6 +873,21 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 return;
             }
 
+            // Calculate percentages if not provided or zero
+            nodes.forEach(node => {
+                if (!node.cpuUsagePercent || node.cpuUsagePercent === 0) {
+                    node.cpuUsagePercent = node.cpuCapacity > 0
+                        ? (node.cpuUsage / node.cpuCapacity) * 100
+                        : 0;
+                }
+                if (!node.memoryUsagePercent || node.memoryUsagePercent === 0) {
+                    node.memoryUsagePercent = node.memoryCapacity > 0
+                        ? (node.memoryUsage / node.memoryCapacity) * 100
+                        : 0;
+                }
+            });
+
+            // Create SVG canvas
             const margin = {top: 20, right: 20, bottom: 60, left: 20};
             const containerWidth = container.node().getBoundingClientRect().width;
             const width = containerWidth - margin.left - margin.right;
@@ -935,25 +943,20 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                     const capacity = resourceType === 'cpu' ? d.cpuCapacity + ' cores' : formatBytes(d.memoryCapacity);
                     const usage = resourceType === 'cpu' ? d.cpuUsage.toFixed(2) + ' cores' : formatBytes(d.memoryUsage);
 
-                    tooltipDiv.transition()
-                        .duration(200)
-                        .style('opacity', .9);
-
-                    tooltipDiv.html(`
-                        <strong>${d.name}</strong><br/>
-                        ${resourceType.toUpperCase()} Usage: ${percentage.toFixed(1)}%<br/>
-                        Used: ${usage}<br/>
-                        Capacity: ${capacity}<br/>
-                        State: ${d.state}<br/>
-                        Pods: ${d.podsRunning}
-                    `)
+                    tooltipDiv.style('opacity', .9)
+                        .html(`
+                            <strong>${d.name}</strong><br/>
+                            ${resourceType.toUpperCase()} Usage: ${percentage.toFixed(1)}%<br/>
+                            Used: ${usage}<br/>
+                            Capacity: ${capacity}<br/>
+                            State: ${d.state}<br/>
+                            Pods: ${d.podsRunning}
+                        `)
                         .style('left', (event.pageX + 10) + 'px')
                         .style('top', (event.pageY - 28) + 'px');
                 })
                 .on('mouseout', function(d) {
-                    tooltipDiv.transition()
-                        .duration(500)
-                        .style('opacity', 0);
+                    tooltipDiv.style('opacity', 0);
                 });
 
             // Add node labels
@@ -975,7 +978,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
         }
 
         function updateNodeUsage() {
-            const usageType = document.getElementById('node-usage-type').value;
+            const usageType = document.getElementById('js-node-usage-type').value;
             const heatmapContainer = document.getElementById('js-nodes-heatmap-container');
             const podsContainer = document.getElementById('js-nodes-pods-container');
 
@@ -987,11 +990,16 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
 
                 // Fetch heatmap data
                 fetch('/api/nodes/heatmap')
-                    .then(response => response.json())
+                    .then(response => {
+                        if (! response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.error) {
                             console.error('Error fetching heatmap data:', data.error);
-                            document.getElementById('node-heatmap-chart').innerHTML =
+                            document.getElementById('js-node-heatmap-chart').innerHTML =
                                 '<p class="error-message">Error loading heatmap data: ' + data.error + '</p>';
                         } else {
                             createNodeHeatmap(data.nodes, resourceType);
@@ -999,13 +1007,46 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                     })
                     .catch(error => {
                         console.error('Error fetching heatmap data:', error);
-                        document.getElementById('node-heatmap-chart').innerHTML =
+                        document.getElementById('js-node-heatmap-chart').innerHTML =
                             '<p class="error-message">Error loading heatmap data</p>';
                     });
             } else {
                 heatmapContainer.style.display = 'none';
                 podsContainer.style.display = 'block';
-                // Handle existing pods usage display
+                $.ajax({
+                    type: "GET",
+                    url: `${FrontendApi.DATA_DIR}/nodes.json`,
+                    dataType: 'json',
+                    success: function (data) {
+                        let dataset = buildNodesDataSet(data, usageType, 'donut');
+                        let dynHtml = '';
+                        let donuts = new Map();
+                        for (let [nname, _] of dataset.data) {
+                            let nodeCssId = getNodeCssId(nname);
+                            donuts[nname] = donut();
+                            dynHtml += '<div class="col-md-4">';
+                            dynHtml += '  <h4>' + nname + '</h4>';
+                            dynHtml += '  <div class="' + getNodeCssClass(nodeCssId) + '"></div>';
+                            dynHtml += '  <div class="' + getNodeLegendCssClass(nodeCssId) + ' britechart-legend"></div>'
+                            dynHtml += '</div>';
+                        }
+
+                        // $("#js-nodes-load-container").html(dynHtml);
+                        podsContainer.innerHTML = dynHtml;
+                        for (let [nname, ndata] of dataset.data) {
+                            let nodeCssId = getNodeCssId(nname);
+                            updateDonutChart(ndata['chartData'],
+                                donuts[nname],
+                                getNodeCssClass(nodeCssId),
+                                getNodeLegendCssClass(nodeCssId)
+                            );
+                        }
+                    },
+                    error: function (xhr, ajaxOptions, thrownError) {
+                        $("#error-message").append('<li>download node data' + ' (' + xhr.status + ')</li>');
+                        $("#error-message-container").show();
+                    }
+                });
             }
         }
 
