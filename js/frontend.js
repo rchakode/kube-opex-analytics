@@ -76,6 +76,7 @@ requirejs.config({
         jquery: './lib/jquery-1.11.0.min',
         bootswatch: './lib/bootswatch',
         bootstrap: './lib/bootstrap.min',
+        d3: './lib/d3.min',
         d3Selection: './d3-selection/dist/d3-selection.min',
         stackedAreaChart: './britecharts/umd/stackedArea.min',
         stackedBarChart: './britecharts/umd/stackedBar.min',
@@ -92,8 +93,8 @@ requirejs.config({
 });
 
 
-define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'donutChart', 'lineChart', 'legend', 'colors', 'tooltip'],
-    function ($, bootstrap, bootswatch, d3Selection, stackedAreaChart, stackedBarChart, donut, lineChart, legend, colors, tooltip) {
+define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'donutChart', 'lineChart', 'legend', 'colors', 'tooltip'],
+    function ($, bootstrap, bootswatch, d3, d3Selection, stackedAreaChart, stackedBarChart, donut, lineChart, legend, colors, tooltip) {
         let cpuUsageTrendsChart = stackedAreaChart();
         let memoryUsageTrendsChart = stackedAreaChart();
         let cpuRfTrendsChart = lineChart();
@@ -247,61 +248,154 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
 
 
         function updateStackedBarChart(dataset, mychart, htmlContainerClass, yLabel, chartTitle) {
-            let chartTooltip = tooltip();
             let htmlContainer = d3Selection.select('.' + htmlContainerClass);
-            let htmlContainerWidth = htmlContainer.node() ? htmlContainer.node().getBoundingClientRect().width : false;
+            let htmlContainerNode = htmlContainer.node();
 
-            if (!htmlContainerWidth) {
+            if (!htmlContainerNode) {
                 return;
             }
 
-            dataset.data.sort(
-                function (data1, data2) {
-                    let ts1 = Date.parse(data1.date + ' GMT')
-                    let ts2 = Date.parse(data2.date + ' GMT')
-                    if (ts1 < ts2)
-                        return -1;
-                    if (ts1 > ts2)
-                        return 1;
-                    return 0;
-                }
-            );
+            // Clear previous chart
+            htmlContainer.selectAll('*').remove();
 
-            mychart
-                .isAnimated(true)
-                .tooltipThreshold(400)
-                .height(400)
-                .width(htmlContainerWidth)
-                .grid('horizontal')
-                .stackLabel('stack')
-                .nameLabel('date')
-                .valueLabel('usage')
-                .valueLabelFormat(',f')
-                .betweenBarsPadding(0.2)
-                .yAxisLabel(yLabel)
-                .colorSchema(KoaColorSchema)
-                .margin({left: 75, top: 50, right: 25, bottom: 50})
-                .on('customMouseOver', function (data) {
-                    chartTooltip.show();
+            // Get container dimensions
+            let htmlContainerWidth = htmlContainerNode.getBoundingClientRect().width;
+            let margin = {left: 75, top: 50, right: 25, bottom: 50};
+            let width = htmlContainerWidth - margin.left - margin.right;
+            let height = 400 - margin.top - margin.bottom;
+
+            // Group data by date for stacking
+            let dateMap = {};
+            dataset.data.forEach(function(d) {
+                if (!dateMap[d.date]) {
+                    dateMap[d.date] = [];
+                }
+                dateMap[d.date].push(d);
+            });
+
+            // Get dates and sort them
+            let dates = Object.keys(dateMap).sort(function(date1, date2) {
+                let ts1 = Date.parse(date1 + ' GMT');
+                let ts2 = Date.parse(date2 + ' GMT');
+                return ts1 - ts2;
+            });
+
+            let stacks = Array.from(new Set(dataset.data.map(function(d) { return d.stack; })));
+
+            // Transform data for stacking
+            let stackData = dates.map(function(date) {
+                let entry = {date: date};
+                dateMap[date].forEach(function(d) {
+                    entry[d.stack] = d.usage;
+                });
+                return entry;
+            });
+
+            // Create stack generator
+            let stack = d3.stack()
+                .keys(stacks)
+                .value((d, key) => d[key] || 0);
+
+            let series = stack(stackData);
+
+            // Create scales
+            let xScale = d3.scaleBand()
+                .domain(dates)
+                .range([0, width])
+                .padding(0.2);
+
+            let yScale = d3.scaleLinear()
+                .domain([0, d3.max(series, s => d3.max(s, d => d[1]))])
+                .nice()
+                .range([height, 0]);
+
+            let colorScale = d3.scaleOrdinal()
+                .domain(stacks)
+                .range(KoaColorSchema);
+
+            // Create tooltip
+            let tooltipDiv = d3.select('body').selectAll('.stackedbar-tooltip').data([0]);
+            let tooltipEnter = tooltipDiv.enter().append('div')
+                .attr('class', 'stackedbar-tooltip')
+                .style('position', 'absolute')
+                .style('padding', '8px')
+                .style('background', 'rgba(0, 0, 0, 0.8)')
+                .style('color', '#fff')
+                .style('border-radius', '4px')
+                .style('font-size', '12px')
+                .style('pointer-events', 'none')
+                .style('opacity', 0)
+                .style('z-index', 1000);
+
+            let tooltip = tooltipDiv.merge(tooltipEnter);
+
+            // Create SVG
+            let svg = htmlContainer.append('svg')
+                .attr('width', htmlContainerWidth)
+                .attr('height', 400);
+
+            let g = svg.append('g')
+                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+            // Add grid lines
+            g.append('g')
+                .attr('class', 'grid')
+                .attr('opacity', 0.1)
+                .call(d3.axisLeft(yScale)
+                    .tickSize(-width)
+                    .tickFormat(''));
+
+            // Add stacked bars
+            g.selectAll('.series')
+                .data(series)
+                .join('g')
+                .attr('class', 'series')
+                .attr('fill', function(d) { return colorScale(d.key); })
+                .selectAll('rect')
+                .data(function(d) { return d; })
+                .join('rect')
+                .attr('x', function(d) { return xScale(d.data.date); })
+                .attr('y', function(d) { return yScale(d[1]); })
+                .attr('height', function(d) { return yScale(d[0]) - yScale(d[1]); })
+                .attr('width', xScale.bandwidth())
+                .on('mouseover', function(event, d) {
+                    let stackKey = d3.select(this.parentNode).datum().key;
+                    let value = d.data[stackKey];
+
+                    tooltip.transition()
+                        .duration(200)
+                        .style('opacity', 0.9);
+
+                    tooltip.html('<strong>' + stackKey + '</strong><br/>' +
+                        'Date: ' + d.data.date + '<br/>' +
+                        chartTitle + ': ' + value.toFixed(3))
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 28) + 'px');
                 })
-                .on('customMouseOut', function () {
-                    chartTooltip.hide();
-                })
-                .on('customMouseMove', function (dataPoint, topicColorMap, pos) {
-                    chartTooltip.update(dataPoint, topicColorMap, pos);
+                .on('mouseout', function() {
+                    tooltip.transition()
+                        .duration(500)
+                        .style('opacity', 0);
                 });
 
-            htmlContainer.datum(dataset.data).call(mychart);
+            // Add axes
+            g.append('g')
+                .attr('class', 'x-axis')
+                .attr('transform', 'translate(0,' + height + ')')
+                .call(d3.axisBottom(xScale));
 
-            chartTooltip
-                .nameLabel('stack')
-                .dateLabel('date')
-                .topicLabel('values')
-                .shouldShowDateInTitle(false)
-                .title(chartTitle);
+            g.append('g')
+                .attr('class', 'y-axis')
+                .call(d3.axisLeft(yScale).tickFormat(d3.format(',f')));
 
-            let tooltipContainer = d3Selection.select('.' + htmlContainerClass + ' .metadata-group');
-            tooltipContainer.datum([]).call(chartTooltip);
+            // Add y-axis label
+            g.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 0 - margin.left)
+                .attr('x', 0 - (height / 2))
+                .attr('dy', '1em')
+                .style('text-anchor', 'middle')
+                .text(yLabel);
         }
 
 
@@ -881,7 +975,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             const nodesPerRow = Math.ceil(Math.sqrt(nodes.length));
             const rectPadding = 10;
             const maxRectSize = Math.min((width - (nodesPerRow * rectPadding)) / nodesPerRow,
-                                        (height - (Math.ceil(nodes.length / nodesPerRow) * rectPadding)) / Math.ceil(nodes.length / nodesPerRow));
+                (height - (Math.ceil(nodes.length / nodesPerRow) * rectPadding)) / Math.ceil(nodes.length / nodesPerRow));
 
             // Create tooltip
             const tooltip = d3Selection.select('body').selectAll('.heatmap-tooltip')
