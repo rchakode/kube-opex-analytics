@@ -204,46 +204,213 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'stackedAreaCh
         }
 
 
-        function updateLineOrAreaChart(dataset, mychart, htmlContainerClass, yLabel, chartTitle) {
+        function updateLineOrAreaChart(dataset, mychart, htmlContainerClass, resourceType, trendType) {
+            let yLabel = trendType === "usage" ? "Resource usage" : "Usage/Requests efficiency";
+            let chartTitle = `${resourceType} - Hourly trends`;
             let htmlContainer = d3Selection.select('.' + htmlContainerClass);
-            let htmlContainerWidth = htmlContainer.node() ? htmlContainer.node().getBoundingClientRect().width : false;
-            let chartTooltip = tooltip();
+            let htmlContainerNode = htmlContainer.node();
 
-            if (!htmlContainerWidth) {
+            if (!htmlContainerNode) {
                 return;
             }
 
-            mychart
-                .isAnimated(true)
-                .tooltipThreshold(600)
-                .height(400)
-                .grid('full')
-                .xAxisFormat('custom')
-                .xAxisCustomFormat('%b %d %H:%M')
-                .xTicks(2)
-                .yAxisLabel(yLabel)
-                .width(htmlContainerWidth)
-                .margin({left: 75, top: 50, right: 25, bottom: 50})
-                .colorSchema(KoaColorSchema)
-                .on('customMouseOver', chartTooltip.show)
-                .on('customMouseMove', function (dataPoint, topicColorMap, dataPointXPosition) {
-                    chartTooltip.update(dataPoint, topicColorMap, dataPointXPosition);
-                })
-                .on('customMouseOut', chartTooltip.hide);
+            // Check if we should show area fill (for usage trend type)
+            let showAreaFill = trendType === 'usage';
 
-            htmlContainer.datum(dataset).call(mychart);
+            // Clear previous chart
+            htmlContainer.selectAll('*').remove();
 
-            chartTooltip
-                .dateFormat('custom')
-                .dateCustomFormat('%b %d %H:%M')
-                .title(chartTitle);
+            // Get container dimensions
+            let htmlContainerWidth = htmlContainerNode.getBoundingClientRect().width;
+            let margin = {left: 75, top: 50, right: 25, bottom: 50};
+            let width = htmlContainerWidth - margin.left - margin.right;
+            let height = 400 - margin.top - margin.bottom;
 
-            if (!dataset.hasOwnProperty('data')) {
-                chartTooltip.topicLabel('values');
+            // Check if data is in dataset.data or directly in dataset
+            let rawData = dataset.hasOwnProperty('data') ? dataset.data : dataset;
+
+            // Filter out invalid data and parse
+            let validData = [];
+            rawData.forEach(function(d) {
+                // Handle both formats: {dateUTC, usage} and {date, value}
+                let dateStr = d.dateUTC || d.date;
+                let usageVal = d.usage !== undefined ? d.usage : d.value;
+
+                let parsedDate = new Date(dateStr);
+                let parsedUsage = parseFloat(usageVal);
+                if (!isNaN(parsedDate.getTime()) && !isNaN(parsedUsage)) {
+                    validData.push({
+                        name: d.name,
+                        date: parsedDate,
+                        usage: parsedUsage
+                    });
+                }
+            });
+
+            if (validData.length === 0) {
+                return;
             }
 
-            let tooltipContainer = d3Selection.select('.' + htmlContainerClass + ' .metadata-group .vertical-marker-container');
-            tooltipContainer.datum([]).call(chartTooltip);
+            // Group data by name (series)
+            let seriesMap = {};
+            validData.forEach(function(d) {
+                if (!seriesMap[d.name]) {
+                    seriesMap[d.name] = [];
+                }
+                seriesMap[d.name].push({
+                    date: d.date,
+                    usage: d.usage
+                });
+            });
+
+            // Convert to array of series
+            let seriesData = Object.keys(seriesMap).map(function(name) {
+                return {
+                    name: name,
+                    values: seriesMap[name].sort(function(a, b) { return a.date - b.date; })
+                };
+            });
+
+            // Create scales
+            let xScale = d3.scaleTime()
+                .domain(d3.extent(validData, function(d) { return d.date; }))
+                .range([0, width]);
+
+            let yScale = d3.scaleLinear()
+                .domain([0, d3.max(validData, function(d) { return d.usage; })])
+                .nice()
+                .range([height, 0]);
+
+            let colorScale = d3.scaleOrdinal()
+                .domain(seriesData.map(function(d) { return d.name; }))
+                .range(KoaColorSchema);
+
+            // Create line generator
+            let line = d3.line()
+                .x(function(d) { return xScale(d.date); })
+                .y(function(d) { return yScale(d.usage); })
+                .curve(d3.curveMonotoneX);
+
+            // Create area generator if needed
+            let area = null;
+            if (showAreaFill) {
+                area = d3.area()
+                    .x(function(d) { return xScale(d.date); })
+                    .y0(height)
+                    .y1(function(d) { return yScale(d.usage); })
+                    .curve(d3.curveMonotoneX);
+            }
+
+            // Create tooltip
+            let tooltipDiv = d3.select('body').selectAll('.areachart-tooltip').data([0]);
+            let tooltipEnter = tooltipDiv.enter().append('div')
+                .attr('class', 'areachart-tooltip')
+                .style('position', 'absolute')
+                .style('padding', '8px')
+                .style('background', 'rgba(0, 0, 0, 0.8)')
+                .style('color', '#fff')
+                .style('border-radius', '4px')
+                .style('font-size', '12px')
+                .style('pointer-events', 'none')
+                .style('opacity', 0)
+                .style('z-index', 1000);
+
+            let tooltip = tooltipDiv.merge(tooltipEnter);
+
+            // Create SVG
+            let svg = htmlContainer.append('svg')
+                .attr('width', htmlContainerWidth)
+                .attr('height', 400);
+
+            let g = svg.append('g')
+                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+            // Add grid lines
+            g.append('g')
+                .attr('class', 'grid')
+                .attr('opacity', 0.1)
+                .call(d3.axisLeft(yScale)
+                    .tickSize(-width)
+                    .tickFormat(''));
+
+            g.append('g')
+                .attr('class', 'grid')
+                .attr('opacity', 0.1)
+                .call(d3.axisBottom(xScale)
+                    .tickSize(-height)
+                    .tickFormat(''));
+
+            // Add area paths if needed
+            if (showAreaFill && area) {
+                g.selectAll('.area-path')
+                    .data(seriesData)
+                    .join('path')
+                    .attr('class', 'area-path')
+                    .attr('d', function(d) { return area(d.values); })
+                    .attr('fill', function(d) { return colorScale(d.name); })
+                    .attr('opacity', 0.3)
+                    .style('pointer-events', 'none');
+            }
+
+            // Add line paths
+            g.selectAll('.line-path')
+                .data(seriesData)
+                .join('path')
+                .attr('class', 'line-path')
+                .attr('d', function(d) { return line(d.values); })
+                .attr('stroke', function(d) { return colorScale(d.name); })
+                .attr('stroke-width', 2)
+                .attr('fill', 'none')
+                .on('mouseover', function(event, d) {
+                    d3.select(this).attr('stroke-width', 3);
+                    tooltip.transition()
+                        .duration(200)
+                        .style('opacity', 0.9);
+                })
+                .on('mousemove', function(event, d) {
+                    let mouseX = d3.pointer(event, g.node())[0];
+                    let dateValue = xScale.invert(mouseX);
+
+                    // Find closest data point
+                    let bisect = d3.bisector(function(d) { return d.date; }).left;
+                    let index = bisect(d.values, dateValue);
+                    let dataPoint = d.values[index] || d.values[d.values.length - 1];
+
+                    let formatDate = d3.timeFormat('%b %d %H:%M');
+
+                    tooltip.html('<strong>' + d.name + '</strong><br/>' +
+                                'Date: ' + formatDate(dataPoint.date) + '<br/>' +
+                                chartTitle + ': ' + dataPoint.usage.toFixed(6))
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 28) + 'px');
+                })
+                .on('mouseout', function() {
+                    d3.select(this).attr('stroke-width', 2);
+                    tooltip.transition()
+                        .duration(500)
+                        .style('opacity', 0);
+                });
+
+            // Add axes
+            g.append('g')
+                .attr('class', 'x-axis')
+                .attr('transform', 'translate(0,' + height + ')')
+                .call(d3.axisBottom(xScale)
+                    .ticks(2)
+                    .tickFormat(d3.timeFormat('%b %d %H:%M')));
+
+            g.append('g')
+                .attr('class', 'y-axis')
+                .call(d3.axisLeft(yScale).tickFormat(d3.format('.2f')));
+
+            // Add y-axis label
+            g.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 0 - margin.left)
+                .attr('x', 0 - (height / 2))
+                .attr('dy', '1em')
+                .style('text-anchor', 'middle')
+                .text(yLabel);
         }
 
 
@@ -746,11 +913,6 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'stackedAreaCh
             let dataFile = `${resourceTypeLowered}_${trendType}_trends.json`;
             let datasetPath = `${FrontendApi.DATA_DIR}/${dataFile}`;
 
-            const TREND_TYPE_LABELS = Object.freeze({
-                "usage": "Hourly Usage",
-                "rf": "Hourly Usage Efficiency",
-            });
-
             $.ajax({
                 type: "GET",
                 url: datasetPath,
@@ -783,7 +945,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'stackedAreaCh
                                     )
                         };
                         if (dataset.data.length > 0) {
-                            updateLineOrAreaChart(dataset, chart, `js-chart-trends-${chartCategory}`, `${resourceType} ${TREND_TYPE_LABELS[trendType]}`, `${TREND_TYPE_LABELS[trendType]}`);
+                            updateLineOrAreaChart(dataset, chart, `js-chart-trends-${chartCategory}`, resourceType, trendType);
                             $("#error-message-container").hide();
                         } else {
                             $("#error-message").html('<li>no trends data found in the selected range</li>');
@@ -800,7 +962,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'stackedAreaCh
                                     })
                                 );
                         if (dataset.length > 0) {
-                            updateLineOrAreaChart(dataset, chart, `js-chart-trends-${chartCategory}`, `${resourceType} ${TREND_TYPE_LABELS[trendType]}`, `${TREND_TYPE_LABELS[trendType]}`);
+                            updateLineOrAreaChart(dataset, chart, `js-chart-trends-${chartCategory}`, resourceType, trendType);
                             $("#error-message-container").hide();
                         } else {
                             $("#error-message").html('<li>no trends data found in the selected range</li>');
