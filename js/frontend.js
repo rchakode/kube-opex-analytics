@@ -93,16 +93,8 @@ requirejs.config({
 });
 
 
-define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'donutChart', 'lineChart', 'legend', 'colors', 'tooltip'],
-    function ($, bootstrap, bootswatch, d3, d3Selection, stackedAreaChart, stackedBarChart, donut, lineChart, legend, colors, tooltip) {
-        let cpuUsageTrendsChart = stackedAreaChart();
-        let memoryUsageTrendsChart = stackedAreaChart();
-        let cpuRfTrendsChart = lineChart();
-        let memoryRfTrendsChart = lineChart();
-        let dailyCpuUsageChart = stackedBarChart();
-        let dailyMemoryUsageChart = stackedBarChart();
-        let monthlyCpuUsageChart = stackedBarChart();
-        let monthlyMemoryUsageChart = stackedBarChart();
+define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'donutChart'],
+    function ($, bootstrap, bootswatch, d3, d3Selection, donut) {
 
         const truncateText = function (str, length, ending) {
             if (length == null) {
@@ -204,7 +196,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'stackedAreaCh
         }
 
 
-        function updateLineOrAreaChart(dataset, mychart, htmlContainerClass, resourceType, trendType) {
+        function updateLineOrAreaChart(dataset, htmlContainerClass, resourceType, trendType) {
             let yLabel = trendType === "usage" ? "Resource usage" : "Usage/Requests efficiency";
             let chartTitle = `${resourceType} - Hourly trends`;
             let htmlContainer = d3Selection.select('.' + htmlContainerClass);
@@ -414,7 +406,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'stackedAreaCh
         }
 
 
-        function updateStackedBarChart(dataset, mychart, htmlContainerClass, yLabel, chartTitle) {
+        function updateStackedBarChart(dataset, htmlContainerClass, yLabel, chartTitle) {
             let htmlContainer = d3Selection.select('.' + htmlContainerClass);
             let htmlContainerNode = htmlContainer.node();
 
@@ -797,13 +789,13 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'stackedAreaCh
             if (usageTrendType === 'usage-efficiency') {
                 $('#chart-block-trends-hourly-usage').hide();
                 $("#chart-block-trends-rf").show();
-                refreshTrendsChartByType(cpuRfTrendsChart, 'CPU', 'rf');
-                refreshTrendsChartByType(memoryRfTrendsChart, 'Memory', 'rf');
+                refreshTrendsChartByType('CPU', 'rf');
+                refreshTrendsChartByType('Memory', 'rf');
             } else {
                 $("#chart-block-trends-rf").hide();
                 $("#chart-block-trends-hourly-usage").show();
-                refreshTrendsChartByType(cpuUsageTrendsChart, 'CPU', 'usage');
-                refreshTrendsChartByType(memoryUsageTrendsChart, 'Memory', 'usage');
+                refreshTrendsChartByType('CPU', 'usage');
+                refreshTrendsChartByType('Memory', 'usage');
             }
         }
 
@@ -813,23 +805,23 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'stackedAreaCh
             if (cumulativeUsageType === 'monthly-usage') {
                 $("#chart-block-daily").hide();
                 $("#chart-block-monthly").show();
-                refreshCumulativeChartByType(monthlyCpuUsageChart, 'CPU', 'usage', 'monthly');
-                refreshCumulativeChartByType(monthlyMemoryUsageChart, 'Memory', 'usage', 'monthly');
+                refreshCumulativeChartByType('CPU', 'usage', 'monthly');
+                refreshCumulativeChartByType('Memory', 'usage', 'monthly');
             } else if (cumulativeUsageType === 'monthly-requests') {
                 $("#chart-block-daily").hide();
                 $("#chart-block-monthly").show();
-                refreshCumulativeChartByType(monthlyCpuUsageChart, 'CPU', 'requests', 'monthly');
-                refreshCumulativeChartByType(monthlyMemoryUsageChart, 'Memory', 'requests', 'monthly');
+                refreshCumulativeChartByType('CPU', 'requests', 'monthly');
+                refreshCumulativeChartByType('Memory', 'requests', 'monthly');
             } else if (cumulativeUsageType === 'daily-requests') {
                 $("#chart-block-monthly").hide();
                 $("#chart-block-daily").show();
-                refreshCumulativeChartByType(dailyCpuUsageChart, 'CPU', 'requests', 'daily');
-                refreshCumulativeChartByType(dailyMemoryUsageChart, 'Memory', 'requests', 'daily');
+                refreshCumulativeChartByType('CPU', 'requests', 'daily');
+                refreshCumulativeChartByType('Memory', 'requests', 'daily');
             } else { // handle as daily-usage
                 $("#chart-block-monthly").hide();
                 $("#chart-block-daily").show();
-                refreshCumulativeChartByType(dailyCpuUsageChart, 'CPU', 'usage', 'daily');
-                refreshCumulativeChartByType(dailyMemoryUsageChart, 'Memory', 'usage', 'daily');
+                refreshCumulativeChartByType('CPU', 'usage', 'daily');
+                refreshCumulativeChartByType('Memory', 'usage', 'daily');
             }
         }
 
@@ -864,11 +856,40 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'stackedAreaCh
         }
 
 
-        function exportImage(chartElt, filename) {
-            return new Blob(
-                [chartElt.exportChart(filename)],
-                {type: 'image/png'}
-            );
+        function exportImage(chartContainerClass, filename) {
+            let svgElement = d3Selection.select('.' + chartContainerClass + ' svg').node();
+
+            if (!svgElement) {
+                console.error('SVG element not found for export');
+                return;
+            }
+
+            // Clone the SVG element
+            let clonedSvg = svgElement.cloneNode(true);
+
+            // Add XML namespace if not present
+            if (!clonedSvg.getAttribute('xmlns')) {
+                clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            }
+
+            // Serialize the SVG
+            let serializer = new XMLSerializer();
+            let svgString = serializer.serializeToString(clonedSvg);
+
+            // Create blob and download link
+            let blob = new Blob([svgString], {type: 'image/svg+xml'});
+            let url = URL.createObjectURL(blob);
+
+            // Create temporary link and trigger download
+            let link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+
+            // Cleanup
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
 
 
@@ -908,7 +929,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'stackedAreaCh
         }
 
 
-        function refreshTrendsChartByType(chart, resourceType, trendType) {
+        function refreshTrendsChartByType(resourceType, trendType) {
             let resourceTypeLowered = resourceType.toLowerCase();
             let dataFile = `${resourceTypeLowered}_${trendType}_trends.json`;
             let datasetPath = `${FrontendApi.DATA_DIR}/${dataFile}`;
@@ -919,7 +940,8 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'stackedAreaCh
                 dataType: 'json',
                 success: function (data) {
                     let chartCategory = `${resourceTypeLowered}-${trendType}`;
-                    installExporter(`trends-${resourceTypeLowered}-png`, '', () => exportImage(chart, 'kopex-trends-' + chartCategory + '.png'));
+                    let chartContainerClass = `js-chart-trends-${chartCategory}`;
+                    installExporter(`trends-${resourceTypeLowered}-png`, '', () => exportImage(chartContainerClass, 'kopex-trends-' + chartCategory + '.svg'));
                     installExporter(`trends-${resourceTypeLowered}-json`, 'kopex-trends-' + chartCategory + '.json', () => exportJSON(data));
                     installExporter(`trends-${resourceTypeLowered}-csv`, 'kopex-trends-' + chartCategory + '.csv', () => exportCSV(data));
 
@@ -945,7 +967,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'stackedAreaCh
                                     )
                         };
                         if (dataset.data.length > 0) {
-                            updateLineOrAreaChart(dataset, chart, `js-chart-trends-${chartCategory}`, resourceType, trendType);
+                            updateLineOrAreaChart(dataset, chartContainerClass, resourceType, trendType);
                             $("#error-message-container").hide();
                         } else {
                             $("#error-message").html('<li>no trends data found in the selected range</li>');
@@ -962,7 +984,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'stackedAreaCh
                                     })
                                 );
                         if (dataset.length > 0) {
-                            updateLineOrAreaChart(dataset, chart, `js-chart-trends-${chartCategory}`, resourceType, trendType);
+                            updateLineOrAreaChart(dataset, `js-chart-trends-${chartCategory}`, resourceType, trendType);
                             $("#error-message-container").hide();
                         } else {
                             $("#error-message").html('<li>no trends data found in the selected range</li>');
@@ -979,7 +1001,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'stackedAreaCh
         }
 
 
-        function refreshCumulativeChartByType(chart, resourceType, usageType, periodType) {
+        function refreshCumulativeChartByType(resourceType, usageType, periodType) {
             let resourceTypeLowered = resourceType.toLowerCase();
             let DATASET_FILES = Object.freeze({
                 "daily-usage": `${resourceTypeLowered}_usage_period_1209600.json`,
@@ -995,14 +1017,13 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'stackedAreaCh
                 url: `${FrontendApi.DATA_DIR}/${DATASET_FILES[dataSetKey]}`,
                 dataType: 'json',
                 success: function (data) {
-                    installExporter(`consolidated-${resourceTypeLowered}-usage-png`, '', () => exportImage(chart, filenamePrefix + '.png'));
+                    let chartContainerClass = `js-chart-${periodType}-${resourceTypeLowered}-usage`;
+                    installExporter(`consolidated-${resourceTypeLowered}-usage-png`, '', () => exportImage(chartContainerClass, filenamePrefix + '.svg'));
                     installExporter(`consolidated-${resourceTypeLowered}-usage-json`, filenamePrefix + '.json', () => exportJSON(data));
                     installExporter(`consolidated-${resourceTypeLowered}-usage-csv`, filenamePrefix + '.csv', () => exportCSV(data));
 
-                    updateStackedBarChart(
-                        {"data": data},
-                        chart,
-                        `js-chart-${periodType}-${resourceTypeLowered}-usage`,
+                    updateStackedBarChart({"data": data},
+                        chartContainerClass,
                         `${resourceType} consumption`,
                         `${periodType} ${resourceType} ${usageType}`);
                 },
