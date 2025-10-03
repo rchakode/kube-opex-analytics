@@ -77,14 +77,7 @@ requirejs.config({
         bootswatch: './lib/bootswatch',
         bootstrap: './lib/bootstrap.min',
         d3: './lib/d3.min',
-        d3Selection: './d3-selection/dist/d3-selection.min',
-        stackedAreaChart: './britecharts/umd/stackedArea.min',
-        stackedBarChart: './britecharts/umd/stackedBar.min',
-        donutChart: './britecharts/umd/donut.min',
-        lineChart: './britecharts/umd/line.min',
-        legend: './britecharts/umd/legend.min',
-        colors: './britecharts/umd/colors.min',
-        tooltip: './britecharts/umd/tooltip.min'
+        d3Selection: './d3-selection/dist/d3-selection.min'
     },
     shim: {
         "bootstrap": ["jquery"],
@@ -93,8 +86,8 @@ requirejs.config({
 });
 
 
-define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'donutChart'],
-    function ($, bootstrap, bootswatch, d3, d3Selection, donut) {
+define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
+    function ($, bootstrap, bootswatch, d3, d3Selection) {
 
         const truncateText = function (str, length, ending) {
             if (length == null) {
@@ -560,30 +553,135 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'donutChart'],
 
         function updateDonutChart(dataset, selectedChart, targetDivContainer, legendContainer, chartTitle) {
             let legendChart = renderLegend(dataset, legendContainer);
-            let donutContainer = d3Selection.select('.' + targetDivContainer);
+            let donutContainer = d3.select('.' + targetDivContainer);
             let containerWidth = donutContainer.node() ? donutContainer.node().getBoundingClientRect().width : false;
 
-            if (containerWidth) {
-                selectedChart
-                    .isAnimated(true)
-                    .highlightSliceById(2)
-                    .width(containerWidth)
-                    .height(containerWidth)
-                    .externalRadius(containerWidth / 2.5)
-                    .internalRadius(containerWidth / 5)
-                    .on('customMouseOver', function (data) {
-                        legendChart.highlight(data.data.id);
-                    })
-                    .on('customMouseOut', function () {
-                        legendChart.clearHighlight();
-                    });
-
-                if (KoaColorSchema) {
-                    selectedChart.colorSchema(KoaColorSchema);
-                }
-
-                donutContainer.datum(dataset).call(selectedChart);
+            if (!containerWidth) {
+                return;
             }
+
+            // Clear previous chart
+            donutContainer.selectAll('*').remove();
+
+            let width = containerWidth;
+            let height = containerWidth;
+            let externalRadius = containerWidth / 2.5;
+            let internalRadius = containerWidth / 5;
+
+            // Create tooltip
+            let tooltipDiv = d3.select('body').selectAll('.donut-tooltip').data([0]);
+            let tooltipEnter = tooltipDiv.enter().append('div')
+                .attr('class', 'donut-tooltip')
+                .style('position', 'absolute')
+                .style('padding', '8px')
+                .style('background', 'rgba(0, 0, 0, 0.8)')
+                .style('color', '#fff')
+                .style('border-radius', '4px')
+                .style('font-size', '12px')
+                .style('pointer-events', 'none')
+                .style('opacity', 0)
+                .style('z-index', 1000);
+
+            let tooltip = tooltipDiv.merge(tooltipEnter);
+
+            // Create pie generator
+            let pie = d3.pie()
+                .value(d => d.quantity || 0)
+                .sort(null);
+
+            // Create arc generator
+            let arc = d3.arc()
+                .innerRadius(internalRadius)
+                .outerRadius(externalRadius);
+
+            // Create highlighted arc (slightly larger)
+            let arcHover = d3.arc()
+                .innerRadius(internalRadius)
+                .outerRadius(externalRadius + 5);
+
+            // Create SVG
+            let svg = donutContainer.append('svg')
+                .attr('width', width)
+                .attr('height', height);
+
+            let g = svg.append('g')
+                .attr('transform', `translate(${width / 2}, ${height / 2})`);
+
+            // Create arcs
+            let arcs = g.selectAll('.arc')
+                .data(pie(dataset))
+                .enter().append('g')
+                .attr('class', 'arc');
+
+            // Add paths
+            arcs.append('path')
+                .attr('d', arc)
+                .attr('fill', (d, i) => KoaColorSchema[i % KoaColorSchema.length])
+                .attr('stroke', 'white')
+                .attr('stroke-width', 2)
+                .style('cursor', 'pointer')
+                .on('mouseover', function(event, d) {
+                    // Highlight arc
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .attr('d', arcHover);
+
+                    // Highlight legend
+                    if (legendChart) {
+                        legendChart.highlight(d.data.id);
+                    }
+
+                    // Show tooltip
+                    tooltip.transition()
+                        .duration(200)
+                        .style('opacity', 0.9);
+
+                    let tooltipText = `<strong>${d.data.name}</strong><br/>`;
+                    if (d.data.quantity !== undefined) {
+                        tooltipText += `Quantity: ${d.data.quantity.toFixed(2)}<br/>`;
+                    }
+                    if (d.data.percentage !== undefined) {
+                        tooltipText += `Percentage: ${d.data.percentage.toFixed(1)}%`;
+                    }
+
+                    tooltip.html(tooltipText)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 28) + 'px');
+                })
+                .on('mousemove', function(event) {
+                    tooltip
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 28) + 'px');
+                })
+                .on('mouseout', function(event, d) {
+                    // Reset arc
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .attr('d', arc);
+
+                    // Clear legend highlight
+                    if (legendChart) {
+                        legendChart.clearHighlight();
+                    }
+
+                    // Hide tooltip
+                    tooltip.transition()
+                        .duration(500)
+                        .style('opacity', 0);
+                });
+
+            // Add animation on load
+            arcs.selectAll('path')
+                .transition()
+                .duration(750)
+                .attrTween('d', function(d) {
+                    let interpolate = d3.interpolate({startAngle: 0, endAngle: 0}, d);
+                    return function(t) {
+                        return arc(interpolate(t));
+                    };
+                });
         }
 
 
@@ -1274,10 +1372,8 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'donutChart'],
                     success: function (data) {
                         let dataset = buildNodesDataSet(data, usageType, 'donut');
                         let dynHtml = '';
-                        let donuts = new Map();
                         for (let [nname, _] of dataset.data) {
                             let nodeCssId = getNodeCssId(nname);
-                            donuts[nname] = donut();
                             dynHtml += '<div class="col-md-4">';
                             dynHtml += '  <h4>' + nname + '</h4>';
                             dynHtml += '  <div class="' + getNodeCssClass(nodeCssId) + '"></div>';
@@ -1290,7 +1386,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection', 'donutChart'],
                         for (let [nname, ndata] of dataset.data) {
                             let nodeCssId = getNodeCssId(nname);
                             updateDonutChart(ndata['chartData'],
-                                donuts[nname],
+                                null,
                                 getNodeCssClass(nodeCssId),
                                 getNodeLegendCssClass(nodeCssId)
                             );
