@@ -345,20 +345,23 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                         resAllocatable = 'cpuAllocatable';
                         break;
                     default:
-                        $("#error-message").append('<li>unknown load type: ' + escape(usageType) + '</li>');
+                        const $errorLi1 = $('<li>').text(`unknown load type: ${usageType}`);
+                        $("#error-message").append($errorLi1);
                         $("#error-message-container").show();
                         return;
                 }
 
                 let node = data[nname];
                 if (typeof node[resUsage] === "undefined" || node[resUsage] == 0) {
-                    $("#error-message").append('<li>No ' + resUsage + ' metric on node ' + escape(node.name) + '</li>');
+                    const $errorLi2 = $('<li>').text(`No ${resUsage} metric on node ${encodeURIComponent(node.name)}`);
+                    $("#error-message").append($errorLi2);
                     $("#error-message-container").show();
                     continue;
                 }
 
                 if (node[resUsage] == 0) {
-                    $("#error-message").append('<li>Node ' + node.name + ' has ' + escape(resUsage) + ' equals to zero' + '</li>');
+                    const $errorLi3 = $('<li>').text(`Node ${encodeURIComponent(node.name)} has ${resUsage} equals to zero`);
+                    $("#error-message").append($errorLi3);
                     $("#error-message-container").show();
                     continue;
                 }
@@ -481,7 +484,8 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                     }
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append('<li>download node data' + ' (' + xhr.status + ')</li>');
+                    const $errorLi4 = $('<li>').text(`download node data (${xhr.status})`);
+                    $("#error-message").append($errorLi4);
                     $("#error-message-container").show();
                 }
             });
@@ -592,7 +596,8 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
                     $(".accounting-cost-model").text('(%)');
-                    $("#error-message").append(`failed loading backend config (${xhr.status} error)`);
+                    const $errorLi5 = $('<li>').text(`failed loading backend config (${xhr.status} error)`);
+                    $("#error-message").append($errorLi5);
                 }
             });
         }
@@ -666,7 +671,8 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
 
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append(`<li>error ${xhr.status} downloading data file ${dataFile}</li>`);
+                    const $errorLi6 = $('<li>').text(`error ${xhr.status} downloading data file ${dataFile}`);
+                    $("#error-message").append($errorLi6);
                     $("#error-message-container").show();
                 }
             });
@@ -700,7 +706,8 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                         `${periodType} ${resourceType} ${usageType}`);
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append(`<li>error ${xhr.status} downloading data file ${DATASET_FILES[periodType]}</li>`);
+                    const $errorLi7 = $('<li>').text(`error ${xhr.status} downloading data file ${DATASET_FILES[periodType]}`);
+                    $("#error-message").append($errorLi7);
                     $("#error-message-container").show();
                 }
             });
