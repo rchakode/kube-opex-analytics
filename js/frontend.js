@@ -104,10 +104,10 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
         let monthlyMemoryUsageChart = stackedBarChart();
 
         const truncateText = function (str, length, ending) {
-            if (length == null) {
+            if (length === null || length === undefined) {
                 length = 100;
             }
-            if (ending == null) {
+            if (ending === null || ending === undefined) {
                 ending = '...';
             }
             if (str.length > length) {
@@ -352,14 +352,14 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 }
 
                 let node = data[nname];
-                if (typeof node[resUsage] === "undefined" || node[resUsage] == 0) {
+                if (typeof node[resUsage] === "undefined" || node[resUsage] === 0) {
                     const $errorLi2 = $('<li>').text(`No ${resUsage} metric on node ${encodeURIComponent(node.name)}`);
                     $("#error-message").append($errorLi2);
                     $("#error-message-container").show();
                     continue;
                 }
 
-                if (node[resUsage] == 0) {
+                if (node[resUsage] === 0) {
                     const $errorLi3 = $('<li>').text(`Node ${encodeURIComponent(node.name)} has ${resUsage} equals to zero`);
                     $("#error-message").append($errorLi3);
                     $("#error-message-container").show();
