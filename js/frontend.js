@@ -18,7 +18,7 @@
 'use strict';
 
 
-var currentUsageType = '';
+var selectedUsageType = '';
 var usageTrendType = 'usage-trend-type-default';
 var cumulativeUsageType = 'daily';
 
@@ -76,14 +76,8 @@ requirejs.config({
         jquery: './lib/jquery-1.11.0.min',
         bootswatch: './lib/bootswatch',
         bootstrap: './lib/bootstrap.min',
-        d3Selection: './d3-selection/dist/d3-selection.min',
-        stackedAreaChart: './britecharts/umd/stackedArea.min',
-        stackedBarChart: './britecharts/umd/stackedBar.min',
-        donutChart: './britecharts/umd/donut.min',
-        lineChart: './britecharts/umd/line.min',
-        legend: './britecharts/umd/legend.min',
-        colors: './britecharts/umd/colors.min',
-        tooltip: './britecharts/umd/tooltip.min'
+        d3: './lib/d3.min',
+        d3Selection: './d3-selection/dist/d3-selection.min'
     },
     shim: {
         "bootstrap": ["jquery"],
@@ -92,16 +86,8 @@ requirejs.config({
 });
 
 
-define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 'stackedBarChart', 'donutChart', 'lineChart', 'legend', 'colors', 'tooltip'],
-    function ($, bootstrap, bootswatch, d3Selection, stackedAreaChart, stackedBarChart, donut, lineChart, legend, colors, tooltip) {
-        let cpuUsageTrendsChart = stackedAreaChart();
-        let memoryUsageTrendsChart = stackedAreaChart();
-        let cpuRfTrendsChart = lineChart();
-        let memoryRfTrendsChart = lineChart();
-        let dailyCpuUsageChart = stackedBarChart();
-        let dailyMemoryUsageChart = stackedBarChart();
-        let monthlyCpuUsageChart = stackedBarChart();
-        let monthlyMemoryUsageChart = stackedBarChart();
+define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
+    function ($, bootstrap, bootswatch, d3, d3Selection) {
 
         const truncateText = function (str, length, ending) {
             if (length === null || length === undefined) {
@@ -119,155 +105,583 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
 
 
         function renderLegend(dataset, targetDivContainer) {
-            let legendChart = legend();
-            let legendContainer = d3Selection.select('.' + targetDivContainer);
+            const legendContainer = d3Selection.select('.' + targetDivContainer);
+            const containerWidth = legendContainer.node() ? legendContainer.node().getBoundingClientRect().width : false;
 
-            let containerWidth = legendContainer.node() ? legendContainer.node().getBoundingClientRect().width : false;
+            if (!containerWidth) return null;
 
-            if (containerWidth) {
-                d3Selection.select('.' + targetDivContainer + ' .britechart-legend').remove();
-                legendChart
-                    .width(containerWidth * 0.8)
-                    .height(dataset.length * 12)
-                    .marginRatio(2)
-                    .markerSize(10)
-                    .numberFormat('.2s');
+            // Clear previous legend
+            legendContainer.selectAll('*').remove();
 
-                if (KoaColorSchema) {
-                    legendChart.colorSchema(KoaColorSchema);
-                }
-                legendContainer.datum(dataset).call(legendChart);
-                return legendChart;
-            }
-        }
+            // Enable scrollbar when content exceeds height
+            legendContainer.style('max-height', '400px')
+                .style('overflow-y', 'auto')
+                .style('overflow-x', 'hidden');
 
-        function updateLineOrAreaChart(dataset, mychart, htmlContainerClass, yLabel, chartTitle) {
-            let htmlContainer = d3Selection.select('.' + htmlContainerClass);
-            let htmlContainerWidth = htmlContainer.node() ? htmlContainer.node().getBoundingClientRect().width : false;
-            let chartTooltip = tooltip();
+            // Create SVG for legend (single column layout)
+            const legendWidth = containerWidth * 0.8;
+            const markerSize = 10;
+            const itemHeight = 25;
 
-            if (!htmlContainerWidth) {
-                return;
-            }
+            // Calculate height based on number of items (single column)
+            const legendHeight = (dataset.length * itemHeight) + 20; // 20px padding
 
-            mychart
-                .isAnimated(true)
-                .tooltipThreshold(600)
-                .height(400)
-                .grid('full')
-                .xAxisFormat('custom')
-                .xAxisCustomFormat('%b %d %H:%M')
-                .xTicks(2)
-                .yAxisLabel(yLabel)
-                .width(htmlContainerWidth)
-                .margin({left: 75, top: 50, right: 25, bottom: 50})
-                .colorSchema(KoaColorSchema)
-                .on('customMouseOver', chartTooltip.show)
-                .on('customMouseMove', function (dataPoint, topicColorMap, dataPointXPosition) {
-                    chartTooltip.update(dataPoint, topicColorMap, dataPointXPosition);
-                })
-                .on('customMouseOut', chartTooltip.hide);
+            const svg = legendContainer.append('svg')
+                .attr('width', legendWidth)
+                .attr('height', legendHeight)
+                .attr('class', 'britechart-legend');
 
-            htmlContainer.datum(dataset).call(mychart);
+            const g = svg.append('g')
+                .attr('transform', 'translate(10, 10)');
 
-            chartTooltip
-                .dateFormat('custom')
-                .dateCustomFormat('%b %d %H:%M')
-                .title(chartTitle);
+            // Sort dataset by percentage in descending order
+            const sortedDataset = dataset.slice().sort((a, b) => {
+                const percentA = a.percentage !== undefined ? a.percentage : 0;
+                const percentB = b.percentage !== undefined ? b.percentage : 0;
+                return percentB - percentA;
+            });
 
-            if (!dataset.hasOwnProperty('data')) {
-                chartTooltip.topicLabel('values');
-            }
+            // Create legend items (two columns)
+            const legendItems = g.selectAll('.legend-item')
+                .data(sortedDataset)
+                .enter().append('g')
+                .attr('class', 'legend-item')
+                .attr('transform', (d, i) => `translate(0, ${i * itemHeight})`)
+                .style('cursor', 'pointer');
 
-            let tooltipContainer = d3Selection.select('.' + htmlContainerClass + ' .metadata-group .vertical-marker-container');
-            tooltipContainer.datum([]).call(chartTooltip);
-        }
+            // Add colored markers
+            legendItems.append('rect')
+                .attr('width', markerSize)
+                .attr('height', markerSize)
+                .attr('fill', (d, i) => KoaColorSchema[i % KoaColorSchema.length]);
 
-        function updateStackedBarChart(dataset, mychart, htmlContainerClass, yLabel, chartTitle) {
-            let chartTooltip = tooltip();
-            let htmlContainer = d3Selection.select('.' + htmlContainerClass);
-            let htmlContainerWidth = htmlContainer.node() ? htmlContainer.node().getBoundingClientRect().width : false;
+            // Add text labels (name)
+            legendItems.append('text')
+                .attr('x', markerSize + 5)
+                .attr('y', markerSize / 2)
+                .attr('dy', '0.35em')
+                .style('font-size', '12px')
+                .text(d => d.name);
 
-            if (!htmlContainerWidth) {
-                return;
-            }
-
-            dataset.data.sort(
-                function (data1, data2) {
-                    let ts1 = Date.parse(data1.date + ' GMT')
-                    let ts2 = Date.parse(data2.date + ' GMT')
-                    if (ts1 < ts2)
-                        return -1;
-                    if (ts1 > ts2)
-                        return 1;
-                    return 0;
-                }
-            );
-
-            mychart
-                .isAnimated(true)
-                .tooltipThreshold(400)
-                .height(400)
-                .width(htmlContainerWidth)
-                .grid('horizontal')
-                .stackLabel('stack')
-                .nameLabel('date')
-                .valueLabel('usage')
-                .valueLabelFormat(',f')
-                .betweenBarsPadding(0.2)
-                .yAxisLabel(yLabel)
-                .colorSchema(KoaColorSchema)
-                .margin({left: 75, top: 50, right: 25, bottom: 50})
-                .on('customMouseOver', function (data) {
-                    chartTooltip.show();
-                })
-                .on('customMouseOut', function () {
-                    chartTooltip.hide();
-                })
-                .on('customMouseMove', function (dataPoint, topicColorMap, pos) {
-                    chartTooltip.update(dataPoint, topicColorMap, pos);
+            // Add resource usage column (quantity and percentage) - right aligned
+            legendItems.append('text')
+                .attr('x', legendWidth - 20)
+                .attr('y', markerSize / 2)
+                .attr('dy', '0.35em')
+                .style('font-size', '12px')
+                .style('text-anchor', 'end')
+                .text(d => {
+                    if (d.quantity !== undefined && d.percentage !== undefined) {
+                        return `${d.quantity.toFixed(2)} (${d.percentage.toFixed(1)}%)`;
+                    }
+                    return '';
                 });
 
-            htmlContainer.datum(dataset.data).call(mychart);
-
-            chartTooltip
-                .nameLabel('stack')
-                .dateLabel('date')
-                .topicLabel('values')
-                .shouldShowDateInTitle(false)
-                .title(chartTitle);
-
-            let tooltipContainer = d3Selection.select('.' + htmlContainerClass + ' .metadata-group');
-            tooltipContainer.datum([]).call(chartTooltip);
+            // Return legend API for compatibility
+            return {
+                highlight: function(id) {
+                    legendItems.style('opacity', (d, i) => d.id === id ? 1 : 0.3);
+                },
+                clearHighlight: function() {
+                    legendItems.style('opacity', 1);
+                }
+            };
         }
 
 
-        function updateDonutChart(dataset, myDonutChart, targetDivContainer, legendContainer, chartTitle) {
+        function updateLineOrAreaChart(dataset, htmlContainerClass, resourceType, trendType) {
+            let yLabel = trendType === "usage" ? "Resource usage" : "Usage/Requests efficiency";
+            let chartTitle = `${resourceType} - Hourly trends`;
+            let htmlContainer = d3Selection.select('.' + htmlContainerClass);
+            let htmlContainerNode = htmlContainer.node();
+
+            if (!htmlContainerNode) {
+                return;
+            }
+
+            // Check if we should show area fill (for usage trend type)
+            let showAreaFill = trendType === 'usage';
+
+            // Clear previous chart
+            htmlContainer.selectAll('*').remove();
+
+            // Get container dimensions
+            let htmlContainerWidth = htmlContainerNode.getBoundingClientRect().width;
+            let margin = {left: 75, top: 50, right: 25, bottom: 50};
+            let width = htmlContainerWidth - margin.left - margin.right;
+            let height = 400 - margin.top - margin.bottom;
+
+            // Check if data is in dataset.data or directly in dataset
+            let rawData = dataset.hasOwnProperty('data') ? dataset.data : dataset;
+
+            // Filter out invalid data and parse
+            let validData = [];
+            rawData.forEach(function(d) {
+                // Handle both formats: {dateUTC, usage} and {date, value}
+                let dateStr = d.dateUTC || d.date;
+                let usageVal = d.usage !== undefined ? d.usage : d.value;
+
+                let parsedDate = new Date(dateStr);
+                let parsedUsage = parseFloat(usageVal);
+                if (!isNaN(parsedDate.getTime()) && !isNaN(parsedUsage)) {
+                    validData.push({
+                        name: d.name,
+                        date: parsedDate,
+                        usage: parsedUsage
+                    });
+                }
+            });
+
+            if (validData.length === 0) {
+                return;
+            }
+
+            // Group data by name (series)
+            let seriesMap = {};
+            validData.forEach(function(d) {
+                if (!seriesMap[d.name]) {
+                    seriesMap[d.name] = [];
+                }
+                seriesMap[d.name].push({
+                    date: d.date,
+                    usage: d.usage
+                });
+            });
+
+            // Convert to array of series
+            let seriesData = Object.keys(seriesMap).map(function(name) {
+                return {
+                    name: name,
+                    values: seriesMap[name].sort(function(a, b) { return a.date - b.date; })
+                };
+            });
+
+            // Create scales
+            let xScale = d3.scaleTime()
+                .domain(d3.extent(validData, function(d) { return d.date; }))
+                .range([0, width]);
+
+            let yScale = d3.scaleLinear()
+                .domain([0, d3.max(validData, function(d) { return d.usage; })])
+                .nice()
+                .range([height, 0]);
+
+            let colorScale = d3.scaleOrdinal()
+                .domain(seriesData.map(function(d) { return d.name; }))
+                .range(KoaColorSchema);
+
+            // Create line generator
+            let line = d3.line()
+                .x(function(d) { return xScale(d.date); })
+                .y(function(d) { return yScale(d.usage); })
+                .curve(d3.curveMonotoneX);
+
+            // Create area generator if needed
+            let area = null;
+            if (showAreaFill) {
+                area = d3.area()
+                    .x(function(d) { return xScale(d.date); })
+                    .y0(height)
+                    .y1(function(d) { return yScale(d.usage); })
+                    .curve(d3.curveMonotoneX);
+            }
+
+            // Create tooltip
+            let tooltipDiv = d3.select('body').selectAll('.areachart-tooltip').data([0]);
+            let tooltipEnter = tooltipDiv.enter().append('div')
+                .attr('class', 'areachart-tooltip')
+                .style('position', 'absolute')
+                .style('padding', '8px')
+                .style('background', 'rgba(0, 0, 0, 0.8)')
+                .style('color', '#fff')
+                .style('border-radius', '4px')
+                .style('font-size', '12px')
+                .style('pointer-events', 'none')
+                .style('opacity', 0)
+                .style('z-index', 1000);
+
+            let tooltip = tooltipDiv.merge(tooltipEnter);
+
+            // Create SVG
+            let svg = htmlContainer.append('svg')
+                .attr('width', htmlContainerWidth)
+                .attr('height', 400);
+
+            let g = svg.append('g')
+                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+            // Add grid lines
+            g.append('g')
+                .attr('class', 'grid')
+                .attr('opacity', 0.1)
+                .call(d3.axisLeft(yScale)
+                    .tickSize(-width)
+                    .tickFormat(''));
+
+            g.append('g')
+                .attr('class', 'grid')
+                .attr('opacity', 0.1)
+                .call(d3.axisBottom(xScale)
+                    .tickSize(-height)
+                    .tickFormat(''));
+
+            // Add area paths if needed
+            if (showAreaFill && area) {
+                g.selectAll('.area-path')
+                    .data(seriesData)
+                    .join('path')
+                    .attr('class', 'area-path')
+                    .attr('d', function(d) { return area(d.values); })
+                    .attr('fill', function(d) { return colorScale(d.name); })
+                    .attr('opacity', 0.3)
+                    .style('pointer-events', 'none');
+            }
+
+            // Add line paths
+            g.selectAll('.line-path')
+                .data(seriesData)
+                .join('path')
+                .attr('class', 'line-path')
+                .attr('d', function(d) { return line(d.values); })
+                .attr('stroke', function(d) { return colorScale(d.name); })
+                .attr('stroke-width', 2)
+                .attr('fill', 'none')
+                .on('mouseover', function(event, d) {
+                    d3.select(this).attr('stroke-width', 3);
+                    tooltip.transition()
+                        .duration(200)
+                        .style('opacity', 0.9);
+                })
+                .on('mousemove', function(event, d) {
+                    let mouseX = d3.pointer(event, g.node())[0];
+                    let dateValue = xScale.invert(mouseX);
+
+                    // Find closest data point
+                    let bisect = d3.bisector(function(d) { return d.date; }).left;
+                    let index = bisect(d.values, dateValue);
+                    let dataPoint = d.values[index] || d.values[d.values.length - 1];
+
+                    let formatDate = d3.timeFormat('%b %d %H:%M');
+
+                    tooltip.html('<strong>' + d.name + '</strong><br/>' +
+                        'Date: ' + formatDate(dataPoint.date) + '<br/>' +
+                        chartTitle + ': ' + dataPoint.usage.toFixed(6))
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 28) + 'px');
+                })
+                .on('mouseout', function() {
+                    d3.select(this).attr('stroke-width', 2);
+                    tooltip.transition()
+                        .duration(500)
+                        .style('opacity', 0);
+                });
+
+            // Add axes
+            g.append('g')
+                .attr('class', 'x-axis')
+                .attr('transform', 'translate(0,' + height + ')')
+                .call(d3.axisBottom(xScale)
+                    .ticks(2)
+                    .tickFormat(d3.timeFormat('%b %d %H:%M')));
+
+            g.append('g')
+                .attr('class', 'y-axis')
+                .call(d3.axisLeft(yScale).tickFormat(d3.format('.2f')));
+
+            // Add y-axis label
+            g.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 0 - margin.left)
+                .attr('x', 0 - (height / 2))
+                .attr('dy', '1em')
+                .style('text-anchor', 'middle')
+                .text(yLabel);
+        }
+
+
+        function updateStackedBarChart(dataset, htmlContainerClass, yLabel, chartTitle) {
+            let htmlContainer = d3Selection.select('.' + htmlContainerClass);
+            let htmlContainerNode = htmlContainer.node();
+
+            if (!htmlContainerNode) {
+                return;
+            }
+
+            // Clear previous chart
+            htmlContainer.selectAll('*').remove();
+
+            // Get container dimensions
+            let htmlContainerWidth = htmlContainerNode.getBoundingClientRect().width;
+            let margin = {left: 75, top: 50, right: 25, bottom: 50};
+            let width = htmlContainerWidth - margin.left - margin.right;
+            let height = 400 - margin.top - margin.bottom;
+
+            // Group data by date for stacking
+            let dateMap = {};
+            dataset.data.forEach(function(d) {
+                if (!dateMap[d.date]) {
+                    dateMap[d.date] = [];
+                }
+                dateMap[d.date].push(d);
+            });
+
+            // Get dates and sort them
+            let dates = Object.keys(dateMap).sort(function(date1, date2) {
+                let ts1 = Date.parse(date1 + ' GMT');
+                let ts2 = Date.parse(date2 + ' GMT');
+                return ts1 - ts2;
+            });
+
+            let stacks = Array.from(new Set(dataset.data.map(function(d) { return d.stack; })));
+
+            // Transform data for stacking
+            let stackData = dates.map(function(date) {
+                let entry = {date: date};
+                dateMap[date].forEach(function(d) {
+                    entry[d.stack] = d.usage;
+                });
+                return entry;
+            });
+
+            // Create stack generator
+            let stack = d3.stack()
+                .keys(stacks)
+                .value((d, key) => d[key] || 0);
+
+            let series = stack(stackData);
+
+            // Create scales
+            let xScale = d3.scaleBand()
+                .domain(dates)
+                .range([0, width])
+                .padding(0.2);
+
+            let yScale = d3.scaleLinear()
+                .domain([0, d3.max(series, s => d3.max(s, d => d[1]))])
+                .nice()
+                .range([height, 0]);
+
+            let colorScale = d3.scaleOrdinal()
+                .domain(stacks)
+                .range(KoaColorSchema);
+
+            // Create tooltip
+            let tooltipDiv = d3.select('body').selectAll('.stackedbar-tooltip').data([0]);
+            let tooltipEnter = tooltipDiv.enter().append('div')
+                .attr('class', 'stackedbar-tooltip')
+                .style('position', 'absolute')
+                .style('padding', '8px')
+                .style('background', 'rgba(0, 0, 0, 0.8)')
+                .style('color', '#fff')
+                .style('border-radius', '4px')
+                .style('font-size', '12px')
+                .style('pointer-events', 'none')
+                .style('opacity', 0)
+                .style('z-index', 1000);
+
+            let tooltip = tooltipDiv.merge(tooltipEnter);
+
+            // Create SVG
+            let svg = htmlContainer.append('svg')
+                .attr('width', htmlContainerWidth)
+                .attr('height', 400);
+
+            let g = svg.append('g')
+                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+            // Add grid lines
+            g.append('g')
+                .attr('class', 'grid')
+                .attr('opacity', 0.1)
+                .call(d3.axisLeft(yScale)
+                    .tickSize(-width)
+                    .tickFormat(''));
+
+            // Add stacked bars
+            g.selectAll('.series')
+                .data(series)
+                .join('g')
+                .attr('class', 'series')
+                .attr('fill', function(d) { return colorScale(d.key); })
+                .selectAll('rect')
+                .data(function(d) { return d; })
+                .join('rect')
+                .attr('x', function(d) { return xScale(d.data.date); })
+                .attr('y', function(d) { return yScale(d[1]); })
+                .attr('height', function(d) { return yScale(d[0]) - yScale(d[1]); })
+                .attr('width', xScale.bandwidth())
+                .on('mouseover', function(event, d) {
+                    let stackKey = d3.select(this.parentNode).datum().key;
+                    let value = d.data[stackKey];
+
+                    tooltip.transition()
+                        .duration(200)
+                        .style('opacity', 0.9);
+
+                    tooltip.html('<strong>' + stackKey + '</strong><br/>' +
+                        'Date: ' + d.data.date + '<br/>' +
+                        chartTitle + ': ' + value.toFixed(3))
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 28) + 'px');
+                })
+                .on('mouseout', function() {
+                    tooltip.transition()
+                        .duration(500)
+                        .style('opacity', 0);
+                });
+
+            // Add axes
+            g.append('g')
+                .attr('class', 'x-axis')
+                .attr('transform', 'translate(0,' + height + ')')
+                .call(d3.axisBottom(xScale));
+
+            g.append('g')
+                .attr('class', 'y-axis')
+                .call(d3.axisLeft(yScale).tickFormat(d3.format(',f')));
+
+            // Add y-axis label
+            g.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 0 - margin.left)
+                .attr('x', 0 - (height / 2))
+                .attr('dy', '1em')
+                .style('text-anchor', 'middle')
+                .text(yLabel);
+        }
+
+
+        function updateDonutChart(dataset, selectedChart, targetDivContainer, legendContainer, chartTitle) {
             let legendChart = renderLegend(dataset, legendContainer);
-            let donutContainer = d3Selection.select('.' + targetDivContainer);
+            let donutContainer = d3.select('.' + targetDivContainer);
             let containerWidth = donutContainer.node() ? donutContainer.node().getBoundingClientRect().width : false;
 
-            if (containerWidth) {
-                myDonutChart
-                    .isAnimated(true)
-                    .highlightSliceById(2)
-                    .width(containerWidth)
-                    .height(containerWidth)
-                    .externalRadius(containerWidth / 2.5)
-                    .internalRadius(containerWidth / 5)
-                    .on('customMouseOver', function (data) {
-                        legendChart.highlight(data.data.id);
-                    })
-                    .on('customMouseOut', function () {
-                        legendChart.clearHighlight();
-                    });
-
-                if (KoaColorSchema) {
-                    myDonutChart.colorSchema(KoaColorSchema);
-                }
-
-                donutContainer.datum(dataset).call(myDonutChart);
+            if (!containerWidth) {
+                return;
             }
+
+            // Clear previous chart
+            donutContainer.selectAll('*').remove();
+
+            let width = containerWidth;
+            let height = containerWidth;
+            let externalRadius = containerWidth / 2.5;
+            let internalRadius = containerWidth / 5;
+
+            // Create tooltip
+            let tooltipDiv = d3.select('body').selectAll('.donut-tooltip').data([0]);
+            let tooltipEnter = tooltipDiv.enter().append('div')
+                .attr('class', 'donut-tooltip')
+                .style('position', 'absolute')
+                .style('padding', '8px')
+                .style('background', 'rgba(0, 0, 0, 0.8)')
+                .style('color', '#fff')
+                .style('border-radius', '4px')
+                .style('font-size', '12px')
+                .style('pointer-events', 'none')
+                .style('opacity', 0)
+                .style('z-index', 1000);
+
+            let tooltip = tooltipDiv.merge(tooltipEnter);
+
+            // Create pie generator
+            let pie = d3.pie()
+                .value(d => d.quantity || 0)
+                .sort(null);
+
+            // Create arc generator
+            let arc = d3.arc()
+                .innerRadius(internalRadius)
+                .outerRadius(externalRadius);
+
+            // Create highlighted arc (slightly larger)
+            let arcHover = d3.arc()
+                .innerRadius(internalRadius)
+                .outerRadius(externalRadius + 5);
+
+            // Create SVG
+            let svg = donutContainer.append('svg')
+                .attr('width', width)
+                .attr('height', height);
+
+            let g = svg.append('g')
+                .attr('transform', `translate(${width / 2}, ${height / 2})`);
+
+            // Create arcs
+            let arcs = g.selectAll('.arc')
+                .data(pie(dataset))
+                .enter().append('g')
+                .attr('class', 'arc');
+
+            // Add paths
+            arcs.append('path')
+                .attr('d', arc)
+                .attr('fill', (d, i) => KoaColorSchema[i % KoaColorSchema.length])
+                .attr('stroke', 'white')
+                .attr('stroke-width', 2)
+                .style('cursor', 'pointer')
+                .on('mouseover', function(event, d) {
+                    // Highlight arc
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .attr('d', arcHover);
+
+                    // Highlight legend
+                    if (legendChart) {
+                        legendChart.highlight(d.data.id);
+                    }
+
+                    // Show tooltip
+                    tooltip.transition()
+                        .duration(200)
+                        .style('opacity', 0.9);
+
+                    let tooltipText = `<strong>${d.data.name}</strong><br/>`;
+                    if (d.data.quantity !== undefined) {
+                        tooltipText += `Quantity: ${d.data.quantity.toFixed(2)}<br/>`;
+                    }
+                    if (d.data.percentage !== undefined) {
+                        tooltipText += `Percentage: ${d.data.percentage.toFixed(1)}%`;
+                    }
+
+                    tooltip.html(tooltipText)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 28) + 'px');
+                })
+                .on('mousemove', function(event) {
+                    tooltip
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 28) + 'px');
+                })
+                .on('mouseout', function(event, d) {
+                    // Reset arc
+                    d3.select(this)
+                        .transition()
+                        .duration(200)
+                        .attr('d', arc);
+
+                    // Clear legend highlight
+                    if (legendChart) {
+                        legendChart.clearHighlight();
+                    }
+
+                    // Hide tooltip
+                    tooltip.transition()
+                        .duration(500)
+                        .style('opacity', 0);
+                });
+
+            // Add animation on load
+            arcs.selectAll('path')
+                .transition()
+                .duration(750)
+                .attrTween('d', function(d) {
+                    let interpolate = d3.interpolate({startAngle: 0, endAngle: 0}, d);
+                    return function(t) {
+                        return arc(interpolate(t));
+                    };
+                });
         }
 
 
@@ -279,18 +693,19 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             tooltip += '<tr><td>Container Runtime</td><td>' + node.containerRuntime + '</td></tr>';
             tooltip += '<tr><td>State</td><td>' + node.state + '</td></tr>';
             tooltip += '<tr><td>CPU</td><td>' + node.cpuCapacity + '</td></tr>';
-            tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>' + computeLoad(node.cpuAllocatable, node.cpuCapacity) + '</td></tr>';
-            tooltip += '<tr><td>&nbsp;&nbsp;Usage</td><td>' + computeLoad(node.cpuUsage, node.cpuCapacity) + '</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>' + computeLoadPercent(node.cpuAllocatable, node.cpuCapacity) + '</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Usage</td><td>' + computeLoadPercent(node.cpuUsage, node.cpuCapacity) + '</td></tr>';
             tooltip += '<tr><td>Memory</td><td>' + node.memCapacity + '</td></tr>';
-            tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>' + computeLoad(node.memAllocatable, node.memAllocatable) + '</td></tr>';
-            tooltip += '<tr><td>&nbsp;&nbsp;Usage</td><td>' + computeLoad(node.memUsage, node.memCapacity) + '</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>' + computeLoadPercent(node.memAllocatable, node.memAllocatable) + '</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Usage</td><td>' + computeLoadPercent(node.memUsage, node.memCapacity) + '</td></tr>';
             tooltip += '<tr><td>Pods Running</td><td>' + node.podsRunning.length + '</td></tr>';
 
             tooltip += '</tbody></table>';
             return tooltip;
         }
 
-        function createPopupContent(nodeInfo) {
+
+        function computeNodePopupHtml(nodeInfo) {
             return ('<div class="modal fade" id="' + nodeInfo.id + '" tabindex="-1" role="dialog" aria-labelledby="' + nodeInfo.name + '" aria-hidden="true">'
                 + '<div class="modal-dialog">'
                 + '<div class="modal-content">'
@@ -309,22 +724,23 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 + '</div>');
         }
 
-
         function buildNodesDataSet(data, usageType) {
             let dataset = {"data": new Map()};
 
             let nodeHtmlList = '';
-            let popupContent = '';
+            let nodePopupHtml = '';
             for (let nname in data) {
                 if (data.hasOwnProperty(nname)) {
                     let node = data[nname];
                     nodeHtmlList += '<li><a href="#" data-toggle="modal" data-target="#' + node.id + '">' + nname + '</a></li>';
-                    popupContent += createPopupContent(node);
+                    nodePopupHtml += computeNodePopupHtml(node);
                 }
             }
             $("#host-list-container").html('<ul>' + nodeHtmlList + "</ul>");
-            $("#popup-container").html(popupContent);
+            $("#popup-container").html(nodePopupHtml);
 
+            let $errorMessage = $("#error-message");
+            let $errorContainer = $("#error-message-container");
             for (let nname in data) {
                 if (!data.hasOwnProperty(nname)) {
                     continue;
@@ -345,24 +761,21 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                         resAllocatable = 'cpuAllocatable';
                         break;
                     default:
-                        const $errorLi1 = $('<li>').text(`unknown load type: ${usageType}`);
-                        $("#error-message").append($errorLi1);
-                        $("#error-message-container").show();
+                        $errorMessage.append('<li>unknown load type: ' + encodeURIComponent(usageType) + '</li>');
+                        $errorContainer.show();
                         return;
                 }
 
                 let node = data[nname];
                 if (typeof node[resUsage] === "undefined" || node[resUsage] === 0) {
-                    const $errorLi2 = $('<li>').text(`No ${resUsage} metric on node ${encodeURIComponent(node.name)}`);
-                    $("#error-message").append($errorLi2);
-                    $("#error-message-container").show();
+                    $errorMessage.append('<li>No ' + resUsage + ' metric on node ' + encodeURIComponent(node.name) + '</li>');
+                    $errorContainer.show();
                     continue;
                 }
 
                 if (node[resUsage] === 0) {
-                    const $errorLi3 = $('<li>').text(`Node ${encodeURIComponent(node.name)} has ${resUsage} equals to zero`);
-                    $("#error-message").append($errorLi3);
-                    $("#error-message-container").show();
+                    $errorMessage.append('<li>Node ' + node.name + ' has ' + encodeURIComponent(resUsage) + ' equals to zero' + '</li>');
+                    $errorContainer.show();
                     continue;
                 }
 
@@ -382,22 +795,22 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 let loadColors = [];
                 for (let pid = 0; pid < node.podsRunning.length; pid++) {
                     let pod = node.podsRunning[pid];
-                    let podLoad = computeLoad(pod[resUsage], node[resCapacity]);
-                    let podLoadRel = computeLoad(pod[resUsage], node[resUsage]);
-                    loadColors.push(computeLoadHeatMapColor(podLoadRel));
-                    sumLoad += podLoad;
+                    let podUsageLoadOverNodeCapacity = computeLoadPercent(pod[resUsage], node[resCapacity]);
+                    let podUsageLoadOverNodeUsage = computeLoadPercent(pod[resUsage], node[resUsage]);
+                    loadColors.push(computeLoadPercentHeatColor(podUsageLoadOverNodeUsage));
+                    sumLoad += podUsageLoadOverNodeCapacity;
                     if (pod[resUsage] > 0.0) {
                         chartData.push({
                             "name": truncateText(pod.name, 25, '...'),
                             "id": pid,
                             "quantity": pod[resUsage],
-                            "percentage": podLoad
+                            "percentage": podUsageLoadOverNodeCapacity
                         });
                     }
                 }
 
                 let nonAllocatableCapacity = node[resCapacity] - node[resAllocatable]
-                let nonAllocatableRatio = computeLoad(nonAllocatableCapacity, node[resCapacity])
+                let nonAllocatableRatio = computeLoadPercent(nonAllocatableCapacity, node[resCapacity])
                 sumLoad += nonAllocatableRatio;
 
                 chartData.push({
@@ -407,24 +820,27 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                     "percentage": nonAllocatableRatio
                 });
 
+                let unusedCapacity = node[resCapacity] * (1 - sumLoad / 100) ;
                 chartData.push({
                     "name": 'unused',
                     "id": 9999,
-                    "quantity": node[resCapacity] * (1 - sumLoad / 100),
+                    "quantity": unusedCapacity,
                     "percentage": (100.0 - sumLoad)
                 });
-                loadColors.push(computeLoadHeatMapColor(0));
+
+                loadColors.push(computeLoadPercentHeatColor(0));
                 dataset.data.set(nname, {'chartData': chartData, 'colorSchema': loadColors})
             }
             return dataset;
         }
 
 
-        function computeLoad(used, capacity) {
+        function computeLoadPercent(used, capacity) {
             return Math.ceil(1e4 * used / capacity) / 100
         }
 
-        function computeLoadHeatMapColor(load) {
+
+        function computeLoadPercentHeatColor(load) {
             const NUM_COLORS = 4;
             const HeatMapColors = Object.freeze({
                 '0': [0, 0, 255],
@@ -459,95 +875,61 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
         }
 
         function getNodeCssClass(nodeCssId) {
-            return 'js-' + nodeCssId;
+            return "js-" + nodeCssId ;
         }
 
         function getNodeLegendCssClass(nodeCssId) {
             return "js-" + nodeCssId + "-legend" ;
         }
 
-        function updateNodeUsage() {
-            currentUsageType = $("#node-usage-type option:selected").val();
-            $.ajax({
-                type: "GET",
-                url: `${FrontendApi.DATA_DIR}/nodes.json`,
-                dataType: 'json',
-                success: function (data) {
-                    let dataset = buildNodesDataSet(data, currentUsageType, 'donut');
-                    let dynHtml = '';
-                    let donuts = new Map();
-                    for (let [nname, _] of dataset.data) {
-                        let nodeCssId = getNodeCssId(nname);
-                        donuts[nname] = donut();
-                        dynHtml += '<div class="col-md-4">';
-                        dynHtml += '  <h4>' + nname + '</h4>';
-                        dynHtml += '  <div class="' + getNodeCssClass(nodeCssId) + '"></div>';
-                        dynHtml += '  <div class="' + getNodeLegendCssClass(nodeCssId) + ' britechart-legend"></div>';
-                        dynHtml += '</div>';
-                    }
-                    $("#js-nodes-load-container").html(dynHtml);
-                    for (let [nname, ndata] of dataset.data) {
-                        let nodeCssId = getNodeCssId(nname);
-                        updateDonutChart(ndata['chartData'],
-                            donuts[nname],
-                            getNodeCssClass(nodeCssId),
-                            getNodeLegendCssClass(nodeCssId));
-                    }
-                },
-                error: function (xhr, ajaxOptions, thrownError) {
-                    const $errorLi4 = $('<li>').text(`download node data (${xhr.status})`);
-                    $("#error-message").append($errorLi4);
-                    $("#error-message-container").show();
-                }
-            });
-        }
-
-
         function showUsageTrendByType() {
             usageTrendType = $("#selected-usage-trend-type option:selected").val();
             if (usageTrendType === 'usage-efficiency') {
                 $('#chart-block-trends-hourly-usage').hide();
                 $("#chart-block-trends-rf").show();
-                refreshTrendsChartByType(cpuRfTrendsChart, 'CPU', 'rf');
-                refreshTrendsChartByType(memoryRfTrendsChart, 'Memory', 'rf');
+                refreshTrendsChartByType('CPU', 'rf');
+                refreshTrendsChartByType('Memory', 'rf');
             } else {
                 $("#chart-block-trends-rf").hide();
                 $("#chart-block-trends-hourly-usage").show();
-                refreshTrendsChartByType(cpuUsageTrendsChart, 'CPU', 'usage');
-                refreshTrendsChartByType(memoryUsageTrendsChart, 'Memory', 'usage');
+                refreshTrendsChartByType('CPU', 'usage');
+                refreshTrendsChartByType('Memory', 'usage');
             }
         }
+
 
         function showCumulativeUsageByType() {
             cumulativeUsageType = $("#selected-cumulative-usage-type option:selected").val();
             if (cumulativeUsageType === 'monthly-usage') {
                 $("#chart-block-daily").hide();
                 $("#chart-block-monthly").show();
-                refreshCumulativeChartByType(monthlyCpuUsageChart, 'CPU', 'usage', 'monthly');
-                refreshCumulativeChartByType(monthlyMemoryUsageChart, 'Memory', 'usage', 'monthly');
+                refreshCumulativeChartByType('CPU', 'usage', 'monthly');
+                refreshCumulativeChartByType('Memory', 'usage', 'monthly');
             } else if (cumulativeUsageType === 'monthly-requests') {
                 $("#chart-block-daily").hide();
                 $("#chart-block-monthly").show();
-                refreshCumulativeChartByType(monthlyCpuUsageChart, 'CPU', 'requests', 'monthly');
-                refreshCumulativeChartByType(monthlyMemoryUsageChart, 'Memory', 'requests', 'monthly');
+                refreshCumulativeChartByType('CPU', 'requests', 'monthly');
+                refreshCumulativeChartByType('Memory', 'requests', 'monthly');
             } else if (cumulativeUsageType === 'daily-requests') {
                 $("#chart-block-monthly").hide();
                 $("#chart-block-daily").show();
-                refreshCumulativeChartByType(dailyCpuUsageChart, 'CPU', 'requests', 'daily');
-                refreshCumulativeChartByType(dailyMemoryUsageChart, 'Memory', 'requests', 'daily');
+                refreshCumulativeChartByType('CPU', 'requests', 'daily');
+                refreshCumulativeChartByType('Memory', 'requests', 'daily');
             } else { // handle as daily-usage
                 $("#chart-block-monthly").hide();
                 $("#chart-block-daily").show();
-                refreshCumulativeChartByType(dailyCpuUsageChart, 'CPU', 'usage', 'daily');
-                refreshCumulativeChartByType(dailyMemoryUsageChart, 'Memory', 'usage', 'daily');
+                refreshCumulativeChartByType('CPU', 'usage', 'daily');
+                refreshCumulativeChartByType('Memory', 'usage', 'daily');
             }
         }
+
 
         function exportJSON(data) {
             return new Blob(
                 [JSON.stringify(data)],
                 {type: 'application/json'})
         }
+
 
         function exportCSV(data) {
             data = JSON.parse(JSON.stringify(data));
@@ -571,12 +953,43 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             );
         }
 
-        function exportImage(chartElt, filename) {
-            return new Blob(
-                [chartElt.exportChart(filename)],
-                {type: 'image/png'}
-            );
+
+        function exportImage(chartContainerClass, filename) {
+            let svgElement = d3Selection.select('.' + chartContainerClass + ' svg').node();
+
+            if (!svgElement) {
+                console.error('SVG element not found for export');
+                return;
+            }
+
+            // Clone the SVG element
+            let clonedSvg = svgElement.cloneNode(true);
+
+            // Add XML namespace if not present
+            if (!clonedSvg.getAttribute('xmlns')) {
+                clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            }
+
+            // Serialize the SVG
+            let serializer = new XMLSerializer();
+            let svgString = serializer.serializeToString(clonedSvg);
+
+            // Create blob and download link
+            let blob = new Blob([svgString], {type: 'image/svg+xml'});
+            let url = URL.createObjectURL(blob);
+
+            // Create temporary link and trigger download
+            let link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+
+            // Cleanup
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
+
 
         function installExporter(targetDivId, filename, exporterFunc) {
             $(`#${targetDivId}`)
@@ -596,6 +1009,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 .removeClass('disabled')
         }
 
+
         function loadBackendConfig() {
             $(".accounting-cost-model").text('');
             $.ajax({
@@ -607,21 +1021,16 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
                     $(".accounting-cost-model").text('(%)');
-                    const $errorLi5 = $('<li>').text(`failed loading backend config (${xhr.status} error)`);
-                    $("#error-message").append($errorLi5);
+                    $("#error-message").append(`failed loading backend config (${xhr.status} error)`);
                 }
             });
         }
 
-        function refreshTrendsChartByType(chart, resourceType, trendType) {
+
+        function refreshTrendsChartByType(resourceType, trendType) {
             let resourceTypeLowered = resourceType.toLowerCase();
             let dataFile = `${resourceTypeLowered}_${trendType}_trends.json`;
             let datasetPath = `${FrontendApi.DATA_DIR}/${dataFile}`;
-
-            const TREND_TYPE_LABELS = Object.freeze({
-                "usage": "Hourly Usage",
-                "rf": "Hourly Usage Efficiency",
-            });
 
             $.ajax({
                 type: "GET",
@@ -629,7 +1038,8 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 dataType: 'json',
                 success: function (data) {
                     let chartCategory = `${resourceTypeLowered}-${trendType}`;
-                    installExporter(`trends-${resourceTypeLowered}-png`, '', () => exportImage(chart, 'kopex-trends-' + chartCategory + '.png'));
+                    let chartContainerClass = `js-chart-trends-${chartCategory}`;
+                    installExporter(`trends-${resourceTypeLowered}-png`, '', () => exportImage(chartContainerClass, 'kopex-trends-' + chartCategory + '.svg'));
                     installExporter(`trends-${resourceTypeLowered}-json`, 'kopex-trends-' + chartCategory + '.json', () => exportJSON(data));
                     installExporter(`trends-${resourceTypeLowered}-csv`, 'kopex-trends-' + chartCategory + '.csv', () => exportCSV(data));
 
@@ -655,7 +1065,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                                     )
                         };
                         if (dataset.data.length > 0) {
-                            updateLineOrAreaChart(dataset, chart, `js-chart-trends-${chartCategory}`, `${resourceType} ${TREND_TYPE_LABELS[trendType]}`, `${TREND_TYPE_LABELS[trendType]}`);
+                            updateLineOrAreaChart(dataset, chartContainerClass, resourceType, trendType);
                             $("#error-message-container").hide();
                         } else {
                             $("#error-message").html('<li>no trends data found in the selected range</li>');
@@ -672,7 +1082,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                                     })
                                 );
                         if (dataset.length > 0) {
-                            updateLineOrAreaChart(dataset, chart, `js-chart-trends-${chartCategory}`, `${resourceType} ${TREND_TYPE_LABELS[trendType]}`, `${TREND_TYPE_LABELS[trendType]}`);
+                            updateLineOrAreaChart(dataset, `js-chart-trends-${chartCategory}`, resourceType, trendType);
                             $("#error-message-container").hide();
                         } else {
                             $("#error-message").html('<li>no trends data found in the selected range</li>');
@@ -682,14 +1092,14 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
 
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
-                    const $errorLi6 = $('<li>').text(`error ${xhr.status} downloading data file ${dataFile}`);
-                    $("#error-message").append($errorLi6);
+                    $("#error-message").append(`<li>error ${xhr.status} downloading data file ${dataFile}</li>`);
                     $("#error-message-container").show();
                 }
             });
         }
 
-        function refreshCumulativeChartByType(chart, resourceType, usageType, periodType) {
+
+        function refreshCumulativeChartByType(resourceType, usageType, periodType) {
             let resourceTypeLowered = resourceType.toLowerCase();
             let DATASET_FILES = Object.freeze({
                 "daily-usage": `${resourceTypeLowered}_usage_period_1209600.json`,
@@ -705,149 +1115,21 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 url: `${FrontendApi.DATA_DIR}/${DATASET_FILES[dataSetKey]}`,
                 dataType: 'json',
                 success: function (data) {
-                    installExporter(`consolidated-${resourceTypeLowered}-usage-png`, '', () => exportImage(chart, filenamePrefix + '.png'));
+                    let chartContainerClass = `js-chart-${periodType}-${resourceTypeLowered}-usage`;
+                    installExporter(`consolidated-${resourceTypeLowered}-usage-png`, '', () => exportImage(chartContainerClass, filenamePrefix + '.svg'));
                     installExporter(`consolidated-${resourceTypeLowered}-usage-json`, filenamePrefix + '.json', () => exportJSON(data));
                     installExporter(`consolidated-${resourceTypeLowered}-usage-csv`, filenamePrefix + '.csv', () => exportCSV(data));
 
-                    updateStackedBarChart(
-                        {"data": data},
-                        chart,
-                        `js-chart-${periodType}-${resourceTypeLowered}-usage`,
+                    updateStackedBarChart({"data": data},
+                        chartContainerClass,
                         `${resourceType} consumption`,
                         `${periodType} ${resourceType} ${usageType}`);
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
-                    const $errorLi7 = $('<li>').text(`error ${xhr.status} downloading data file ${DATASET_FILES[periodType]}`);
-                    $("#error-message").append($errorLi7);
+                    $("#error-message").append(`<li>error ${xhr.status} downloading data file ${DATASET_FILES[periodType]}</li>`);
                     $("#error-message-container").show();
                 }
             });
-        }
-
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-        }
-
-        function createNodeHeatmap(nodes, resourceType) {
-            const container = d3Selection.select('#js-node-heatmap-chart');
-            container.selectAll('*').remove(); // Clear previous heatmap
-
-            if (!nodes || nodes.length === 0) {
-                container.append('p')
-                    .attr('class', 'error-message')
-                    .text('No nodes available');
-                return;
-            }
-
-            // Calculate percentages if not provided or zero
-            nodes.forEach(node => {
-                if (!node.cpuUsagePercent || node.cpuUsagePercent === 0) {
-                    node.cpuUsagePercent = node.cpuCapacity > 0
-                        ? (node.cpuUsage / node.cpuCapacity) * 100
-                        : 0;
-                }
-                if (!node.memoryUsagePercent || node.memoryUsagePercent === 0) {
-                    node.memoryUsagePercent = node.memoryCapacity > 0
-                        ? (node.memoryUsage / node.memoryCapacity) * 100
-                        : 0;
-                }
-            });
-
-            // Create SVG canvas
-            const margin = {top: 20, right: 20, bottom: 60, left: 20};
-            const containerWidth = container.node().getBoundingClientRect().width;
-            const width = containerWidth - margin.left - margin.right;
-            const cellSize = 80;
-            const cellsPerRow = Math.floor(width / cellSize);
-            const rows = Math.ceil(nodes.length / cellsPerRow);
-            const height = rows * cellSize;
-
-            const svg = container.append('svg')
-                .attr('width', containerWidth)
-                .attr('height', height + margin.top + margin.bottom);
-
-            const g = svg.append('g')
-                .attr('transform', `translate(${margin.left},${margin.top})`);
-
-            // Color scale based on usage percentage
-            const getColor = (percentage) => {
-                if (percentage === null || percentage === undefined || isNaN(percentage)) return '#95a5a6';
-                if (percentage < 20) return '#3498db';
-                if (percentage < 50) return '#2ecc71';
-                if (percentage < 80) return '#f39c12';
-                return '#e74c3c';
-            };
-
-            // Create tooltip div
-            const tooltipDiv = d3Selection.select('body').append('div')
-                .attr('class', 'tooltip')
-                .style('opacity', 0)
-                .style('position', 'absolute')
-                .style('background-color', 'white')
-                .style('border', '1px solid #ddd')
-                .style('border-radius', '4px')
-                .style('padding', '10px')
-                .style('pointer-events', 'none')
-                .style('z-index', '1000');
-
-            // Create heatmap cells
-            const cells = g.selectAll('.heatmap-cell')
-                .data(nodes)
-                .enter().append('g')
-                .attr('class', 'heatmap-cell')
-                .attr('transform', (d, i) => {
-                    const row = Math.floor(i / cellsPerRow);
-                    const col = i % cellsPerRow;
-                    return `translate(${col * cellSize},${row * cellSize})`;
-                });
-
-            // Add rectangles
-            cells.append('rect')
-                .attr('width', cellSize - 5)
-                .attr('height', cellSize - 5)
-                .attr('rx', 4)
-                .attr('fill', d => {
-                    const percentage = resourceType === 'cpu' ? d.cpuUsagePercent : d.memoryUsagePercent;
-                    return getColor(percentage);
-                })
-                .attr('stroke', '#fff')
-                .attr('stroke-width', 2)
-                .on('mouseover', function(event, d) {
-                    const percentage = resourceType === 'cpu' ? d.cpuUsagePercent : d.memoryUsagePercent;
-                    const capacity = resourceType === 'cpu' ? d.cpuCapacity + ' cores' : formatBytes(d.memoryCapacity);
-                    const usage = resourceType === 'cpu' ? d.cpuUsage.toFixed(2) + ' cores' : formatBytes(d.memoryUsage);
-
-                    tooltipDiv.style('opacity', .9)
-                        .html(`
-                            <strong>${d.name}</strong><br/>
-                            ${resourceType.toUpperCase()} Usage: ${percentage.toFixed(1)}%<br/>
-                            Used: ${usage}<br/>
-                            Capacity: ${capacity}<br/>
-                            State: ${d.state}<br/>
-                            Pods: ${d.podsRunning}
-                        `)
-                        .style('left', (event.pageX + 10) + 'px')
-                        .style('top', (event.pageY - 28) + 'px');
-                })
-                .on('mouseout', function(d) {
-                    tooltipDiv.style('opacity', 0);
-                });
-
-            // Add node labels
-            cells.append('text')
-                .attr('x', (cellSize - 5) / 2)
-                .attr('y', (cellSize - 5) / 2)
-                .attr('text-anchor', 'middle')
-                .attr('dominant-baseline', 'middle')
-                .style('fill', 'white')
-                .style('font-size', '10px')
-                .style('font-weight', 'bold')
-                .style('pointer-events', 'none')
-                .text(d => d.name.length > 10 ? d.name.substring(0, 10) + '...' : d.name);
         }
 
         function updateAllCharts() {
@@ -859,9 +1141,11 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             updateNodeUsage();
         }
 
+
         function initDateFilters() {
             const formatDatetimeFilter = (dt) => {
-                let dformat  = [dt.getFullYear(),
+                let dformat;
+                dformat = [dt.getFullYear(),
                         (dt.getMonth() + 1).toString().padStart(2, 0),
                         dt.getDate().toString().padStart(2, 0)].join('-') + 'T' +
                     [dt.getHours().toString().padStart(2, 0),
@@ -889,6 +1173,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             dateFilter2.onchange = function () { showUsageTrendByType(); };
         }
 
+
         (function ($) {
             $(document).ready(function () {
                 $.ajaxSetup(
@@ -912,6 +1197,208 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                 }, 300000); // update every 5 mins
             });
         })(jQuery);
+
+
+        // Node Heatmap Functionality
+        function getUsageColor(percentage) {
+            if (percentage <= 50) return '#2ecc71';      // Green - Low usage
+            if (percentage <= 80) return '#f39c12';      // Orange - Medium usage
+            return '#e74c3c';                            // Red - High usage
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function createNodeHeatmap(nodes, resourceType) {
+            const container = d3Selection.select('#js-node-heatmap-chart');
+            container.selectAll('*').remove(); // Clear previous heatmap
+
+            if (!nodes || nodes.length === 0) {
+                container.append('div')
+                    .attr('class', 'no-data-message')
+                    .html('<p>No node data available for heatmap visualization.</p>');
+                return;
+            }
+
+            // Calculate percentages if not provided or zero
+            nodes.forEach(node => {
+                if (!node.cpuUsagePercent || node.cpuUsagePercent === 0) {
+                    node.cpuUsagePercent = node.cpuCapacity > 0
+                        ? (node.cpuUsage / node.cpuCapacity) * 100
+                        : 0;
+                }
+                if (!node.memoryUsagePercent || node.memoryUsagePercent === 0) {
+                    node.memoryUsagePercent = node.memoryCapacity > 0
+                        ? (node.memoryUsage / node.memoryCapacity) * 100
+                        : 0;
+                }
+            });
+
+            // Create SVG canvas
+            const margin = {top: 20, right: 20, bottom: 60, left: 20};
+            const containerWidth = container.node().getBoundingClientRect().width;
+            const width = containerWidth - margin.left - margin.right;
+            const height = 400 - margin.top - margin.bottom;
+
+            const svg = container.append('svg')
+                .attr('width', containerWidth)
+                .attr('height', 400);
+
+            const g = svg.append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            // Calculate grid layout
+            const nodesPerRow = Math.ceil(Math.sqrt(nodes.length));
+            const rectPadding = 10;
+            const maxRectSize = Math.min((width - (nodesPerRow * rectPadding)) / nodesPerRow,
+                (height - (Math.ceil(nodes.length / nodesPerRow) * rectPadding)) / Math.ceil(nodes.length / nodesPerRow));
+
+            // Create tooltip
+            const tooltip = d3Selection.select('body').selectAll('.heatmap-tooltip')
+                .data([0]);
+
+            const tooltipEnter = tooltip.enter().append('div')
+                .attr('class', 'heatmap-tooltip')
+                .style('opacity', 0);
+
+            const tooltipDiv = tooltip.merge(tooltipEnter);
+
+            // Create nodes
+            const nodeGroups = g.selectAll('.node-group')
+                .data(nodes)
+                .enter().append('g')
+                .attr('class', 'node-group')
+                .attr('transform', (d, i) => {
+                    const row = Math.floor(i / nodesPerRow);
+                    const col = i % nodesPerRow;
+                    const x = col * (maxRectSize + rectPadding);
+                    const y = row * (maxRectSize + rectPadding);
+                    return `translate(${x},${y})`;
+                });
+
+            // Add rectangles
+            nodeGroups.append('rect')
+                .attr('class', 'node-rect')
+                .attr('width', d => Math.min(d.rectSize || maxRectSize, maxRectSize))
+                .attr('height', d => Math.min(d.rectSize || maxRectSize, maxRectSize))
+                .attr('fill', d => {
+                    const percentage = resourceType === 'cpu' ? d.cpuUsagePercent : d.memoryUsagePercent;
+                    return percentage > 0 ? getUsageColor(percentage) : '#95a5a6';
+                })
+                .on('mouseover', function(event, d) {
+                    const percentage = resourceType === 'cpu' ? d.cpuUsagePercent : d.memoryUsagePercent;
+                    const capacity = resourceType === 'cpu' ? d.cpuCapacity + ' cores' : formatBytes(d.memoryCapacity);
+                    const usage = resourceType === 'cpu' ? d.cpuUsage.toFixed(2) + ' cores' : formatBytes(d.memoryUsage);
+
+                    tooltipDiv.style('opacity', .9)
+                        .html(`
+                            <strong>${d.name}</strong><br/>
+                            ${resourceType.toUpperCase()} Usage: ${percentage.toFixed(1)}%<br/>
+                            Used: ${usage}<br/>
+                            Capacity: ${capacity}<br/>
+                            State: ${d.state}<br/>
+                            Pods: ${d.podsRunning}
+                        `)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 28) + 'px');
+                })
+                .on('mouseout', function(d) {
+                    tooltipDiv.style('opacity', 0);
+                });
+
+            // Add node labels
+            nodeGroups.append('text')
+                .attr('class', 'node-label')
+                .attr('x', d => (Math.min(d.rectSize || maxRectSize, maxRectSize)) / 2)
+                .attr('y', d => (Math.min(d.rectSize || maxRectSize, maxRectSize)) / 2 - 5)
+                .text(d => d.name.length > 8 ? d.name.substring(0, 6) + '...' : d.name);
+
+            // Add usage percentage text
+            nodeGroups.append('text')
+                .attr('class', 'node-usage-text')
+                .attr('x', d => (Math.min(d.rectSize || maxRectSize, maxRectSize)) / 2)
+                .attr('y', d => (Math.min(d.rectSize || maxRectSize, maxRectSize)) / 2 + 8)
+                .text(d => {
+                    const percentage = resourceType === 'cpu' ? d.cpuUsagePercent : d.memoryUsagePercent;
+                    return percentage > 0 ? percentage.toFixed(1) + '%' : 'N/A';
+                });
+        }
+
+        function updateNodeUsage() {
+            const usageType = document.getElementById('js-node-usage-type').value;
+            const heatmapContainer = document.getElementById('js-nodes-heatmap-container');
+            const podsContainer = document.getElementById('js-nodes-pods-container');
+
+            if (usageType.includes('heatmap')) {
+                heatmapContainer.style.display = 'block';
+                podsContainer.style.display = 'none';
+
+                const resourceType = usageType.includes('cpu') ? 'cpu' : 'memory';
+
+                // Fetch heatmap data
+                fetch('/api/nodes/heatmap')
+                    .then(response => {
+                        if (! response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.error) {
+                            console.error('Error fetching heatmap data:', data.error);
+                            document.getElementById('js-node-heatmap-chart').innerHTML =
+                                '<p class="error-message">Error loading heatmap data: ' + data.error + '</p>';
+                        } else {
+                            createNodeHeatmap(data.nodes, resourceType);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching heatmap data:', error);
+                        document.getElementById('js-node-heatmap-chart').innerHTML =
+                            '<p class="error-message">Error loading heatmap data</p>';
+                    });
+            } else {
+                heatmapContainer.style.display = 'none';
+                podsContainer.style.display = 'block';
+                $.ajax({
+                    type: "GET",
+                    url: `${FrontendApi.DATA_DIR}/nodes.json`,
+                    dataType: 'json',
+                    success: function (data) {
+                        let dataset = buildNodesDataSet(data, usageType, 'donut');
+                        let dynHtml = '';
+                        for (let [nname, _] of dataset.data) {
+                            let nodeCssId = getNodeCssId(nname);
+                            dynHtml += '<div class="col-md-4">';
+                            dynHtml += '  <h4>' + nname + '</h4>';
+                            dynHtml += '  <div class="' + getNodeCssClass(nodeCssId) + '"></div>';
+                            dynHtml += '  <div class="' + getNodeLegendCssClass(nodeCssId) + ' britechart-legend"></div>'
+                            dynHtml += '</div>';
+                        }
+
+                        // $("#js-nodes-load-container").html(dynHtml);
+                        podsContainer.innerHTML = dynHtml;
+                        for (let [nname, ndata] of dataset.data) {
+                            let nodeCssId = getNodeCssId(nname);
+                            updateDonutChart(ndata['chartData'],
+                                null,
+                                getNodeCssClass(nodeCssId),
+                                getNodeLegendCssClass(nodeCssId)
+                            );
+                        }
+                    },
+                    error: function (xhr, ajaxOptions, thrownError) {
+                        $("#error-message").append('<li>download node data' + ' (' + xhr.status + ')</li>');
+                        $("#error-message-container").show();
+                    }
+                });
+            }
+        }
 
         // export API
         FrontendApi.refreshUsageCharts = updateAllCharts;
