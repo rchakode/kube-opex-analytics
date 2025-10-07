@@ -103,6 +103,26 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
             }
         };
 
+        // Centralized error handling utilities
+        function showError(message, clearPrevious = false) {
+            const $errorMessage = $("#error-message");
+            const $errorContainer = $("#error-message-container");
+
+            if (clearPrevious) {
+                $errorMessage.html('');
+            }
+
+            // Escape HTML to prevent XSS
+            const safeMessage = $('<div>').text(message).html();
+            $errorMessage.append(`<li>${safeMessage}</li>`);
+            $errorContainer.show();
+        }
+
+        function clearErrors() {
+            $("#error-message-container").hide();
+            $("#error-message").html('');
+        }
+
 
         function renderLegend(dataset, targetDivContainer) {
             const legendContainer = d3Selection.select('.' + targetDivContainer);
@@ -1021,7 +1041,10 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
                     $(".accounting-cost-model").text('(%)');
-                    $("#error-message").append(`failed loading backend config (${xhr.status} error)`);
+                    showError(`Failed loading backend config (${xhr.status} error)`);
+                    if (thrownError) {
+                        console.error('Backend config error:', thrownError);
+                    }
                 }
             });
         }
@@ -1068,8 +1091,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                             updateLineOrAreaChart(dataset, chartContainerClass, resourceType, trendType);
                             $("#error-message-container").hide();
                         } else {
-                            $("#error-message").html('<li>no trends data found in the selected range</li>');
-                            $("#error-message-container").show();
+                            showError('No trends data found in the selected range', true);
                         }
                     } else {
                         const dataset =
@@ -1085,15 +1107,16 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                             updateLineOrAreaChart(dataset, `js-chart-trends-${chartCategory}`, resourceType, trendType);
                             $("#error-message-container").hide();
                         } else {
-                            $("#error-message").html('<li>no trends data found in the selected range</li>');
-                            $("#error-message-container").show();
+                            showError('No trends data found in the selected range', true);
                         }
                     }
 
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append(`<li>error ${xhr.status} downloading data file ${dataFile}</li>`);
-                    $("#error-message-container").show();
+                    showError(`Error ${xhr.status} downloading data file ${dataFile}`);
+                    if (thrownError) {
+                        console.error('Trends chart error:', thrownError);
+                    }
                 }
             });
         }
@@ -1110,9 +1133,10 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
 
             let dataSetKey = (periodType+'-'+usageType).toLowerCase();
             let filenamePrefix = 'kopex-' + resourceTypeLowered + '-' + dataSetKey;
+            let dataFile = DATASET_FILES[dataSetKey];
             $.ajax({
                 type: "GET",
-                url: `${FrontendApi.DATA_DIR}/${DATASET_FILES[dataSetKey]}`,
+                url: `${FrontendApi.DATA_DIR}/${dataFile}`,
                 dataType: 'json',
                 success: function (data) {
                     let chartContainerClass = `js-chart-${periodType}-${resourceTypeLowered}-usage`;
@@ -1126,15 +1150,16 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                         `${periodType} ${resourceType} ${usageType}`);
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
-                    $("#error-message").append(`<li>error ${xhr.status} downloading data file ${DATASET_FILES[periodType]}</li>`);
-                    $("#error-message-container").show();
+                    showError(`Error ${xhr.status} downloading data file ${dataFile}`);
+                    if (thrownError) {
+                        console.error('Cumulative chart error:', thrownError);
+                    }
                 }
             });
         }
 
         function updateAllCharts() {
-            $("#error-message-container").hide();
-            $("#error-message").html('')
+            clearErrors();
             loadBackendConfig();
             showUsageTrendByType();
             showCumulativeUsageByType();
@@ -1393,8 +1418,10 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                         }
                     },
                     error: function (xhr, ajaxOptions, thrownError) {
-                        $("#error-message").append('<li>download node data' + ' (' + xhr.status + ')</li>');
-                        $("#error-message-container").show();
+                        showError(`Error ${xhr.status} downloading node data`);
+                        if (thrownError) {
+                            console.error('Node data error:', thrownError);
+                        }
                     }
                 });
             }
