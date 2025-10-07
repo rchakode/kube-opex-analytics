@@ -454,6 +454,17 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
             return 'rgb(' + r + ',' + g + ',' + b + ')';
         }
 
+        function getNodeCssId(nodeName) {
+            return 'kn-' + nodeName.replaceAll('.', '_');
+        }
+
+        function getNodeCssClass(nodeCssId) {
+            return 'js-' + nodeCssId;
+        }
+
+        function getNodeLegendCssClass(nodeCssId) {
+            return "js-" + nodeCssId + "-legend" ;
+        }
 
         function updateNodeUsage() {
             currentUsageType = $("#node-usage-type option:selected").val();
@@ -466,21 +477,21 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                     let dynHtml = '';
                     let donuts = new Map();
                     for (let [nname, _] of dataset.data) {
-                        let nname4Css = 'kn-' + nname.replaceAll('.', '_');
+                        let nodeCssId = getNodeCssId(nname);
                         donuts[nname] = donut();
                         dynHtml += '<div class="col-md-4">';
                         dynHtml += '  <h4>' + nname + '</h4>';
-                        dynHtml += '  <div class="js-' + nname4Css + '"></div>';
-                        dynHtml += '  <div class="js-' + nname4Css + '-legend britechart-legend"></div>';
+                        dynHtml += '  <div class="' + getNodeCssClass(nodeCssId) + '"></div>';
+                        dynHtml += '  <div class="' + getNodeLegendCssClass(nodeCssId) + ' britechart-legend"></div>';
                         dynHtml += '</div>';
                     }
                     $("#js-nodes-load-container").html(dynHtml);
                     for (let [nname, ndata] of dataset.data) {
-                        let nname4Css = 'kn-' + nname.replaceAll('.', '_');
+                        let nodeCssId = getNodeCssId(nname);
                         updateDonutChart(ndata['chartData'],
                             donuts[nname],
-                            'js-' + nname4Css,
-                            'js-' + nname4Css + '-legend');
+                            getNodeCssClass(nodeCssId),
+                            getNodeLegendCssClass(nodeCssId));
                     }
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
@@ -711,6 +722,132 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3Selection', 'stackedAreaChart', 
                     $("#error-message-container").show();
                 }
             });
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function createNodeHeatmap(nodes, resourceType) {
+            const container = d3Selection.select('#js-node-heatmap-chart');
+            container.selectAll('*').remove(); // Clear previous heatmap
+
+            if (!nodes || nodes.length === 0) {
+                container.append('p')
+                    .attr('class', 'error-message')
+                    .text('No nodes available');
+                return;
+            }
+
+            // Calculate percentages if not provided or zero
+            nodes.forEach(node => {
+                if (!node.cpuUsagePercent || node.cpuUsagePercent === 0) {
+                    node.cpuUsagePercent = node.cpuCapacity > 0
+                        ? (node.cpuUsage / node.cpuCapacity) * 100
+                        : 0;
+                }
+                if (!node.memoryUsagePercent || node.memoryUsagePercent === 0) {
+                    node.memoryUsagePercent = node.memoryCapacity > 0
+                        ? (node.memoryUsage / node.memoryCapacity) * 100
+                        : 0;
+                }
+            });
+
+            // Create SVG canvas
+            const margin = {top: 20, right: 20, bottom: 60, left: 20};
+            const containerWidth = container.node().getBoundingClientRect().width;
+            const width = containerWidth - margin.left - margin.right;
+            const cellSize = 80;
+            const cellsPerRow = Math.floor(width / cellSize);
+            const rows = Math.ceil(nodes.length / cellsPerRow);
+            const height = rows * cellSize;
+
+            const svg = container.append('svg')
+                .attr('width', containerWidth)
+                .attr('height', height + margin.top + margin.bottom);
+
+            const g = svg.append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+
+            // Color scale based on usage percentage
+            const getColor = (percentage) => {
+                if (percentage === null || percentage === undefined || isNaN(percentage)) return '#95a5a6';
+                if (percentage < 20) return '#3498db';
+                if (percentage < 50) return '#2ecc71';
+                if (percentage < 80) return '#f39c12';
+                return '#e74c3c';
+            };
+
+            // Create tooltip div
+            const tooltipDiv = d3Selection.select('body').append('div')
+                .attr('class', 'tooltip')
+                .style('opacity', 0)
+                .style('position', 'absolute')
+                .style('background-color', 'white')
+                .style('border', '1px solid #ddd')
+                .style('border-radius', '4px')
+                .style('padding', '10px')
+                .style('pointer-events', 'none')
+                .style('z-index', '1000');
+
+            // Create heatmap cells
+            const cells = g.selectAll('.heatmap-cell')
+                .data(nodes)
+                .enter().append('g')
+                .attr('class', 'heatmap-cell')
+                .attr('transform', (d, i) => {
+                    const row = Math.floor(i / cellsPerRow);
+                    const col = i % cellsPerRow;
+                    return `translate(${col * cellSize},${row * cellSize})`;
+                });
+
+            // Add rectangles
+            cells.append('rect')
+                .attr('width', cellSize - 5)
+                .attr('height', cellSize - 5)
+                .attr('rx', 4)
+                .attr('fill', d => {
+                    const percentage = resourceType === 'cpu' ? d.cpuUsagePercent : d.memoryUsagePercent;
+                    return getColor(percentage);
+                })
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 2)
+                .on('mouseover', function(event, d) {
+                    const percentage = resourceType === 'cpu' ? d.cpuUsagePercent : d.memoryUsagePercent;
+                    const capacity = resourceType === 'cpu' ? d.cpuCapacity + ' cores' : formatBytes(d.memoryCapacity);
+                    const usage = resourceType === 'cpu' ? d.cpuUsage.toFixed(2) + ' cores' : formatBytes(d.memoryUsage);
+
+                    tooltipDiv.style('opacity', .9)
+                        .html(`
+                            <strong>${d.name}</strong><br/>
+                            ${resourceType.toUpperCase()} Usage: ${percentage.toFixed(1)}%<br/>
+                            Used: ${usage}<br/>
+                            Capacity: ${capacity}<br/>
+                            State: ${d.state}<br/>
+                            Pods: ${d.podsRunning}
+                        `)
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 28) + 'px');
+                })
+                .on('mouseout', function(d) {
+                    tooltipDiv.style('opacity', 0);
+                });
+
+            // Add node labels
+            cells.append('text')
+                .attr('x', (cellSize - 5) / 2)
+                .attr('y', (cellSize - 5) / 2)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .style('fill', 'white')
+                .style('font-size', '10px')
+                .style('font-weight', 'bold')
+                .style('pointer-events', 'none')
+                .text(d => d.name.length > 10 ? d.name.substring(0, 10) + '...' : d.name);
         }
 
         function updateAllCharts() {
