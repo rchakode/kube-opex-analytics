@@ -17,7 +17,7 @@
 -->
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <title>Kubernetes Opex Analytics | Hourly, Daily and Monthly Analytics of Kubernetes Cluster Usage</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,6 +27,75 @@
     <link rel="stylesheet" href="css/bootswatch.min.css">
     <link type="text/css" rel="stylesheet" href="css/britecharts/britecharts.min.css" />
     <link rel="stylesheet" href="css/frontend.css">
+    <style>
+        /* Light theme (default) */
+        :root[data-theme="light"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --chart-bg: #ffffff;
+        }
+
+        /* Dark theme */
+        :root[data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --text-primary: #e9ecef;
+            --text-secondary: #adb5bd;
+            --border-color: #495057;
+            --chart-bg: #2d2d2d;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .page-header {
+            background-color: var(--bg-primary);
+        }
+
+        .navbar {
+            background-color: var(--bg-secondary) !important;
+            border-color: var(--border-color) !important;
+        }
+
+        .chart-container {
+            background-color: var(--chart-bg);
+            transition: background-color 0.3s;
+        }
+
+        legend, h4 {
+            color: var(--text-primary) !important;
+        }
+
+        .control-label {
+            color: var(--text-secondary);
+        }
+
+        footer {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        /* Theme toggle button */
+        .theme-toggle {
+            cursor: pointer;
+            padding: 8px 15px;
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            transition: all 0.3s;
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--bg-secondary);
+        }
+    </style>
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
     <script src="../bower_components/html5shiv/dist/html5shiv.js"></script>
@@ -41,6 +110,31 @@
                 "CONSOLIDATED": "consolidated-pods",
             });
         FrontendApi.DATA_DIR='{{ koa_frontend_data_location }}';
+
+        // Theme toggle functionality
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+
+            // Update button text
+            const btn = document.getElementById('theme-toggle-btn');
+            btn.textContent = newTheme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode';
+        }
+
+        // Load saved theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+
+            const btn = document.getElementById('theme-toggle-btn');
+            if (btn) {
+                btn.textContent = savedTheme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode';
+            }
+        });
     </script>
     <script data-main="js/frontend.js" src="js/require-v2.3.6.min.js" > </script>
     <script>
@@ -60,6 +154,7 @@
         </div>
         <div class="navbar-collapse collapse" id="navbar-main">
             <ul class="nav navbar-nav navbar-right">
+                <li><button class="theme-toggle" onclick="toggleTheme()" id="theme-toggle-btn">🌙 Dark Mode</button></li>
                 <li><a href="#" data-toggle="modal" data-target="#myModal">About</a></li>
             </ul>
         </div>
@@ -203,12 +298,11 @@
                     </select>
                 </span>
             </legend>
-            <div id="js-nodes-heatmap-container" style="display: none;">
-                <div class="heatmap-legend">
-                    <strong>Load Legend:</strong>
-                    <div class="legend-items">
-                        <span class="legend-item"><span class="legend-color" style="background-color: #3498db;"></span>Low (0-20%)</span>
-                        <span class="legend-item"><span class="legend-color" style="background-color: #2ecc71;"></span>Normal (20-50%)</span>
+            <div id="js-nodes-load-container">
+                <div id="js-nodes-heatmap-container" style="display: none;">
+                    <div class="heatmap-legend">
+                        <span class="legend-title">Usage Level:</span>
+                        <span class="legend-item"><span class="legend-color" style="background-color: #2ecc71;"></span>Low (0-50%)</span>
                         <span class="legend-item"><span class="legend-color" style="background-color: #f39c12;"></span>Medium (50-80%)</span>
                         <span class="legend-item"><span class="legend-color" style="background-color: #e74c3c;"></span>High (80-100%)</span>
                         <span class="legend-item"><span class="legend-color" style="background-color: #95a5a6;"></span>No Data</span>
