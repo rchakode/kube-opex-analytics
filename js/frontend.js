@@ -1332,6 +1332,10 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                         .style('left', (event.pageX + 10) + 'px')
                         .style('top', (event.pageY - 28) + 'px');
                 })
+                .on('mousemove', function(event) {
+                    tooltipDiv.style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 28) + 'px');
+                })
                 .on('mouseout', function(d) {
                     tooltipDiv.style('opacity', 0);
                 });
@@ -1341,13 +1345,24 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 .attr('class', 'node-label')
                 .attr('x', d => (Math.min(d.rectSize || maxRectSize, maxRectSize)) / 2)
                 .attr('y', d => (Math.min(d.rectSize || maxRectSize, maxRectSize)) / 2 - 5)
-                .text(d => d.name.length > 8 ? d.name.substring(0, 6) + '...' : d.name);
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .style('font-size', '14px')
+                .style('font-weight', 'bold')
+                .style('fill', '#ffffff')
+                .style('pointer-events', 'none')
+                .text(d => d.name.length > 10 ? d.name.substring(0, 10) + '...' : d.name);
 
             // Add usage percentage text
             nodeGroups.append('text')
                 .attr('class', 'node-usage-text')
                 .attr('x', d => (Math.min(d.rectSize || maxRectSize, maxRectSize)) / 2)
-                .attr('y', d => (Math.min(d.rectSize || maxRectSize, maxRectSize)) / 2 + 8)
+                .attr('y', d => (Math.min(d.rectSize || maxRectSize, maxRectSize)) / 2 + 15)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .style('font-size', '13px')
+                .style('fill', '#ffffff')
+                .style('pointer-events', 'none')
                 .text(d => {
                     const percentage = resourceType === 'cpu' ? d.cpuUsagePercent : d.memoryUsagePercent;
                     return percentage > 0 ? percentage.toFixed(1) + '%' : 'N/A';
