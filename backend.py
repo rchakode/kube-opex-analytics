@@ -53,7 +53,7 @@ def create_directory_if_not_exists(path):
 
 
 class Config:
-    version = '25.03.1'
+    version = '25.10.0'
     db_round_decimals = 6
     db_non_allocatable = 'non-allocatable'
     db_billing_hourly_rate = '.billing-hourly-rate'
@@ -252,6 +252,66 @@ def render():
     return flask.render_template('index.html',
                                  koa_frontend_data_location=KOA_CONFIG.frontend_data_location,
                                  koa_version=KOA_CONFIG.version)
+
+
+@app.route('/api/nodes/heatmap')
+@cross_origin()
+def get_node_heatmap_data():
+    """Get node heatmap data for CPU and memory usage visualization."""
+    try:
+        # Read nodes data
+        nodes_file = f'{KOA_CONFIG.frontend_data_location}/nodes.json'
+        if not os.path.exists(nodes_file):
+            return flask.jsonify({'error': 'Nodes data not available', 'nodes': []})
+
+        with open(nodes_file, 'r') as f:
+            nodes_data = json.load(f)
+
+        heatmap_data = []
+        for node_name, node_info in nodes_data.items():
+            # Calculate CPU usage percentage
+            cpu_usage_pct = 0.0
+            if hasattr(node_info, 'cpuAllocatable') and node_info.get('cpuAllocatable', 0) > 0:
+                cpu_used = node_info.get('cpuUsage', 0)
+                cpu_usage_pct = (cpu_used / node_info['cpuAllocatable']) * 100
+
+            # Calculate memory usage percentage
+            memory_usage_pct = 0.0
+            if hasattr(node_info, 'memAllocatable') and node_info.get('memAllocatable', 0) > 0:
+                mem_used = node_info.get('memUsage', 0)
+                memory_usage_pct = (mem_used / node_info['memAllocatable']) * 100
+
+            # Calculate node size based on CPU capacity (for rectangle sizing)
+            cpu_capacity = node_info.get('cpuCapacity', 1)
+            base_size = 50  # Base rectangle size
+            size_multiplier = max(1, cpu_capacity / 2)  # Scale based on CPU cores
+            rect_size = min(base_size * size_multiplier, 200)  # Cap max size
+
+            node_heatmap_info = {
+                'name': node_name,
+                'cpuUsagePercent': round(cpu_usage_pct, 2),
+                'memoryUsagePercent': round(memory_usage_pct, 2),
+                'cpuCapacity': node_info.get('cpuCapacity', 0),
+                'memoryCapacity': node_info.get('memCapacity', 0),
+                'cpuAllocatable': node_info.get('cpuAllocatable', 0),
+                'memoryAllocatable': node_info.get('memAllocatable', 0),
+                'cpuUsage': node_info.get('cpuUsage', 0),
+                'memoryUsage': node_info.get('memUsage', 0),
+                'state': node_info.get('state', 'Unknown'),
+                'podsRunning': len(node_info.get('podsRunning', [])),
+                'rectSize': round(rect_size, 0)
+            }
+            heatmap_data.append(node_heatmap_info)
+
+        return flask.jsonify({
+            'nodes': heatmap_data,
+            'timestamp': int(time.time()),
+            'total_nodes': len(heatmap_data)
+        })
+
+    except Exception as e:
+        KOA_LOGGER.error("Error generating node heatmap data: %s", str(e))
+        return flask.jsonify({'error': 'Failed to generate heatmap data', 'nodes': []})
 
 
 def get_http_resource_or_return_none_on_error(url):
@@ -704,6 +764,35 @@ class K8sUsage:
                 self.cpuAllocatable += node.cpuAllocatable
                 self.memAllocatable += node.memAllocatable
 
+    def calculate_node_usage(self):
+        """Calculate individual node CPU and memory usage from running pods."""
+        for node_name, node in self.nodes.items():
+            node.cpuUsage = 0.0
+            node.memUsage = 0.0
+            node.cpuRequest = 0.0
+            node.memRequest = 0.0
+
+            # Sum up usage from all pods running on this node
+            if hasattr(node, 'podsRunning') and node.podsRunning:
+                for pod in node.podsRunning:
+                    if hasattr(pod, 'cpuUsage') and hasattr(pod, 'memUsage'):
+                        node.cpuUsage += pod.cpuUsage
+                        node.memUsage += pod.memUsage
+                    if hasattr(pod, 'cpuRequest') and hasattr(pod, 'memRequest'):
+                        node.cpuRequest += pod.cpuRequest
+                        node.memRequest += pod.memRequest
+
+            # Calculate usage percentages
+            if hasattr(node, 'cpuAllocatable') and node.cpuAllocatable > 0:
+                node.cpuUsagePercent = round((node.cpuUsage / node.cpuAllocatable) * 100, 2)
+            else:
+                node.cpuUsagePercent = 0.0
+
+            if hasattr(node, 'memAllocatable') and node.memAllocatable > 0:
+                node.memUsagePercent = round((node.memUsage / node.memAllocatable) * 100, 2)
+            else:
+                node.memUsagePercent = 0.0
+
     def dump_nodes(self):
         with open(str('%s/nodes.json' % KOA_CONFIG.frontend_data_location), 'w') as fd:
             fd.write(json.dumps(self.nodes, cls=JSONMarshaller))
@@ -1006,6 +1095,7 @@ def create_metrics_puller():
             k8s_usage.extract_pods(pull_k8s('/api/v1/pods'))
             k8s_usage.extract_pod_metrics(pull_k8s('/apis/metrics.k8s.io/v1beta1/pods'))
             k8s_usage.consolidate_ns_usage()
+            k8s_usage.calculate_node_usage()
             k8s_usage.dump_nodes()
 
             if k8s_usage.cpuCapacity > 0.0 and k8s_usage.memCapacity > 0.0:
