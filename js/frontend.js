@@ -181,6 +181,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 .attr('y', markerSize / 2)
                 .attr('dy', '0.35em')
                 .style('font-size', '12px')
+                .style('fill', 'var(--text-primary)')
                 .text(d => d.name);
 
             // Add resource usage column (quantity and percentage) - right aligned
@@ -190,6 +191,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 .attr('dy', '0.35em')
                 .style('font-size', '12px')
                 .style('text-anchor', 'end')
+                .style('fill', 'var(--text-primary)')
                 .text(d => {
                     if (d.quantity !== undefined && d.percentage !== undefined) {
                         return `${d.quantity.toFixed(2)} (${d.percentage.toFixed(1)}%)`;
