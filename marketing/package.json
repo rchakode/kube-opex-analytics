@@ -1,0 +1,11 @@
+{
+  "name": "kube-opex-analytics-screenshots",
+  "version": "1.0.0",
+  "description": "Screenshot automation for Kube Opex Analytics marketing materials",
+  "scripts": {
+    "capture": "node capture-screenshots.js"
+  },
+  "dependencies": {
+    "puppeteer": "^21.5.0"
+  }
+}
