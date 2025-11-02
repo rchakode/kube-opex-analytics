@@ -11,32 +11,33 @@ import re
 SCREENSHOTS_DIR = Path("/home/redhat/kube-opex-analytics/screenshots/marketing/")
 OUTPUT_VIDEO = Path("/home/redhat/kube-opex-analytics/screenshots/marketing/kube-opex-analytics-demo.mp4")
 FPS = 30
-DURATION_PER_SLIDE = 3  # seconds
+DURATION_PER_SLIDE = 1  # seconds
 TRANSITION_DURATION = 0.5  # seconds
 TARGET_WIDTH = 1920
 TARGET_HEIGHT = 1080
 
 # Text overlays for each screenshot
 SLIDE_TITLES = {
-    "01-dashboard-light-theme.png": "Dashboard Overview - Light Theme",
-    "01b-dashboard-monthly-usage-light.png": "Monthly Usage Tracking",
-    "01c-dashboard-heatmap-light.png": "Resource Utilization Heatmap",
-    "01d-dashboard-usage-trends-tooltip-light.png": "Interactive Usage Trends",
+    "01-dashboard-light-theme.png": "Complete Usage Visibility Into Your Kubernetes Cluster",
+    "01b-dashboard-monthly-usage-light.png": "Track Usage Across Hourly, Daily & Monthly Periods",
+    #"01c-dashboard-heatmap-light.png": "Resource Utilization Heatmap",
+    #"01d-dashboard-usage-trends-tooltip-light.png": "Interactive Usage Trends",
     "02-dashboard-dark-theme.png": "Dashboard Overview - Dark Theme",
-    "02b-dashboard-monthly-usage-dark.png": "Monthly Usage - Dark Theme",
-    "02c-dashboard-heatmap-dark.png": "Heatmap - Dark Theme",
-    "03-usage-trends-charts.png": "Comprehensive Usage Trends",
-    "04-usage-efficiency-view.png": "Resource Efficiency Insights",
-    "05-daily-usage-accounting.png": "Daily Usage Accounting",
-    "06-monthly-usage-accounting.png": "Monthly Usage Accounting",
-    "07-node-cpu-heatmap.png": "Node CPU Heatmap",
-    "08-node-memory-heatmap.png": "Node Memory Heatmap",
-    "09-node-cpu-pods-usage.png": "Node CPU & Pods Usage",
-    "10-heatmap-tooltip-demo.png": "Interactive Heatmap Tooltips",
-    "11-heatmap-dark-theme.png": "Heatmap Dark Theme",
-    "12-full-dashboard-dark.png": "Complete Dashboard View",
-    "13-node-detail-popup-light.png": "Node Details - Light Theme",
-    "14-node-detail-popup-dark.png": "Node Details - Dark Theme",
+    #"02b-dashboard-monthly-usage-dark.png": "Monthly Usage - Dark Theme",
+    #"02c-dashboard-heatmap-dark.png": "Heatmap - Dark Theme",
+    "03-usage-trends-charts.png": "Identify Trends & Forecast Future Resource Needss",
+    "04-usage-efficiency-view.png": "Optimize Resource Request Efficiency & Reduce Waste",
+    "05-daily-usage-accounting.png": "Transparent Daily Cost Tracking",
+    "06-monthly-usage-accounting.png": "Monthly Reports for Chargeback & Budget Planning",
+    "07-node-cpu-heatmap.png": "Heatmap to Visualize Node Utilization at a Glance",
+    #"08-node-memory-heatmap.png": "Node Memory Heatmap",
+    "09-node-cpu-pods-usage.png": "Understand Workload Distribution Across Nodes",
+    "10-heatmap-tooltip-demo.png": "Tooltips to Drill Down Into Detailed Metrics on Demands",
+    #"11-heatmap-dark-theme.png": "Heatmap Dark Theme",
+    #"12-full-dashboard-dark.png": "Deep Insights Into Node Configurations & Capacity",
+    "13-node-detail-popup-light.png": "Insights Into Node Configurations & Capacity",
+    #"14-node-detail-popup-dark.png": "Node Details - Dark Theme",
+    "15-export-menu-feature.png": "Export Data (PNG, CSV, JSON) for Custom AI & Analytics Workflows",
 }
 
 
@@ -120,7 +121,7 @@ def create_intro_frame(width, height):
     frame = np.zeros((height, width, 3), dtype=np.uint8)
 
     # Add title
-    title = "Kube OPEX Analytics"
+    title = "Kube Opex Analytics"
     subtitle = "Kubernetes Resource Usage & Cost Analytics"
 
     font = cv2.FONT_HERSHEY_SIMPLEX

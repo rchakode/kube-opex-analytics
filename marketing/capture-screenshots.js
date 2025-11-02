@@ -298,6 +298,37 @@ async function captureScreenshots() {
                 path: path.join(OUTPUT_DIR, '14-node-detail-popup-dark.png'),
                 fullPage: false
             });
+
+            // Close popup
+            const closeButton2 = await page.$('#popup-container .close');
+            if (closeButton2) {
+                await closeButton2.click();
+                await wait(500);
+            }
+        }
+
+        // 15. Export menu feature - light theme
+        console.log('☀️ Switching to light theme for export menu...');
+        await page.click('#theme-toggle-btn');
+        await wait(500);
+
+        console.log('📸 Capturing: 15-export-menu-feature.png');
+
+        // Scroll to usage trends section where export button is located
+        await page.evaluate(() => {
+            document.querySelector('.js-chart-trends-cpu-usage').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        await wait(1000);
+
+        // Click the export dropdown button to show the menu
+        const exportButton = await page.$('.menu-export');
+        if (exportButton) {
+            await exportButton.click();
+            await wait(800); // Wait for dropdown animation
+            await page.screenshot({
+                path: path.join(OUTPUT_DIR, '15-export-menu-feature.png'),
+                fullPage: false
+            });
         }
 
         console.log('\n✅ Screenshot capture complete!');
