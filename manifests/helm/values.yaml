@@ -37,7 +37,7 @@ securityContext:
 replicaCount: 1
 
 image:
-  repository: rchakode/kube-opex-analytics
+  repository: registry.hub.docker.com/rchakode/kube-opex-analytics
   pullPolicy: Always
 
 nameOverride: ""
