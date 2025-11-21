@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""
-Create a marketing video from screenshots
-"""
-import cv2
-import numpy as np
-from pathlib import Path
+"""Create a marketing video from screenshots."""
 import re
+from pathlib import Path
+
+import cv2
+
+import numpy as np
 
 # Configuration
 SCREENSHOTS_DIR = Path("/home/redhat/kube-opex-analytics/screenshots/marketing/")
@@ -20,35 +20,35 @@ TARGET_HEIGHT = 1080
 SLIDE_TITLES = {
     "01-dashboard-light-theme.png": "Complete Usage Visibility Into Your Kubernetes Cluster",
     "01b-dashboard-monthly-usage-light.png": "Track Usage Across Hourly, Daily & Monthly Periods",
-    #"01c-dashboard-heatmap-light.png": "Resource Utilization Heatmap",
-    #"01d-dashboard-usage-trends-tooltip-light.png": "Interactive Usage Trends",
+    # "01c-dashboard-heatmap-light.png": "Resource Utilization Heatmap",
+    # "01d-dashboard-usage-trends-tooltip-light.png": "Interactive Usage Trends",
     "02-dashboard-dark-theme.png": "Dashboard Overview - Dark Theme",
-    #"02b-dashboard-monthly-usage-dark.png": "Monthly Usage - Dark Theme",
-    #"02c-dashboard-heatmap-dark.png": "Heatmap - Dark Theme",
+    # "02b-dashboard-monthly-usage-dark.png": "Monthly Usage - Dark Theme",
+    # "02c-dashboard-heatmap-dark.png": "Heatmap - Dark Theme",
     "03-usage-trends-charts.png": "Identify Trends & Forecast Future Resource Needss",
     "04-usage-efficiency-view.png": "Optimize Resource Request Efficiency & Reduce Waste",
     "05-daily-usage-accounting.png": "Transparent Daily Cost Tracking",
     "06-monthly-usage-accounting.png": "Monthly Reports for Chargeback & Budget Planning",
     "07-node-cpu-heatmap.png": "Heatmap to Visualize Node Utilization at a Glance",
-    #"08-node-memory-heatmap.png": "Node Memory Heatmap",
+    # "08-node-memory-heatmap.png": "Node Memory Heatmap",
     "09-node-cpu-pods-usage.png": "Understand Workload Distribution Across Nodes",
     "10-heatmap-tooltip-demo.png": "Tooltips to Drill Down Into Detailed Metrics on Demands",
-    #"11-heatmap-dark-theme.png": "Heatmap Dark Theme",
-    #"12-full-dashboard-dark.png": "Deep Insights Into Node Configurations & Capacity",
+    # "11-heatmap-dark-theme.png": "Heatmap Dark Theme",
+    # "12-full-dashboard-dark.png": "Deep Insights Into Node Configurations & Capacity",
     "13-node-detail-popup-light.png": "Insights Into Node Configurations & Capacity",
-    #"14-node-detail-popup-dark.png": "Node Details - Dark Theme",
+    # "14-node-detail-popup-dark.png": "Node Details - Dark Theme",
     "15-export-menu-feature.png": "Export Data (PNG, CSV, JSON) for Custom AI & Analytics Workflows",
 }
 
 
 def natural_sort_key(s):
-    """Sort filenames naturally (1, 2, 10 instead of 1, 10, 2)"""
+    """Sort filenames naturally (1, 2, 10 instead of 1, 10, 2)."""
     return [int(text) if text.isdigit() else text.lower()
             for text in re.split('([0-9]+)', str(s))]
 
 
 def resize_and_pad(image, target_width, target_height):
-    """Resize image to fit within target dimensions while maintaining aspect ratio, then pad"""
+    """Resize image to fit within target dimensions while maintaining aspect ratio, then pad."""
     height, width = image.shape[:2]
 
     # Calculate scaling factor
@@ -63,13 +63,13 @@ def resize_and_pad(image, target_width, target_height):
     canvas = np.zeros((target_height, target_width, 3), dtype=np.uint8)
     y_offset = (target_height - new_height) // 2
     x_offset = (target_width - new_width) // 2
-    canvas[y_offset:y_offset+new_height, x_offset:x_offset+new_width] = resized
+    canvas[y_offset:y_offset + new_height, x_offset:x_offset + new_width] = resized
 
     return canvas
 
 
 def add_text_overlay(image, text, position='bottom'):
-    """Add text overlay to image"""
+    """Add text overlay to image."""
     img_copy = image.copy()
     height, width = img_copy.shape[:2]
 
@@ -107,7 +107,7 @@ def add_text_overlay(image, text, position='bottom'):
 
 
 def create_fade_transition(img1, img2, num_frames):
-    """Create a fade transition between two images"""
+    """Create a fade transition between two images."""
     frames = []
     for i in range(num_frames):
         alpha = i / num_frames
@@ -117,7 +117,7 @@ def create_fade_transition(img1, img2, num_frames):
 
 
 def create_intro_frame(width, height):
-    """Create an intro frame with project title"""
+    """Create an intro frame with project title."""
     frame = np.zeros((height, width, 3), dtype=np.uint8)
 
     # Add title
@@ -140,13 +140,14 @@ def create_intro_frame(width, height):
     (subtitle_width, subtitle_height), _ = cv2.getTextSize(subtitle, font, subtitle_scale, subtitle_thickness)
     subtitle_x = (width - subtitle_width) // 2
     subtitle_y = height // 2 + 50
-    cv2.putText(frame, subtitle, (subtitle_x, subtitle_y), font, subtitle_scale, (149, 165, 166), subtitle_thickness, cv2.LINE_AA)
+    cv2.putText(frame, subtitle, (subtitle_x, subtitle_y), font, subtitle_scale, (149, 165, 166),
+                subtitle_thickness, cv2.LINE_AA)
 
     return frame
 
 
 def create_outro_frame(width, height):
-    """Create an outro frame with project info"""
+    """Create an outro frame with project info."""
     frame = np.zeros((height, width, 3), dtype=np.uint8)
 
     font = cv2.FONT_HERSHEY_SIMPLEX
@@ -197,7 +198,7 @@ def main():
     previous_frame = intro_frame
 
     for idx, img_path in enumerate(image_files):
-        print(f"Processing {img_path.name} ({idx+1}/{len(image_files)})")
+        print(f"Processing {img_path.name} ({idx + 1}/{len(image_files)})")
 
         # Load and process image
         img = cv2.imread(str(img_path))
