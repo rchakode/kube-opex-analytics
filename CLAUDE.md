@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 `kube-opex-analytics` is a Kubernetes usage analytics and cost optimization tool. It provides hourly, daily, and monthly resource consumption analytics to help organizations track and optimize Kubernetes cluster costs.
 
 **Tech Stack:**
+
 - Python 3 (Flask backend with RRDtool for time-series data)
 - JavaScript frontend (RequireJS + Britecharts for visualization)
 - Docker containerized deployment
@@ -14,19 +15,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-### Testing
+### Dependency Management
+
+```bash
+# Install dependencies
+uv sync
+```
+
+### Testing & Linting
+
 ```bash
 # Run tests
-pytest
+uv run pytest
 
-# Run tests with linting (recommended)
-tox
+# Run linting
+uv run ruff check .
 
-# Run only linting
-tox -e lint
+# Format code
+uv run ruff format .
 ```
 
 ### Local Development
+
 ```bash
 # Debug mode (requires kubectl access to cluster)
 ./run-debug.sh <cluster_name>
@@ -36,6 +46,7 @@ tox -e lint
 ```
 
 ### Building
+
 ```bash
 # Build Docker image
 docker build -t kube-opex-analytics .
@@ -44,12 +55,14 @@ docker build -t kube-opex-analytics .
 ## Architecture
 
 ### Core Components
+
 - **`backend.py`**: Main Flask application (1113 lines) - handles Kubernetes API polling, data processing, and web API
 - **`js/frontend.js`**: Frontend application using RequireJS module system and Britecharts for data visualization
 - **`index.html`**: Jinja2 template serving the web dashboard
 - **RRDtool databases**: Time-series storage for metrics (stored in `/data` volume)
 
 ### Data Flow
+
 1. Kubernetes API polling every 5 minutes (configurable via `KOA_POLLING_INTERVAL_SEC`)
 2. Metrics processing and consolidation into hourly/daily/monthly aggregates
 3. RRDtool database storage for time-series data
@@ -57,9 +70,10 @@ docker build -t kube-opex-analytics .
 5. Britecharts renders interactive dashboards
 
 ### Key Classes and Functions
-- `K8sUsage`: Main metrics collection and processing class
-- `PrometheusExporter`: Prometheus metrics integration
-- `ConfigLoader`: Environment variable configuration management
+
+- `K8sUsage`: Metrics collection and processing (pods/nodes aggregation)
+- `Rrd`: Encapsulates RRD persistence, trend/histogram exports, Prometheus gauges
+- `Config`: Environment-backed configuration loader
 - `decode_capacity()`: Kubernetes resource unit parsing (CPU/memory)
 
 ## Configuration
@@ -67,13 +81,15 @@ docker build -t kube-opex-analytics .
 The application uses environment variables for configuration:
 
 ### Essential Variables
+
 - `KOA_K8S_API_ENDPOINT`: Kubernetes API server URL
 - `KOA_K8S_AUTH_TOKEN`: Service account token for API access
 - `KOA_DB_LOCATION`: Path for RRDtool databases (default: `/data`)
 - `KOA_COST_MODEL`: Billing model - `CUMULATIVE_RATIO` (default), `RATIO`, or `CHARGE_BACK`
 
 ### Optional Variables
-- `KOA_BILLING_HOURLY_RATE`: Hourly cost rate for charge-back model (default: 9.92)
+
+- `KOA_BILLING_HOURLY_RATE`: Hourly cost rate for charge-back model (default: -1.0 unless set)
 - `KOA_BILLING_CURRENCY_SYMBOL`: Currency symbol (default: '$')
 - `KOA_POLLING_INTERVAL_SEC`: Metrics collection interval (default: 300)
 - `KOA_K8S_API_VERIFY_SSL`: SSL verification for API calls (default: true)
@@ -81,7 +97,7 @@ The application uses environment variables for configuration:
 ## Testing Strategy
 
 - `test_backend.py`: Unit tests for core functionality (CPU/memory capacity decoding)
-- `tox.ini`: Comprehensive testing with flake8 linting
+- Tooling relies on `uv`; sync environments with `uv sync --frozen --group dev` and run checks via `uv run`
 - Tests focus on Kubernetes resource unit parsing and data processing logic
 
 ## Frontend Architecture
