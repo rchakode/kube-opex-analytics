@@ -1,0 +1,68 @@
+[project]
+name = "kube-opex-analytics"
+version = "2.0.0"
+description = "Kubernetes Opex Analytics"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "flask",
+    "flask-cors",
+    "requests",
+    "rrdtool",
+    "prometheus-client",
+    "waitress",
+]
+authors = [{ name = "Rodrigue Chakode", email = "rodrigue.chakode@gmail.com" }]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+py-modules = ["backend"]
+include = [
+    "css/**",
+    "js/**",
+    "static/**",
+    "index.html",
+    "entrypoint.sh",
+    "LICENSE",
+    "NOTICE",
+]
+
+[dependency-groups]
+dev = ["pytest", "ruff"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py38"
+
+[tool.ruff.lint]
+select = [
+    "E",   # Standard flake8 rules (pycodestyle, pyflakes)
+    "F",   # Standard flake8 rules (pycodestyle, pyflakes)
+    "B",   # flake8-bugbear
+    "D",   # pydocstyle
+    "G",   # flake8-logging-format
+    "C90", # mccabe (complexity)
+]
+
+ignore = [
+    # "B001", # do not use bare except, specify exception instead (Handled by E722)
+    # "B901", # blind except: statement
+    "D100", # Missing docstring in public module
+    "D101", # Missing docstring in public class
+    "D102", # Missing docstring in public method
+    "D103", # Missing docstring in public function
+    "D104", # Missing docstring in public package
+    "D105", # Missing docstring in magic method
+    "D107", # Missing docstring in __init__
+    "E722", # do not use bare except, specify exception instead
+    "C901", # Method is too complex
+    "D203", # 1 blank line required before class docstring (incompatible with D211)
+    "D213", # Multi-line docstring summary should start at the second line (incompatible with D212)
+]
+
+[tool.pytest.ini_options]
+addopts = "-ra -q"
+testpaths = ["tests", "test_backend.py"]
