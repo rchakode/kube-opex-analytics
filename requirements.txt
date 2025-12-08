@@ -1,6 +1,0 @@
-flask
-flask_cors
-requests
-rrdtool
-prometheus_client
-waitress

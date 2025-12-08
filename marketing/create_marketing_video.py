@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Create a marketing video from screenshots."""
+
 import re
 from pathlib import Path
 
@@ -43,8 +44,7 @@ SLIDE_TITLES = {
 
 def natural_sort_key(s):
     """Sort filenames naturally (1, 2, 10 instead of 1, 10, 2)."""
-    return [int(text) if text.isdigit() else text.lower()
-            for text in re.split('([0-9]+)', str(s))]
+    return [int(text) if text.isdigit() else text.lower() for text in re.split("([0-9]+)", str(s))]
 
 
 def resize_and_pad(image, target_width, target_height):
@@ -63,12 +63,12 @@ def resize_and_pad(image, target_width, target_height):
     canvas = np.zeros((target_height, target_width, 3), dtype=np.uint8)
     y_offset = (target_height - new_height) // 2
     x_offset = (target_width - new_width) // 2
-    canvas[y_offset:y_offset + new_height, x_offset:x_offset + new_width] = resized
+    canvas[y_offset : y_offset + new_height, x_offset : x_offset + new_width] = resized
 
     return canvas
 
 
-def add_text_overlay(image, text, position='bottom'):
+def add_text_overlay(image, text, position="bottom"):
     """Add text overlay to image."""
     img_copy = image.copy()
     height, width = img_copy.shape[:2]
@@ -84,7 +84,7 @@ def add_text_overlay(image, text, position='bottom'):
     (text_width, text_height), baseline = cv2.getTextSize(text, font, font_scale, font_thickness)
 
     # Position text
-    if position == 'bottom':
+    if position == "bottom":
         text_x = (width - text_width) // 2
         text_y = height - 60
         bg_y1 = height - 100
@@ -140,8 +140,16 @@ def create_intro_frame(width, height):
     (subtitle_width, subtitle_height), _ = cv2.getTextSize(subtitle, font, subtitle_scale, subtitle_thickness)
     subtitle_x = (width - subtitle_width) // 2
     subtitle_y = height // 2 + 50
-    cv2.putText(frame, subtitle, (subtitle_x, subtitle_y), font, subtitle_scale, (149, 165, 166),
-                subtitle_thickness, cv2.LINE_AA)
+    cv2.putText(
+        frame,
+        subtitle,
+        (subtitle_x, subtitle_y),
+        font,
+        subtitle_scale,
+        (149, 165, 166),
+        subtitle_thickness,
+        cv2.LINE_AA,
+    )
 
     return frame
 
@@ -177,7 +185,7 @@ def main():
     print(f"Found {len(image_files)} screenshots")
 
     # Initialize video writer
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out = cv2.VideoWriter(str(OUTPUT_VIDEO), fourcc, FPS, (TARGET_WIDTH, TARGET_HEIGHT))
 
     if not out.isOpened():
