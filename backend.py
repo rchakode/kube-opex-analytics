@@ -77,6 +77,8 @@ class Config:
     included_namespaces = [i for i in os.getenv("KOA_INCLUDED_NAMESPACES", "").replace(" ", ",").split(",") if i]
     excluded_namespaces = [i for i in os.getenv("KOA_EXCLUDED_NAMESPACES", "").replace(" ", ",").split(",") if i]
     google_api_key = os.getenv("KOA_GOOGLE_API_KEY", "NO_GOOGLE_API_KEY")
+    # NVIDIA DCGM exporter endpoint for GPU metrics collection (e.g., "http://dcgm-exporter:9400/metrics/json")
+    nvidia_dcgm_endpoint = os.getenv('KOA_NVIDIA_DCGM_ENDPOINT', None)
 
     def process_cost_model_config(self):
         cost_model_label = "cumulative"
@@ -465,6 +467,29 @@ class Pod:
         self.memRequest = 0.0
 
 
+class GpuMetrics:
+    """
+    Data class to store NVIDIA GPU metrics collected from DCGM exporter.
+
+    Metrics are aggregated per pod (identified by namespace + pod name).
+    Multiple GPUs on the same pod will have their metrics summed.
+    """
+
+    def __init__(self):
+        self.namespace = ''
+        self.pod = ''
+        # GPU compute utilization percentage (from DCGM_FI_DEV_GPU_UTIL)
+        self.gpuCpuUsage = 0.0
+        # GPU memory bandwidth utilization percentage (from DCGM_FI_DEV_MEM_COPY_UTIL)
+        self.gpuMemBandwidth = 0.0
+        # GPU framebuffer memory used in MiB (from DCGM_FI_DEV_FB_USED)
+        self.gpuMemUsage = 0.0
+        # GPU framebuffer memory free in MiB (from DCGM_FI_DEV_FB_FREE)
+        self.gpuMemFree = 0.0
+        # Number of GPUs contributing to this aggregated metric
+        self.gpuCount = 0
+
+
 class ResourceCapacities:
     def __init__(self, cpu, mem):
         self.cpu = cpu
@@ -501,6 +526,16 @@ class JSONMarshaller(json.JSONEncoder):
             }
         elif isinstance(obj, ResourceCapacities):
             return {"cpu": obj.cpu, "mem": obj.mem}
+        elif isinstance(obj, GpuMetrics):
+            return {
+                'namespace': obj.namespace,
+                'pod': obj.pod,
+                'gpuCpuUsage': obj.gpuCpuUsage,
+                'gpuMemBandwidth': obj.gpuMemBandwidth,
+                'gpuMemUsage': obj.gpuMemUsage,
+                'gpuMemFree': obj.gpuMemFree,
+                'gpuCount': obj.gpuCount
+            }
         return json.JSONEncoder.default(self, obj)
 
 
@@ -541,6 +576,8 @@ class K8sUsage:
         self.cloudCostAvailable = None
         self.hourlyRate = 0.0
         self.managedControlPlanePrice = {"AKS": 0.10, "GKE": 0.10}
+        # GPU metrics storage: key is "pod.namespace", value is GpuMetrics instance
+        self.gpuMetricsByPod = {}
 
     def decode_capacity(self, cap_input):
         data_length = len(cap_input)
@@ -721,6 +758,102 @@ class K8sUsage:
                     pod.cpuUsage += self.decode_capacity(container["usage"]["cpu"])
                     pod.memUsage += self.decode_capacity(container["usage"]["memory"])
                 self.pods[pod.name] = pod
+
+    def extract_gpu_metrics(self, data_json):
+        """
+        Extract GPU metrics from DCGM exporter JSON data.
+
+        Processes the following DCGM metrics:
+        - DCGM_FI_DEV_GPU_UTIL: GPU compute utilization percentage -> gpuCpuUsage
+        - DCGM_FI_DEV_MEM_COPY_UTIL: Memory bandwidth utilization percentage -> gpuMemBandwidth
+        - DCGM_FI_DEV_FB_USED: Framebuffer memory used (MiB) -> gpuMemUsage
+        - DCGM_FI_DEV_FB_FREE: Framebuffer memory free (MiB) -> gpuMemFree
+
+        Metrics are aggregated per pod using namespace and pod labels.
+        Multiple GPUs on the same pod will have their metrics summed.
+
+        :param data: Raw JSON string from DCGM exporter endpoint
+        :return: None (updates self.gpuMetricsByPod dictionary)
+        """
+        # Exit if no valid data
+        if data_json is None:
+            return
+
+        # Mapping of DCGM metric names to GpuMetrics attributes
+        metric_mapping = {
+            'DCGM_FI_DEV_GPU_UTIL': 'gpuCpuUsage',
+            'DCGM_FI_DEV_MEM_COPY_UTIL': 'gpuMemBandwidth',
+            'DCGM_FI_DEV_FB_USED': 'gpuMemUsage',
+            'DCGM_FI_DEV_FB_FREE': 'gpuMemFree'
+        }
+
+        # Track which GPUs we've seen per pod to count them correctly
+        gpus_per_pod = {}
+
+        for metric_name, attr_name in metric_mapping.items():
+            metric_data = data_json.get(metric_name, [])
+
+            for entry in metric_data:
+                labels = entry.get('labels', {})
+                namespace = labels.get('namespace', '')
+                pod = labels.get('pod', '')
+                gpu_uuid = labels.get('UUID', '')
+
+                # Skip entries without required labels
+                if not namespace or not pod:
+                    KOA_LOGGER.debug(
+                        "Skipping DCGM metric %s entry without namespace/pod labels",
+                        metric_name
+                    )
+                    continue
+
+                # Check if namespace is allowed
+                if not KOA_CONFIG.allow_namespace(namespace):
+                    continue
+
+                # Create unique pod key (same format as pods dictionary)
+                pod_key = '%s.%s' % (pod, namespace)
+
+                # Get or create GpuMetrics instance for this pod
+                if pod_key not in self.gpuMetricsByPod:
+                    gpu_metrics = GpuMetrics()
+                    gpu_metrics.namespace = namespace
+                    gpu_metrics.pod = pod
+                    self.gpuMetricsByPod[pod_key] = gpu_metrics
+                    gpus_per_pod[pod_key] = set()
+
+                # Track unique GPUs per pod
+                if pod_key in gpus_per_pod and gpu_uuid:
+                    gpus_per_pod[pod_key].add(gpu_uuid)
+
+                # Get metric value (default to 0.0 if missing or invalid)
+                try:
+                    value = float(entry.get('value', 0.0))
+                except (ValueError, TypeError):
+                    value = 0.0
+
+                # Accumulate the metric value for the pod
+                # (multiple GPUs will have their values summed)
+                current_value = getattr(self.gpuMetricsByPod[pod_key], attr_name)
+                setattr(self.gpuMetricsByPod[pod_key], attr_name, current_value + value)
+
+        # Update GPU count for each pod
+        for pod_key, gpu_uuids in gpus_per_pod.items():
+            if pod_key in self.gpuMetricsByPod:
+                self.gpuMetricsByPod[pod_key].gpuCount = len(gpu_uuids)
+
+        KOA_LOGGER.debug(
+            "[puller] Extracted GPU metrics for %d pods",
+            len(self.gpuMetricsByPod)
+        )
+
+    def dump_gpu_metrics(self):
+        """Dump GPU metrics to a JSON file for frontend consumption."""
+        if not self.gpuMetricsByPod:
+            return
+
+        with open(str('%s/gpu_metrics.json' % KOA_CONFIG.frontend_data_location), 'w') as fd:
+            fd.write(json.dumps(self.gpuMetricsByPod, cls=JSONMarshaller))
 
     def consolidate_ns_usage(self):
         """Consolidate namespace usage.
@@ -1090,6 +1223,76 @@ def pull_k8s(api_context):
 
     return data
 
+def jsonify_dcgm_metrics(data):
+    """Transform Prometheus metrics from DCGM Exporter to JSON."""
+
+    metrics = {}
+    for line in data.split('\n'):
+        if line.startswith('DCGM_'):
+            # Parse metric name and value
+            if '{' in line:
+                name = line.split('{')[0]
+                labels_str = line.split('{')[1].split('}')[0]
+                value = line.split('}')[1].strip()
+            else:
+                parts = line.split()
+                name = parts[0]
+                labels_str = ""
+                value = parts[1] if len(parts) > 1 else None
+
+            # Parse labels
+            labels = {}
+            if labels_str:
+                for label in labels_str.split(','):
+                    if '=' in label:
+                        k, v = label.split('=', 1)
+                        labels[k] = v.strip('"')
+
+            if name not in metrics:
+                metrics[name] = []
+            metrics[name].append({'labels': labels, 'value': float(value)})
+
+    return metrics
+
+
+def pull_dcgm_metrics():
+    """
+    Fetch GPU metrics from NVIDIA DCGM exporter endpoint.
+
+    The DCGM exporter provides metrics in JSON format when queried at /metrics/json.
+    Returns the raw JSON data or None if the endpoint is not configured or on error.
+    """
+    if KOA_CONFIG.nvidia_dcgm_endpoint is None:
+        return None
+
+    data = None
+    try:
+        http_req = requests.get(
+            KOA_CONFIG.nvidia_dcgm_endpoint,
+            verify=KOA_CONFIG.koa_verify_ssl_option,
+            timeout=30  # 30 second timeout for DCGM endpoint
+        )
+        if http_req.status_code == 200:
+            data = jsonify_dcgm_metrics(http_req.text)
+            KOA_LOGGER.debug('[puller] Successfully fetched DCGM metrics from %s', KOA_CONFIG.nvidia_dcgm_endpoint)
+        else:
+            KOA_LOGGER.error(
+                "DCGM endpoint %s returned error (status=%d): %s",
+                KOA_CONFIG.nvidia_dcgm_endpoint,
+                http_req.status_code,
+                http_req.text
+            )
+    except requests.exceptions.Timeout:
+        KOA_LOGGER.error("Timeout while querying DCGM endpoint %s", KOA_CONFIG.nvidia_dcgm_endpoint)
+    except requests.exceptions.ConnectionError as ex:
+        KOA_LOGGER.error("Connection error to DCGM endpoint %s: %s", KOA_CONFIG.nvidia_dcgm_endpoint, ex)
+    except requests.exceptions.RequestException as ex:
+        KOA_LOGGER.error("Request error to DCGM endpoint %s: %s", KOA_CONFIG.nvidia_dcgm_endpoint, ex)
+    except Exception as ex:
+        KOA_LOGGER.error("Unexpected error fetching DCGM metrics: %s", ex)
+
+    return data
+
 
 def create_metrics_puller():
     try:
@@ -1104,9 +1307,12 @@ def create_metrics_puller():
             k8s_usage.extract_node_metrics(pull_k8s("/apis/metrics.k8s.io/v1beta1/nodes"))
             k8s_usage.extract_pods(pull_k8s("/api/v1/pods"))
             k8s_usage.extract_pod_metrics(pull_k8s("/apis/metrics.k8s.io/v1beta1/pods"))
+            # Collect GPU metrics from DCGM exporter if configured
+            k8s_usage.extract_gpu_metrics(pull_dcgm_metrics())
             k8s_usage.consolidate_ns_usage()
             k8s_usage.calculate_node_usage()
             k8s_usage.dump_nodes()
+            k8s_usage.dump_gpu_metrics()
 
             if k8s_usage.cpuCapacity > 0.0 and k8s_usage.memCapacity > 0.0:
                 now_epoch = calendar.timegm(time.gmtime())
