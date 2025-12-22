@@ -150,6 +150,14 @@ class Config:
     def usage_efficiency_db(ns):
         return "%s%s" % (ns, Config.request_efficiency_db_file_extention())
 
+    @staticmethod
+    def gpu_db_file_extension():
+        return '__gpu'
+
+    @staticmethod
+    def gpu_metrics_db(ns):
+        return '%s%s' % (ns, Config.gpu_db_file_extension())
+
 
 def configure_logger(debug_enabled):
     if debug_enabled:
@@ -1066,9 +1074,12 @@ class Rrd:
 
         :param dbfiles: array of RRD files
         :param category: may be 'usage' or 'rf' (request factor) according the type of analytics trends expected
+        :param prefix: optional prefix for output filenames (e.g., 'gpu_')
         :return: None
         """
         res_usage = collections.defaultdict(list)
+        KOA_LOGGER.debug('[dump_trend_analytics] category=%s, prefix=%s, dbfiles_count=%d',
+                        category, prefix, len(dbfiles))
         for _, db in enumerate(dbfiles):
             if db == KOA_CONFIG.db_billing_hourly_rate:
                 if not KOA_CONFIG.enable_debug:
@@ -1076,22 +1087,27 @@ class Rrd:
 
             rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=db)
             current_trend_data = rrd.dump_trend_data(period=RrdPeriod.PERIOD_7_DAYS_SEC)
+            KOA_LOGGER.debug('[dump_trend_analytics] db=%s, cpu_data_len=%d, mem_data_len=%d',
+                            db, len(current_trend_data[0]), len(current_trend_data[1]))
             for res in [ResUsageType.CPU, ResUsageType.MEMORY]:
                 if current_trend_data[res]:
                     res_usage[res].append(current_trend_data[res])
 
-        with open(str("%s/cpu_%s_trends.json" % (KOA_CONFIG.frontend_data_location, category)), "w") as fd:
+        mem_label = 'mem' if prefix else 'memory'
+        with open(str("%s/%scpu_%s_trends.json" % (KOA_CONFIG.frontend_data_location, prefix, category)), "w") as fd:
             fd.write("[" + ",".join(res_usage[0]) + "]")
 
-        with open(str("%s/memory_%s_trends.json" % (KOA_CONFIG.frontend_data_location, category)), "w") as fd:
+        with open(str("%s/%s%s_%s_trends.json" % (KOA_CONFIG.frontend_data_location, prefix, mem_label, category)), "w") as fd:
             fd.write("[" + ",".join(res_usage[1]) + "]")
 
     @staticmethod
-    def dump_histogram_analytics(dbfiles, period, cost_model):
+    def dump_histogram_analytics(dbfiles, period, cost_model, prefix=''):
         """Dump usage history data.
 
         :param dbfiles: The target RRD file
         :param period: the retrieval period
+        :param cost_model: the cost model to use
+        :param prefix: optional prefix for output filenames (e.g., 'gpu_')
         :return:
         """
         now_gmtime = time.gmtime()
@@ -1178,13 +1194,14 @@ class Rrd:
                                 req_cost
                             )  # noqa: E501
 
-        with open(str("%s/cpu_usage_period_%d.json" % (KOA_CONFIG.frontend_data_location, period)), "w") as fd:
+        mem_label = 'mem' if prefix else 'memory'
+        with open(str("%s/%scpu_usage_period_%d.json" % (KOA_CONFIG.frontend_data_location, prefix, period)), "w") as fd:
             fd.write("[" + ",".join(usage_export[0]) + "]")
-        with open(str("%s/memory_usage_period_%d.json" % (KOA_CONFIG.frontend_data_location, period)), "w") as fd:
+        with open(str("%s/%s%s_usage_period_%d.json" % (KOA_CONFIG.frontend_data_location, prefix, mem_label, period)), "w") as fd:
             fd.write("[" + ",".join(usage_export[1]) + "]")
-        with open(str("%s/cpu_requests_period_%d.json" % (KOA_CONFIG.frontend_data_location, period)), "w") as fd:
+        with open(str("%s/%scpu_requests_period_%d.json" % (KOA_CONFIG.frontend_data_location, prefix, period)), "w") as fd:
             fd.write("[" + ",".join(requests_export[0]) + "]")
-        with open(str("%s/memory_requests_period_%d.json" % (KOA_CONFIG.frontend_data_location, period)), "w") as fd:
+        with open(str("%s/%s%s_requests_period_%d.json" % (KOA_CONFIG.frontend_data_location, prefix, mem_label, period)), "w") as fd:
             fd.write("[" + ",".join(requests_export[1]) + "]")
 
 
@@ -1357,6 +1374,47 @@ def create_metrics_puller():
                         rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.usage_efficiency_db(ns))
                         rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_efficiency, mem_usage=mem_efficiency)
 
+                # handle GPU metrics by namespace (outside the namespace loop)
+                if k8s_usage.gpuMetricsByPod:
+                    # Aggregate GPU metrics by namespace
+                    gpu_by_namespace = {}
+                    for pod_key, gpu_metrics in k8s_usage.gpuMetricsByPod.items():
+                        gpu_ns = gpu_metrics.namespace
+                        if gpu_ns not in gpu_by_namespace:
+                            gpu_by_namespace[gpu_ns] = {
+                                'gpuCpuUsage': 0.0,
+                                'gpuMemUsage': 0.0,
+                                'gpuMemFree': 0.0,
+                                'gpuCount': 0
+                            }
+                        gpu_by_namespace[gpu_ns]['gpuCpuUsage'] += gpu_metrics.gpuCpuUsage
+                        gpu_by_namespace[gpu_ns]['gpuMemUsage'] += gpu_metrics.gpuMemUsage
+                        gpu_by_namespace[gpu_ns]['gpuMemFree'] += gpu_metrics.gpuMemFree
+                        gpu_by_namespace[gpu_ns]['gpuCount'] += gpu_metrics.gpuCount
+
+                    # Store GPU metrics in RRD databases
+                    for gpu_ns, gpu_data in gpu_by_namespace.items():
+                        # Calculate average GPU compute utilization across all GPUs in namespace
+                        gpu_count = gpu_data['gpuCount']
+                        if gpu_count > 0:
+                            gpu_cpu_usage = gpu_data['gpuCpuUsage'] / gpu_count
+                        else:
+                            gpu_cpu_usage = 0.0
+
+                        # Calculate GPU memory utilization percentage
+                        total_gpu_mem = gpu_data['gpuMemUsage'] + gpu_data['gpuMemFree']
+                        if total_gpu_mem > 0:
+                            gpu_mem_usage = (gpu_data['gpuMemUsage'] / total_gpu_mem) * 100
+                        else:
+                            gpu_mem_usage = 0.0
+
+                        rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.gpu_metrics_db(gpu_ns))
+                        rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=gpu_cpu_usage, mem_usage=gpu_mem_usage)
+                        KOA_LOGGER.debug(
+                            '[puller] GPU metrics for namespace %s: compute=%.2f%%, memory=%.2f%%',
+                            gpu_ns, gpu_cpu_usage, gpu_mem_usage
+                        )
+
             time.sleep(int(KOA_CONFIG.polling_interval_sec))
 
     except Exception as ex:
@@ -1375,14 +1433,23 @@ def dump_analytics(cost_model_by_user=None):
 
             ns_dbfiles = []
             rf_dbfiles = []
+            gpu_dbfiles = []
             for fn in dbfiles:
                 if fn.endswith(KOA_CONFIG.request_efficiency_db_file_extention()):
                     rf_dbfiles.append(fn)
+                elif fn.endswith(KOA_CONFIG.gpu_db_file_extension()):
+                    gpu_dbfiles.append(fn)
                 else:
                     ns_dbfiles.append(fn)
 
+            KOA_LOGGER.info('[dump_analytics] ns_dbfiles=%d, rf_dbfiles=%d, gpu_dbfiles=%d',
+                            len(ns_dbfiles), len(rf_dbfiles), len(gpu_dbfiles))
+            if gpu_dbfiles:
+                KOA_LOGGER.info('[dump_analytics] gpu_dbfiles: %s', gpu_dbfiles)
+
             Rrd.dump_trend_analytics(ns_dbfiles, "usage")
             Rrd.dump_trend_analytics(rf_dbfiles, "rf")
+            Rrd.dump_trend_analytics(gpu_dbfiles, 'usage', prefix='gpu_')
 
             cost_model_selected = cost_model_by_user
             if cost_model_by_user is None:
@@ -1398,6 +1465,8 @@ def dump_analytics(cost_model_by_user=None):
             Rrd.dump_histogram_analytics(
                 dbfiles=ns_dbfiles, period=RrdPeriod.PERIOD_YEAR_SEC, cost_model=cost_model_selected
             )  # noqa: E501
+            Rrd.dump_histogram_analytics(dbfiles=gpu_dbfiles, period=RrdPeriod.PERIOD_14_DAYS_SEC, cost_model=cost_model_selected, prefix='gpu_')   # noqa: E501
+            Rrd.dump_histogram_analytics(dbfiles=gpu_dbfiles, period=RrdPeriod.PERIOD_YEAR_SEC, cost_model=cost_model_selected, prefix='gpu_')      # noqa: E501
             time.sleep(export_interval)
     except Exception as ex:
         exception_type = type(ex).__name__
