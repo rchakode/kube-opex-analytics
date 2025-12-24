@@ -916,6 +916,8 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 $("#chart-block-trends-hourly-usage").show();
                 refreshTrendsChartByType('CPU', 'usage');
                 refreshTrendsChartByType('Memory', 'usage');
+                refreshGpuTrendsChart('cpu');
+                refreshGpuTrendsChart('mem');
             }
         }
 
@@ -927,21 +929,29 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 $("#chart-block-monthly").show();
                 refreshCumulativeChartByType('CPU', 'usage', 'monthly');
                 refreshCumulativeChartByType('Memory', 'usage', 'monthly');
+                refreshGpuCumulativeChart('cpu', 'monthly');
+                refreshGpuCumulativeChart('mem', 'monthly');
             } else if (cumulativeUsageType === 'monthly-requests') {
                 $("#chart-block-daily").hide();
                 $("#chart-block-monthly").show();
                 refreshCumulativeChartByType('CPU', 'requests', 'monthly');
                 refreshCumulativeChartByType('Memory', 'requests', 'monthly');
+                refreshGpuCumulativeChart('cpu', 'monthly');
+                refreshGpuCumulativeChart('mem', 'monthly');
             } else if (cumulativeUsageType === 'daily-requests') {
                 $("#chart-block-monthly").hide();
                 $("#chart-block-daily").show();
                 refreshCumulativeChartByType('CPU', 'requests', 'daily');
                 refreshCumulativeChartByType('Memory', 'requests', 'daily');
+                refreshGpuCumulativeChart('cpu', 'daily');
+                refreshGpuCumulativeChart('mem', 'daily');
             } else { // handle as daily-usage
                 $("#chart-block-monthly").hide();
                 $("#chart-block-daily").show();
                 refreshCumulativeChartByType('CPU', 'usage', 'daily');
                 refreshCumulativeChartByType('Memory', 'usage', 'daily');
+                refreshGpuCumulativeChart('cpu', 'daily');
+                refreshGpuCumulativeChart('mem', 'daily');
             }
         }
 
@@ -1159,6 +1169,79 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 }
             });
         }
+
+
+        function refreshGpuTrendsChart(resourceType) {
+            let dataFile = `gpu_${resourceType}_usage_trends.json`;
+            let datasetPath = `${FrontendApi.DATA_DIR}/${dataFile}`;
+
+            $.ajax({
+                type: "GET",
+                url: datasetPath,
+                dataType: 'json',
+                success: function (data) {
+                    let chartContainerClass = `js-chart-trends-gpu-${resourceType}-usage`;
+
+                    let filterDate1 = $("#filter-start-date").val();
+                    let filterDate2 = $('#filter-end-date').val();
+                    if (filterDate1 > filterDate2) {
+                        let df = filterDate1;
+                        filterDate1 = filterDate2;
+                        filterDate2 = df;
+                    }
+
+                    const dataset = data.filter(item => (item.dateUTC >= filterDate1 && item.dateUTC <= filterDate2))
+                        .map(({name, usage, dateUTC}) => ({
+                            name: name.replace('__gpu', ''),
+                            date: dateUTC,
+                            value: usage
+                        }));
+
+                    if (dataset.length > 0) {
+                        updateLineOrAreaChart(dataset, chartContainerClass, `GPU ${resourceType.toUpperCase()}`, 'usage');
+                        $("#error-message-container").hide();
+                    } else {
+                        showError('No GPU trends data found in the selected range', true);
+                    }
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    showError(`Error ${xhr.status} downloading GPU data file ${dataFile}`);
+                    if (thrownError) {
+                        console.error('GPU trends chart error:', thrownError);
+                    }
+                }
+            });
+        }
+
+
+        function refreshGpuCumulativeChart(resourceType, periodType) {
+            let GPU_DATASET_FILES = Object.freeze({
+                "daily": `gpu_${resourceType}_usage_period_1209600.json`,
+                "monthly": `gpu_${resourceType}_usage_period_31968000.json`,
+            });
+
+            let dataFile = GPU_DATASET_FILES[periodType];
+            let chartContainerClass = `js-chart-${periodType}-gpu-${resourceType}-usage`;
+
+            $.ajax({
+                type: "GET",
+                url: `${FrontendApi.DATA_DIR}/${dataFile}`,
+                dataType: 'json',
+                success: function (data) {
+                    updateStackedBarChart({"data": data},
+                        chartContainerClass,
+                        `GPU ${resourceType.toUpperCase()} consumption`,
+                        `${periodType} GPU ${resourceType.toUpperCase()} usage`);
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    showError(`Error ${xhr.status} downloading GPU data file ${dataFile}`);
+                    if (thrownError) {
+                        console.error('GPU cumulative chart error:', thrownError);
+                    }
+                }
+            });
+        }
+
 
         function updateAllCharts() {
             clearErrors();
