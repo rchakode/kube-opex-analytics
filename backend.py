@@ -342,102 +342,6 @@ def get_http_resource_or_return_none_on_error(url):
     return data
 
 
-def get_azure_price(node):
-    """Query Azure pricing API to compute node price based on its computing resources (e.g. vCPU, RAM)."""
-    api_base = "https://prices.azure.com/api/retail/prices?$filter=armRegionName"
-    api_endpoint = "{} eq '{}' and skuName eq '{}' and serviceName eq 'Virtual Machines'".format(
-        api_base, node.region, node.instanceType
-    )  # noqa: E501
-
-    pricing_data = get_http_resource_or_return_none_on_error(api_endpoint)
-    if pricing_data is None:
-        return 0.0
-
-    pricing_json = pricing_data.json()
-    if pricing_json.get("Count", 0) == 0:
-        api_endpoint = "{} eq '{}' and skuName eq '{}{}' and serviceName eq 'Virtual Machines'".format(
-            api_base, node.region, node.instanceType[0].lower(), node.instanceType[1:]
-        )  # noqa: E501
-
-    price = 0.0
-    while price == 0.0:
-        pricing_data = get_http_resource_or_return_none_on_error(api_endpoint)
-        if pricing_data is None:
-            break
-
-        pricing_json = pricing_data.json()
-        for _, item in enumerate(pricing_json["Items"]):
-            if node.os == "windows":
-                if item["type"] == "Consumption" and item["productName"].endswith("Windows"):
-                    price = item.get("unitPrice")
-            elif node.os == "linux":
-                if item["type"] == "Consumption" and not (item["productName"].endswith("Windows")):
-                    price = item.get("unitPrice")
-
-        api_endpoint = pricing_json.get("NextPageLink", None)
-        if api_endpoint is None:
-            break
-
-    return price
-
-
-def gcp_search_price_per_page(node, skus, instance_description):
-    """Compute GKE node price."""
-    price = 0.0
-    for _, sku in skus:
-        if sku.get("description").startswith(instance_description):
-            if node.region in sku.get("serviceRegions") and sku["category"]["usageType"] == "OnDemand":
-                price_info = sku["pricingInfo"][0]["pricingExpression"]["tieredRates"][0]
-                units = float(price_info["unitPrice"]["units"])
-                nanos = float(price_info["unitPrice"]["nanos"])
-                price = units + nanos * 1e-9
-
-    return price
-
-
-def get_gcp_price(node, memory, cpu):
-    """Query GCE pricing API to compute node price based on its computing capacities (e.g. vCPU, RAM)."""
-    cpu_price = 0.0
-    memory_price = 0.0
-    instance_cpu_desc = node.instanceType[:2].upper() + " Instance Core"
-    instance_memory_desc = node.instanceType[:2].upper() + " Instance Ram"
-
-    base_api_endpoint = "https://cloudbilling.googleapis.com/v1/services/6F81-5844-456A/skus?key={}".format(
-        KOA_CONFIG.google_api_key
-    )  # noqa: E501
-
-    pricing_data = get_http_resource_or_return_none_on_error(base_api_endpoint)
-    if pricing_data is None:
-        return 0.0
-
-    pricing_json = pricing_data.json()
-    skus = pricing_json.get("skus", None)
-    if skus is not None:
-        cpu_price = cpu * gcp_search_price_per_page(node, skus, instance_cpu_desc)
-        memory_price = memory * gcp_search_price_per_page(node, skus, instance_memory_desc)
-
-    next_page_token = pricing_json.get("nextPageToken", None)
-    while next_page_token is not None and next_page_token != "":
-        api_endpoint = "{}&pageToken={}".format(base_api_endpoint, next_page_token)
-
-        pricing_data = get_http_resource_or_return_none_on_error(api_endpoint)
-        if pricing_data is None:
-            break
-
-        pricing_json = pricing_data.json()
-        skus = pricing_json.get("skus", None)
-        if skus is not None:
-            cpu_price += cpu * gcp_search_price_per_page(node, skus, instance_cpu_desc)
-            memory_price += memory * gcp_search_price_per_page(node, skus, instance_memory_desc)
-
-        if cpu_price != 0.0 and memory_price != 0.0:
-            break
-
-        next_page_token = pricing_json.get("nextPageToken", None)
-
-    return cpu_price + memory_price
-
-
 class Node:
     def __init__(self):
         self.id = ""
@@ -453,11 +357,9 @@ class Node:
         self.containerRuntime = ""
         self.podsRunning = []
         self.podsNotRunning = []
-        self.region = ""
-        self.os = ""
-        self.instanceType = ""
-        self.aksCluster = None
-        self.gcpCluster = None
+        self.region = ''
+        self.os = ''
+        self.instanceType = ''
         self.hourlyPrice = 0.0
 
 
@@ -581,9 +483,6 @@ class K8sUsage:
             "None": 1,
         }
 
-        self.cloudCostAvailable = None
-        self.hourlyRate = 0.0
-        self.managedControlPlanePrice = {"AKS": 0.10, "GKE": 0.10}
         # GPU metrics storage: key is "pod.namespace", value is GpuMetrics instance
         self.gpuMetricsByPod = {}
 
@@ -662,26 +561,10 @@ class K8sUsage:
                         break
 
                 # check managed cluster settings
-                node.region = metadata["labels"].get("topology.kubernetes.io/region", None)
-                node.instanceType = metadata["labels"].get("node.kubernetes.io/instance-type", None)
-                node.aksCluster = metadata["labels"].get("kubernetes.azure.com/cluster", None)
-                node.gcpCluster = metadata["labels"].get("cloud.google.com/gke-boot-disk", None)
-
-                # AKS cluster processing
-                if node.aksCluster is not None:
-                    self.cloudCostAvailable = "AKS"
-                    node.hourlyPrice = get_azure_price(node)
-                    self.hourlyRate += node.hourlyPrice
-
-                # GKE cluster processing
-                if node.gcpCluster is not None and KOA_CONFIG.google_api_key != "NO_GOOGLE_API_KEY":
-                    self.cloudCostAvailable = "GKE"
-                    node.HourlyPrice = get_gcp_price(node, node.memCapacity * 9.5367431640625e-7, node.cpuCapacity)
-                    self.hourlyRate += node.HourlyPrice
+                node.region = metadata['labels'].get('topology.kubernetes.io/region', None)
+                node.instanceType = metadata['labels'].get('node.kubernetes.io/instance-type', None)
 
             self.nodes[node.name] = node
-
-        self.hourlyRate += self.managedControlPlanePrice.get(self.cloudCostAvailable, 0.0)
 
     def extract_node_metrics(self, data):
         # exit if not valid data
@@ -1344,12 +1227,7 @@ def create_metrics_puller():
                 rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.db_non_allocatable)
                 rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_non_allocatable, mem_usage=mem_non_allocatable)
 
-                hourly_rate = -1
-                if KOA_CONFIG.billing_hourly_rate > 0:
-                    hourly_rate = KOA_CONFIG.billing_hourly_rate
-                else:
-                    if k8s_usage.cloudCostAvailable is not None:
-                        hourly_rate = k8s_usage.hourlyRate
+                hourly_rate = KOA_CONFIG.billing_hourly_rate if KOA_CONFIG.billing_hourly_rate > 0 else -1
 
                 rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.db_billing_hourly_rate)
                 rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=hourly_rate, mem_usage=hourly_rate)
