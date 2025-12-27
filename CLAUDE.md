@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-`kube-opex-analytics` is a Kubernetes usage analytics and cost optimization tool. It provides hourly, daily, and monthly resource consumption analytics to help organizations track and optimize Kubernetes cluster costs.
+`kube-opex-analytics` is a Kubernetes usage analytics and cost optimization tool. It provides hourly, daily, and monthly resource consumption analytics (CPU, Memory, GPU) to help organizations track and optimize Kubernetes cluster costs.
 
 **Tech Stack:**
 
-- Python 3 (Flask backend with RRDtool for time-series data)
-- JavaScript frontend (RequireJS + Britecharts for visualization)
-- Docker containerized deployment
-- Kubernetes native integration
+- **Backend**: Python 3 with Flask, RRDtool for time-series storage, Prometheus client for metrics export
+- **Frontend**: JavaScript with jQuery, Bootstrap/Bootswatch, RequireJS (module loading), D3.js (visualization)
+- **Data Sources**: Kubernetes Metrics Server (CPU/memory), NVIDIA DCGM Exporter (GPU)
+- **Deployment**: Docker containerized, Kubernetes native (Helm charts)
 
 ## Development Commands
 
@@ -57,17 +57,19 @@ docker build -t kube-opex-analytics .
 ### Core Components
 
 - **`backend.py`**: Main Flask application (1113 lines) - handles Kubernetes API polling, data processing, and web API
-- **`js/frontend.js`**: Frontend application using RequireJS module system and Britecharts for data visualization
+- **`js/frontend.js`**: Frontend application using RequireJS module system and D3.js for data visualization
 - **`index.html`**: Jinja2 template serving the web dashboard
 - **RRDtool databases**: Time-series storage for metrics (stored in `/data` volume)
 
 ### Data Flow
 
-1. Kubernetes API polling every 5 minutes (configurable via `KOA_POLLING_INTERVAL_SEC`)
+1. Metrics polling every 5 minutes (configurable via `KOA_POLLING_INTERVAL_SEC`):
+   - CPU/Memory: Kubernetes Metrics Server API
+   - GPU: NVIDIA DCGM Exporter metrics
 2. Metrics processing and consolidation into hourly/daily/monthly aggregates
 3. RRDtool database storage for time-series data
 4. Flask API endpoints serve data to frontend
-5. Britecharts renders interactive dashboards
+5. D3.js renders interactive dashboards
 
 ### Key Classes and Functions
 
@@ -103,8 +105,9 @@ The application uses environment variables for configuration:
 ## Frontend Architecture
 
 - **Module System**: RequireJS for dependency management
-- **Visualization**: Britecharts library for charts (bar, line, heatmap, donut)
-- **Data Types**: CPU, memory, and consolidated usage metrics
+- **UI Framework**: Bootstrap via Bootswatch theme, jQuery for DOM manipulation
+- **Visualization**: D3.js library for charts (line, area, donut, legends)
+- **Data Types**: CPU, memory, GPU, and consolidated usage metrics
 - **API Integration**: RESTful endpoints for fetching time-series data
 
 ## Development Notes
@@ -112,5 +115,5 @@ The application uses environment variables for configuration:
 - The application runs on port 5483 by default
 - Uses Waitress WSGI server in production
 - Supports both standalone and Kubernetes deployment via Helm charts
-- Frontend assets include Bootstrap for styling and D3.js for chart foundations
+- Frontend assets include Bootstrap for styling
 - Prometheus exporter available at `/metrics` endpoint for integration with monitoring systems
