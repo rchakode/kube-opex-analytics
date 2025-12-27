@@ -231,6 +231,7 @@
                 <h4>Memory Usage</h4>
                 <div class="js-chart-trends-memory-usage"></div>
             </div>
+            {% if koa_dcgm_enabled %}
             <div class="col-md-6">
                 <h4>GPU CPU Usage</h4>
                 <div class="js-chart-trends-gpu-cpu-usage"></div>
@@ -239,6 +240,7 @@
                 <h4>GPU Memory Usage</h4>
                 <div class="js-chart-trends-gpu-mem-usage"></div>
             </div>
+            {% endif %}
         </div>
 
     </div>
@@ -285,6 +287,7 @@
                 <h4>Memory Usage</h4>
                 <div class="js-chart-daily-memory-usage"></div>
             </div>
+            {% if koa_dcgm_enabled %}
             <div class="col-md-6">
                 <h4>GPU CPU Usage</h4>
                 <div class="js-chart-daily-gpu-cpu-usage"></div>
@@ -293,6 +296,7 @@
                 <h4>GPU Memory Usage</h4>
                 <div class="js-chart-daily-gpu-mem-usage"></div>
             </div>
+            {% endif %}
         </div>
 
         <div id="chart-block-monthly">
@@ -304,6 +308,7 @@
                 <h4>Memory Usage</h4>
                 <div class="js-chart-monthly-memory-usage"></div>
             </div>
+            {% if koa_dcgm_enabled %}
             <div class="col-md-6">
                 <h4>GPU CPU Usage</h4>
                 <div class="js-chart-monthly-gpu-cpu-usage"></div>
@@ -312,6 +317,7 @@
                 <h4>GPU Memory Usage</h4>
                 <div class="js-chart-monthly-gpu-mem-usage"></div>
             </div>
+            {% endif %}
         </div>
     </div>
 

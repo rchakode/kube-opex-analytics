@@ -266,6 +266,7 @@ def render():
         "index.html",
         koa_frontend_data_location=KOA_CONFIG.frontend_data_location,
         koa_version=KOA_CONFIG.version,
+        koa_dcgm_enabled=KOA_CONFIG.nvidia_dcgm_endpoint is not None,
     )
 
 
