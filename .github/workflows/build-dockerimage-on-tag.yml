@@ -7,16 +7,16 @@ jobs:
   build_release_image:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
-    - name: Build and push Docker image
-      env:
-        DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
-        DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      run: |
-        export GIT_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
-        export IMAGE_TAG=$(echo $GIT_TAG | sed 's/v//')
-        docker build . --file Dockerfile --tag registry.hub.docker.com/$DOCKERHUB_USERNAME/kube-opex-analytics:$IMAGE_TAG
-        docker tag registry.hub.docker.com/$DOCKERHUB_USERNAME/kube-opex-analytics:$IMAGE_TAG registry.hub.docker.com/$DOCKERHUB_USERNAME/kube-opex-analytics:latest
-        echo "$DOCKERHUB_PASSWORD" | docker login -u $DOCKERHUB_USERNAME --password-stdin
-        docker push registry.hub.docker.com/$DOCKERHUB_USERNAME/kube-opex-analytics:$IMAGE_TAG
-        docker push registry.hub.docker.com/$DOCKERHUB_USERNAME/kube-opex-analytics
+      - uses: actions/checkout@v5
+      - name: Build and push Docker image
+        env:
+          DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          export GIT_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+          export IMAGE_TAG=$(echo $GIT_TAG | sed 's/v//')
+          docker build . --file Dockerfile --tag docker.io/$DOCKERHUB_USERNAME/kube-opex-analytics:$IMAGE_TAG
+          docker tag docker.io/$DOCKERHUB_USERNAME/kube-opex-analytics:$IMAGE_TAG docker.io/$DOCKERHUB_USERNAME/kube-opex-analytics:latest
+          echo "$DOCKERHUB_PASSWORD" | docker login -u $DOCKERHUB_USERNAME --password-stdin
+          docker push docker.io/$DOCKERHUB_USERNAME/kube-opex-analytics:$IMAGE_TAG
+          docker push docker.io/$DOCKERHUB_USERNAME/kube-opex-analytics

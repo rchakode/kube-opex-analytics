@@ -13,5 +13,5 @@ resources:
   - resources/kube-opex-analytics-tests.yaml
 images:
   - name: kube-opex-analytics
-    newName: registry.hub.docker.com/rchakode/kube-opex-analytics
+    newName: docker.io/rchakode/kube-opex-analytics
     newTag: 26.01.0
