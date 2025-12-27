@@ -3,7 +3,10 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main]
+    branches:
+      - 'feat/**'
+      - 'fix/**'
+      - 'release/**'
 
 permissions:
   contents: read
@@ -32,8 +35,8 @@ jobs:
         with:
           images: registry.hub.docker.com/rchakode/kube-opex-analytics
           tags: |
-            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
             type=sha,format=short,prefix={{date 'YYYY-MM-DD'}}-
+            type=ref,event=branch
             type=ref,event=pr
 
       - name: Build and push
