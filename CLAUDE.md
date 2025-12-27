@@ -110,6 +110,17 @@ The application uses environment variables for configuration:
 - **Data Types**: CPU, memory, GPU, and consolidated usage metrics
 - **API Integration**: RESTful endpoints for fetching time-series data
 
+## Versioning
+
+The project uses [Calendar Versioning](https://calver.org/) with format `YY.MM.MICRO`. Version must be updated in these files:
+
+| File | Location |
+|------|----------|
+| `backend.py` | `Config.version` (line ~56) |
+| `pyproject.toml` | `version` field |
+| `manifests/helm/Chart.yaml` | `version` and `appVersion` fields |
+| `manifests/kustomize/kustomization.yaml` | `images[].newTag` field |
+
 ## Development Notes
 
 - The application runs on port 5483 by default
