@@ -15,8 +15,8 @@ jobs:
       run: |
         export GIT_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
         export IMAGE_TAG=$(echo $GIT_TAG | sed 's/v//')
-        docker build . --file Dockerfile --tag registry.hub.docker.com/rchakode/kube-opex-analytics:$IMAGE_TAG
-        docker tag registry.hub.docker.com/rchakode/kube-opex-analytics:$IMAGE_TAG registry.hub.docker.com/rchakode/kube-opex-analytics:latest
+        docker build . --file Dockerfile --tag registry.hub.docker.com/$DOCKERHUB_USERNAME/kube-opex-analytics:$IMAGE_TAG
+        docker tag registry.hub.docker.com/$DOCKERHUB_USERNAME/kube-opex-analytics:$IMAGE_TAG registry.hub.docker.com/$DOCKERHUB_USERNAME/kube-opex-analytics:latest
         echo "$DOCKERHUB_PASSWORD" | docker login -u $DOCKERHUB_USERNAME --password-stdin
-        docker push registry.hub.docker.com/rchakode/kube-opex-analytics:$IMAGE_TAG
-        docker push registry.hub.docker.com/rchakode/kube-opex-analytics
+        docker push registry.hub.docker.com/$DOCKERHUB_USERNAME/kube-opex-analytics:$IMAGE_TAG
+        docker push registry.hub.docker.com/$DOCKERHUB_USERNAME/kube-opex-analytics
