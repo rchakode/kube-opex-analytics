@@ -76,7 +76,6 @@ class Config:
     k8s_ssl_client_cert_key = os.getenv("KOA_K8S_AUTH_CLIENT_CERT_KEY", "NO_ENV_CLIENT_CERT_CERT")
     included_namespaces = [i for i in os.getenv("KOA_INCLUDED_NAMESPACES", "").replace(" ", ",").split(",") if i]
     excluded_namespaces = [i for i in os.getenv("KOA_EXCLUDED_NAMESPACES", "").replace(" ", ",").split(",") if i]
-    google_api_key = os.getenv("KOA_GOOGLE_API_KEY", "NO_GOOGLE_API_KEY")
     # NVIDIA DCGM exporter endpoint for GPU metrics collection (e.g., "http://dcgm-exporter:9400/metrics/json")
     nvidia_dcgm_endpoint = os.getenv("KOA_NVIDIA_DCGM_ENDPOINT", None)
 
@@ -99,6 +98,7 @@ class Config:
             self.billing_hourly_rate = float(-1.0)
 
     def __init__(self):
+        self.billing_hourly_rate = float(-1.0)
         self.process_billing_hourly_rate_config()
         self.load_rbac_auth_token()
         self.process_cost_model_config()
