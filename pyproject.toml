@@ -1,4 +1,4 @@
-rev[project]
+[project]
 name = "kube-opex-analytics"
 version = "26.01.0"
 description = "Kubernetes Opex Analytics"
