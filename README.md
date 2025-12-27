@@ -62,7 +62,7 @@ Before installing, ensure metrics-server is running in your cluster:
 
 ```bash
 # Check if metrics-server is deployed
-kubectl get deployment metrics-server -n kube-system
+kubectl -n kube-system get deploy | grep metrics-server
 
 # Verify it's working
 kubectl top nodes
