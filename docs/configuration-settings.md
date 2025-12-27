@@ -17,3 +17,40 @@ This section provides an exhaustive list of configuration variables used by `kub
 * `KOA_BILLING_CURRENCY_SYMBOL` (optional, default is '`$`'): sets a currency string to use to annotate costs on reports.
 * `KOA_INCLUDED_NAMESPACES` (optional, default is '`*`'): comma-separated list of namespaces to monitore. If any value is provided, only these namespaces will be accounted.
 * `KOA_EXCLUDED_NAMESPACES` (optional, default is ''): comma-separated list of namespaces to ignore. If any value is provided, these namespaces will be discarded. This options takes precedence over `KOA_INCLUDED_NAMESPACES`.
+* `KOA_NVIDIA_DCGM_ENDPOINT` (optional): sets the NVIDIA DCGM Exporter endpoint for GPU metrics collection. When set, kube-opex-analytics will poll the DCGM Exporter to collect GPU utilization metrics per pod/namespace. Example: `http://dcgm-exporter.gpu-operator:9400/metrics`. Requires [DCGM Exporter](https://github.com/NVIDIA/dcgm-exporter) deployed in the cluster.
+
+## GPU Metrics with NVIDIA DCGM
+
+To enable GPU metrics collection, you need:
+
+1. **NVIDIA DCGM Exporter** deployed in your cluster (see [Prerequisites](../README.md#verify-dcgm-exporter-gpu-metrics))
+2. **Configure the endpoint** via `KOA_NVIDIA_DCGM_ENDPOINT` environment variable
+
+### Collected GPU Metrics
+
+When DCGM integration is enabled, the following metrics are collected per pod:
+
+| Metric | DCGM Source | Description |
+|--------|-------------|-------------|
+| GPU Utilization | `DCGM_FI_DEV_GPU_UTIL` | GPU compute utilization percentage |
+| Memory Bandwidth | `DCGM_FI_DEV_MEM_COPY_UTIL` | GPU memory bandwidth utilization percentage |
+| Memory Used | `DCGM_FI_DEV_FB_USED` | Framebuffer memory used (MiB) |
+| Memory Free | `DCGM_FI_DEV_FB_FREE` | Framebuffer memory free (MiB) |
+
+### Helm Configuration
+
+When deploying with Helm, use the `dcgm` values:
+
+```yaml
+dcgm:
+  enabled: true
+  endpoint: http://dcgm-exporter.gpu-operator:9400/metrics
+```
+
+Or via command line:
+
+```bash
+helm upgrade --install kube-opex-analytics ./manifests/helm \
+  --set dcgm.enabled=true \
+  --set dcgm.endpoint=http://dcgm-exporter.gpu-operator:9400/metrics
+```

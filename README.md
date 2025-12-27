@@ -215,6 +215,21 @@ Key environment variables:
 | `KOA_COST_MODEL` | Billing model (`CUMULATIVE_RATIO`, `RATIO`, `CHARGE_BACK`) | `CUMULATIVE_RATIO` |
 | `KOA_BILLING_HOURLY_RATE` | Hourly cost for chargeback model | `-1.0` |
 | `KOA_BILLING_CURRENCY_SYMBOL` | Currency symbol for cost display | `$` |
+| `KOA_NVIDIA_DCGM_ENDPOINT` | NVIDIA DCGM Exporter endpoint for GPU metrics | Not set (GPU disabled) |
+
+### GPU Metrics (NVIDIA DCGM)
+
+To enable GPU metrics collection, set the DCGM Exporter endpoint:
+
+```bash
+# Environment variable
+export KOA_NVIDIA_DCGM_ENDPOINT=http://dcgm-exporter.gpu-operator:9400/metrics
+
+# Or with Helm
+helm upgrade --install kube-opex-analytics ./manifests/helm \
+  --set dcgm.enabled=true \
+  --set dcgm.endpoint=http://dcgm-exporter.gpu-operator:9400/metrics
+```
 
 See [Configuration Settings](./docs/configuration-settings.md) for the complete reference.
 

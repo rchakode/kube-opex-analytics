@@ -50,7 +50,11 @@ spec:
                 secretKeyRef:
                   name: kube-opex-analytics-secrets
                   key: KOA_GOOGLE_API_KEY
-          {{- end }}                  
+          {{- end }}
+          {{- if and .Values.dcgm.enabled .Values.dcgm.endpoint }}
+            - name: "KOA_NVIDIA_DCGM_ENDPOINT"
+              value: {{ .Values.dcgm.endpoint | quote }}
+          {{- end }}
         {{- end }}
         {{- if .Values.includedNamespaces }}
           {{- if not .Values.envs }}

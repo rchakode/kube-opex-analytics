@@ -13,6 +13,13 @@ envs:
   KOA_INCLUDED_NAMESPACES: ''
   KOA_EXCLUDED_NAMESPACES: ''
 
+# NVIDIA DCGM Exporter integration for GPU metrics
+# Set endpoint to enable GPU metrics collection (requires DCGM Exporter deployed in cluster)
+# Example: http://dcgm-exporter.gpu-operator:9400/metrics
+dcgm:
+  enabled: false
+  endpoint: ''
+
 dataVolume:
   persist: true
   capacity: 1Gi
