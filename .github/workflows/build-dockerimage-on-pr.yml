@@ -38,6 +38,8 @@ jobs:
             type=sha,format=short,prefix={{date 'YYYY-MM-DD'}}-
             type=ref,event=branch
             type=ref,event=pr
+          flavor: |
+            latest=false
 
       - name: Build and push
         uses: docker/build-push-action@v6
