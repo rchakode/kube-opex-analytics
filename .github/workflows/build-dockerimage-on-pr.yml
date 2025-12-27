@@ -33,7 +33,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: registry.hub.docker.com/rchakode/kube-opex-analytics
+          images: docker.io/rchakode/kube-opex-analytics
           tags: |
             type=sha,format=short,prefix={{date 'YYYY-MM-DD'}}-
             type=ref,event=branch

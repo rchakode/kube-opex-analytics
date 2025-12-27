@@ -26,7 +26,7 @@ docker run -d \
     -v /var/lib/kube-opex-analytics:/data \
     -e KOA_DB_LOCATION=/data/db \
     -e KOA_K8S_API_ENDPOINT=http://127.0.0.1:8001 \
-    registry.hub.docker.com/rchakode/kube-opex-analytics
+    docker.io/rchakode/kube-opex-analytics
 ```
 
 In this command:
