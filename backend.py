@@ -882,7 +882,7 @@ class Rrd:
                     round(cpu_usage, KOA_CONFIG.db_round_decimals),
                     round(mem_usage, KOA_CONFIG.db_round_decimals),
                 ),
-                )
+            )
         except rrdtool.OperationalError:
             KOA_LOGGER.error("failing adding rrd sample => %s", traceback.format_exc())
 
@@ -926,7 +926,7 @@ class Rrd:
                     sum_res_usage[ResUsageType.CPU] += current_cpu_usage
                     sum_res_usage[ResUsageType.MEMORY] += current_mem_usage
                     if calendar.timegm(rrd_cdp_gmtime) == int(
-                            int(now_epoch_utc / RrdPeriod.PERIOD_1_HOUR_SEC) * RrdPeriod.PERIOD_1_HOUR_SEC
+                        int(now_epoch_utc / RrdPeriod.PERIOD_1_HOUR_SEC) * RrdPeriod.PERIOD_1_HOUR_SEC
                     ):
                         PROMETHEUS_HOURLY_USAGE_EXPORTER.labels(self.dbname, ResUsageType.CPU.name).set(
                             current_cpu_usage
@@ -1015,7 +1015,7 @@ class Rrd:
             fd.write("[" + ",".join(res_usage[0]) + "]")
 
         with open(
-                str("%s/%s%s_%s_trends.json" % (KOA_CONFIG.frontend_data_location, prefix, mem_label, category)), "w"
+            str("%s/%s%s_%s_trends.json" % (KOA_CONFIG.frontend_data_location, prefix, mem_label, category)), "w"
         ) as fd:
             fd.write("[" + ",".join(res_usage[1]) + "]")
 
@@ -1087,7 +1087,7 @@ class Rrd:
                                 usage_cost = round(
                                     usage_ratio * usage_per_type_date[res][date_key][KOA_CONFIG.db_billing_hourly_rate],
                                     KOA_CONFIG.db_round_decimals,
-                                    )
+                                )
 
                         usage_export[res].append('{"stack":"%s","usage":%f,"date":"%s"}' % (db, usage_cost, date_key))
                         if Rrd.get_date_group(now_gmtime, period) == date_key:
@@ -1105,7 +1105,7 @@ class Rrd:
                                 req_cost = round(
                                     req_ratio * usage_per_type_date[res][date_key][KOA_CONFIG.db_billing_hourly_rate],
                                     KOA_CONFIG.db_round_decimals,
-                                    )
+                                )
 
                         requests_export[res].append('{"stack":"%s","usage":%f,"date":"%s"}' % (db, req_cost, date_key))
                         if Rrd.get_date_group(now_gmtime, period) == date_key:
@@ -1115,41 +1115,47 @@ class Rrd:
 
         mem_label = "mem" if prefix else "memory"
         with open(
-                str("%s/%scpu_usage_period_%d.json" % (
-                        KOA_CONFIG.frontend_data_location,
-                        prefix,
-                        period,
-                )),
-                "w"
+            str(
+                "%s/%scpu_usage_period_%d.json"
+                % (
+                    KOA_CONFIG.frontend_data_location,
+                    prefix,
+                    period,
+                )
+            ),
+            "w",
         ) as fd:
             fd.write("[" + ",".join(usage_export[0]) + "]")
         with open(
-                str("%s/%s%s_usage_period_%d.json" % (
-                        KOA_CONFIG.frontend_data_location,
-                        prefix,
-                        mem_label,
-                        period,
-                )),
-                "w"
+            str(
+                "%s/%s%s_usage_period_%d.json"
+                % (
+                    KOA_CONFIG.frontend_data_location,
+                    prefix,
+                    mem_label,
+                    period,
+                )
+            ),
+            "w",
         ) as fd:
             fd.write("[" + ",".join(usage_export[1]) + "]")
         with open(
-                str("%s/%scpu_requests_period_%d.json" % (
-                        KOA_CONFIG.frontend_data_location,
-                        prefix,
-                        period,
-                )),
-                "w"
+            str(
+                "%s/%scpu_requests_period_%d.json"
+                % (
+                    KOA_CONFIG.frontend_data_location,
+                    prefix,
+                    period,
+                )
+            ),
+            "w",
         ) as fd:
             fd.write("[" + ",".join(requests_export[0]) + "]")
         with open(
-                str("%s/%s%s_requests_period_%d.json" % (
-                        KOA_CONFIG.frontend_data_location,
-                        prefix,
-                        mem_label,
-                        period),
-                    ),
-                "w"
+            str(
+                "%s/%s%s_requests_period_%d.json" % (KOA_CONFIG.frontend_data_location, prefix, mem_label, period),
+            ),
+            "w",
         ) as fd:
             fd.write("[" + ",".join(requests_export[1]) + "]")
 
@@ -1169,8 +1175,8 @@ def pull_k8s(api_context):
         elif KOA_CONFIG.k8s_rbac_auth_token != "NO_ENV_TOKEN_FILE":
             headers["Authorization"] = "Bearer %s" % KOA_CONFIG.k8s_rbac_auth_token
         elif (
-                KOA_CONFIG.k8s_auth_username != "NO_ENV_AUTH_USERNAME"
-                and KOA_CONFIG.k8s_auth_password != "NO_ENV_AUTH_PASSWORD"
+            KOA_CONFIG.k8s_auth_username != "NO_ENV_AUTH_USERNAME"
+            and KOA_CONFIG.k8s_auth_password != "NO_ENV_AUTH_PASSWORD"
         ):
             token = base64.b64encode("%s:%s" % (KOA_CONFIG.k8s_auth_username, KOA_CONFIG.k8s_auth_password))
             headers["Authorization"] = "Basic %s" % token
@@ -1315,7 +1321,8 @@ def create_metrics_puller():
                 )
                 rrd.add_sample(
                     timestamp_epoch=now_epoch,
-                    cpu_usage=hourly_rate, mem_usage=hourly_rate,
+                    cpu_usage=hourly_rate,
+                    mem_usage=hourly_rate,
                 )
 
                 # handle resource request and usage by pods
@@ -1445,25 +1452,16 @@ def dump_analytics(cost_model_by_user=None):
                     )
 
             Rrd.dump_histogram_analytics(
-                dbfiles=ns_dbfiles,
-                period=RrdPeriod.PERIOD_14_DAYS_SEC,
-                cost_model=cost_model_selected
+                dbfiles=ns_dbfiles, period=RrdPeriod.PERIOD_14_DAYS_SEC, cost_model=cost_model_selected
             )  # noqa: E501
             Rrd.dump_histogram_analytics(
-                dbfiles=ns_dbfiles,
-                period=RrdPeriod.PERIOD_YEAR_SEC,
-                cost_model=cost_model_selected
+                dbfiles=ns_dbfiles, period=RrdPeriod.PERIOD_YEAR_SEC, cost_model=cost_model_selected
             )  # noqa: E501
             Rrd.dump_histogram_analytics(
-                dbfiles=gpu_dbfiles,
-                period=RrdPeriod.PERIOD_14_DAYS_SEC,
-                cost_model=cost_model_selected, prefix="gpu_"
+                dbfiles=gpu_dbfiles, period=RrdPeriod.PERIOD_14_DAYS_SEC, cost_model=cost_model_selected, prefix="gpu_"
             )  # noqa: E501
             Rrd.dump_histogram_analytics(
-                dbfiles=gpu_dbfiles,
-                period=RrdPeriod.PERIOD_YEAR_SEC,
-                cost_model=cost_model_selected,
-                prefix="gpu_"
+                dbfiles=gpu_dbfiles, period=RrdPeriod.PERIOD_YEAR_SEC, cost_model=cost_model_selected, prefix="gpu_"
             )  # noqa: E501
             time.sleep(export_interval)
     except Exception as ex:
