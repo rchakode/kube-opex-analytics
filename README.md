@@ -164,10 +164,10 @@ docker run -d \
 │  Metrics Server   │──┐
 │  (CPU/Memory)     │  │    ┌──────────────────────────────────────┐
 └───────────────────┘  ├───>│         kube-opex-analytics          │
-┌───────────────────┐  │    │  ┌─────────┐  ┌───────┐  ┌─────────┐ │
-│  DCGM Exporter    │──┘    │  │ Poller  │─>│RRDtool│─>│Flask API│ │
-│  (GPU metrics)    │       │  │ (5 min) │  │  DBs  │  │         │ │
-└───────────────────┘       │  └─────────┘  └───────┘  └────┬────┘ │
+┌───────────────────┐  │    │  ┌─────────┐  ┌────────┐  ┌─────────┐│
+│  DCGM Exporter    │──┘    │  │ Poller  │─>│RRD DBs │─>│ API     ││
+│  (GPU metrics)    │       │  │ (5 min) │  │        │  │         ││
+└───────────────────┘       │  └─────────┘  └────────┘  └────┬────┘│
                             └───────────────────────────────┼──────┘
                                                             │
                             ┌───────────────────────────────┼──────┐
@@ -186,9 +186,9 @@ docker run -d \
 1. Metrics polled every 5 minutes (configurable):
    - CPU/Memory from Kubernetes Metrics Server
    - GPU from NVIDIA DCGM Exporter
-2. Metrics are processed and stored in RRDtool time-series databases
+2. Metrics are processed and stored in internal lightweight time-series databases (round-robin DBs)
 3. Data is consolidated into hourly, daily, and monthly aggregates
-4. Flask API serves data to the built-in web UI and Prometheus scraper
+4. API serves data to the built-in web UI and Prometheus scraper
 
 ## Documentation
 
