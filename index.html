@@ -107,6 +107,10 @@
             {
                 "CPU": "cpu-pods",
                 "MEM": "memory-pods",
+                {% if koa_dcgm_enabled %}
+                "GPU_COMPUTE": "gpu-compute-pods",
+                "GPU_MEMORY": "gpu-memory-pods",
+                {% endif %}
                 "CONSOLIDATED": "consolidated-pods",
             });
         FrontendApi.DATA_DIR='{{ koa_frontend_data_location }}';
@@ -331,6 +335,12 @@
                         <option value="cpu-heatmap">CPU / Load heatmap</option>
                         <option value="memory-pods">Memory / Pods usage</option>
                         <option value="memory-heatmap">Memory / Load heatmap</option>
+                        {% if koa_dcgm_enabled %}
+                        <option value="gpu-compute-pods">GPU Compute / Pods usage</option>
+                        <option value="gpu-compute-heatmap">GPU Compute / Load heatmap</option>
+                        <option value="gpu-memory-pods">GPU Memory / Pods usage</option>
+                        <option value="gpu-memory-heatmap">GPU Memory / Load heatmap</option>
+                        {% endif %}
                     </select>
                 </span>
             </legend>

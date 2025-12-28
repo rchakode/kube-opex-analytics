@@ -782,6 +782,18 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                         resCapacity = 'cpuCapacity';
                         resAllocatable = 'cpuAllocatable';
                         break;
+                    case UsageTypes.GPU_COMPUTE:
+                        // GPU compute utilization is already a percentage
+                        resUsage = 'gpuUsage';
+                        resCapacity = null;
+                        resAllocatable = null;
+                        break;
+                    case UsageTypes.GPU_MEMORY:
+                        // GPU memory usage in bytes
+                        resUsage = 'gpuMemUsage';
+                        resCapacity = null;
+                        resAllocatable = null;
+                        break;
                     default:
                         $errorMessage.append('<li>unknown load type: ' + encodeURIComponent(usageType) + '</li>');
                         $errorContainer.show();
@@ -789,6 +801,103 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 }
 
                 let node = data[nname];
+
+                // Handle GPU Compute - show per-pod GPU compute utilization
+                if (usageType === UsageTypes.GPU_COMPUTE) {
+                    // Skip nodes without GPU
+                    if (typeof node.gpuCount === "undefined" || node.gpuCount === 0) {
+                        continue;
+                    }
+
+                    let chartData = [];
+                    let loadColors = [];
+                    let sumGpuUsage = 0.0;
+
+                    // Iterate through pods with GPU usage
+                    let podId = 0;
+                    for (let pid = 0; pid < node.podsRunning.length; pid++) {
+                        let pod = node.podsRunning[pid];
+                        if (pod.gpuCount > 0 && pod.gpuUsage > 0) {
+                            // Pod's GPU usage is already a percentage (0-100)
+                            let podGpuPercent = pod.gpuUsage;
+                            // Normalize to percentage of total node GPU capacity
+                            let podContribution = (pod.gpuCount / node.gpuCount) * podGpuPercent;
+                            sumGpuUsage += podContribution;
+
+                            chartData.push({
+                                "name": truncateText(pod.name, 25, '...'),
+                                "id": podId++,
+                                "quantity": pod.gpuUsage,
+                                "percentage": podContribution
+                            });
+                            loadColors.push(computeLoadPercentHeatColor(podGpuPercent));
+                        }
+                    }
+
+                    // GPU unused
+                    let gpuUnusedPercent = Math.max(0, 100.0 - sumGpuUsage);
+                    chartData.push({
+                        "name": 'unused',
+                        "id": 9999,
+                        "quantity": gpuUnusedPercent,
+                        "percentage": gpuUnusedPercent
+                    });
+                    loadColors.push(computeLoadPercentHeatColor(0));
+
+                    dataset.data.set(nname, {'chartData': chartData, 'colorSchema': loadColors});
+                    continue;
+                }
+
+                // Handle GPU Memory - show per-pod GPU memory usage
+                if (usageType === UsageTypes.GPU_MEMORY) {
+                    // Skip nodes without GPU
+                    if (typeof node.gpuCount === "undefined" || node.gpuCount === 0) {
+                        continue;
+                    }
+
+                    let chartData = [];
+                    let loadColors = [];
+                    let totalGpuMem = (node.gpuMemUsage || 0) + (node.gpuMemFree || 0);
+
+                    // Skip if no GPU memory info
+                    if (totalGpuMem === 0) {
+                        continue;
+                    }
+
+                    let sumGpuMemPercent = 0.0;
+
+                    // Iterate through pods with GPU memory usage
+                    let podId = 0;
+                    for (let pid = 0; pid < node.podsRunning.length; pid++) {
+                        let pod = node.podsRunning[pid];
+                        if (pod.gpuCount > 0 && pod.gpuMemUsage > 0) {
+                            let podGpuMemPercent = (pod.gpuMemUsage / totalGpuMem) * 100;
+                            sumGpuMemPercent += podGpuMemPercent;
+
+                            chartData.push({
+                                "name": truncateText(pod.name, 25, '...'),
+                                "id": podId++,
+                                "quantity": pod.gpuMemUsage,
+                                "percentage": podGpuMemPercent
+                            });
+                            loadColors.push(computeLoadPercentHeatColor(podGpuMemPercent));
+                        }
+                    }
+
+                    // GPU memory unused
+                    let gpuMemUnusedPercent = Math.max(0, 100.0 - sumGpuMemPercent);
+                    chartData.push({
+                        "name": 'unused',
+                        "id": 9999,
+                        "quantity": node.gpuMemFree || 0,
+                        "percentage": gpuMemUnusedPercent
+                    });
+                    loadColors.push(computeLoadPercentHeatColor(0));
+
+                    dataset.data.set(nname, {'chartData': chartData, 'colorSchema': loadColors});
+                    continue;
+                }
+
                 if (typeof node[resUsage] === "undefined" || node[resUsage] === 0) {
                     $errorMessage.append('<li>No ' + resUsage + ' metric on node ' + encodeURIComponent(node.name) + '</li>');
                     $errorContainer.show();
@@ -1335,8 +1444,20 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 return;
             }
 
+            // Filter nodes for GPU - only show nodes with GPUs
+            let filteredNodes = nodes;
+            if (resourceType === 'gpu-compute' || resourceType === 'gpu-memory') {
+                filteredNodes = nodes.filter(node => node.gpuCount > 0);
+                if (filteredNodes.length === 0) {
+                    container.append('div')
+                        .attr('class', 'no-data-message')
+                        .html('<p>No nodes with GPUs found.</p>');
+                    return;
+                }
+            }
+
             // Calculate percentages if not provided or zero
-            nodes.forEach(node => {
+            filteredNodes.forEach(node => {
                 if (!node.cpuUsagePercent || node.cpuUsagePercent === 0) {
                     node.cpuUsagePercent = node.cpuCapacity > 0
                         ? (node.cpuUsage / node.cpuCapacity) * 100
@@ -1348,6 +1469,9 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                         : 0;
                 }
             });
+
+            // Use filtered nodes for the rest of the function
+            nodes = filteredNodes;
 
             // Create SVG canvas
             const margin = {top: 20, right: 20, bottom: 60, left: 20};
@@ -1397,18 +1521,46 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 .attr('width', d => Math.min(d.rectSize || maxRectSize, maxRectSize))
                 .attr('height', d => Math.min(d.rectSize || maxRectSize, maxRectSize))
                 .attr('fill', d => {
-                    const percentage = resourceType === 'cpu' ? d.cpuUsagePercent : d.memoryUsagePercent;
+                    let percentage;
+                    if (resourceType === 'cpu') {
+                        percentage = d.cpuUsagePercent;
+                    } else if (resourceType === 'gpu-compute') {
+                        percentage = d.gpuComputeUsagePercent || 0;
+                    } else if (resourceType === 'gpu-memory') {
+                        percentage = d.gpuMemoryUsagePercent || 0;
+                    } else {
+                        percentage = d.memoryUsagePercent;
+                    }
                     return percentage > 0 ? getUsageColor(percentage) : '#95a5a6';
                 })
                 .on('mouseover', function(event, d) {
-                    const percentage = resourceType === 'cpu' ? d.cpuUsagePercent : d.memoryUsagePercent;
-                    const capacity = resourceType === 'cpu' ? d.cpuCapacity + ' cores' : formatBytes(d.memoryCapacity);
-                    const usage = resourceType === 'cpu' ? d.cpuUsage.toFixed(2) + ' cores' : formatBytes(d.memoryUsage);
+                    let percentage, capacity, usage, label;
+                    if (resourceType === 'cpu') {
+                        percentage = d.cpuUsagePercent;
+                        capacity = d.cpuCapacity + ' cores';
+                        usage = d.cpuUsage.toFixed(2) + ' cores';
+                        label = 'CPU';
+                    } else if (resourceType === 'gpu-compute') {
+                        percentage = d.gpuComputeUsagePercent || 0;
+                        capacity = d.gpuCount + ' GPUs';
+                        usage = percentage.toFixed(1) + '%';
+                        label = 'GPU Compute';
+                    } else if (resourceType === 'gpu-memory') {
+                        percentage = d.gpuMemoryUsagePercent || 0;
+                        capacity = formatBytes(d.gpuMemoryTotal || 0);
+                        usage = formatBytes(d.gpuMemoryUsage || 0);
+                        label = 'GPU Memory';
+                    } else {
+                        percentage = d.memoryUsagePercent;
+                        capacity = formatBytes(d.memoryCapacity);
+                        usage = formatBytes(d.memoryUsage);
+                        label = 'Memory';
+                    }
 
                     tooltipDiv.style('opacity', .9)
                         .html(`
                             <strong>${d.name}</strong><br/>
-                            ${resourceType.toUpperCase()} Usage: ${percentage.toFixed(1)}%<br/>
+                            ${label} Usage: ${percentage.toFixed(1)}%<br/>
                             Used: ${usage}<br/>
                             Capacity: ${capacity}<br/>
                             State: ${d.state}<br/>
@@ -1449,7 +1601,16 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 .style('fill', '#ffffff')
                 .style('pointer-events', 'none')
                 .text(d => {
-                    const percentage = resourceType === 'cpu' ? d.cpuUsagePercent : d.memoryUsagePercent;
+                    let percentage;
+                    if (resourceType === 'cpu') {
+                        percentage = d.cpuUsagePercent;
+                    } else if (resourceType === 'gpu-compute') {
+                        percentage = d.gpuComputeUsagePercent || 0;
+                    } else if (resourceType === 'gpu-memory') {
+                        percentage = d.gpuMemoryUsagePercent || 0;
+                    } else {
+                        percentage = d.memoryUsagePercent;
+                    }
                     return percentage > 0 ? percentage.toFixed(1) + '%' : 'N/A';
                 });
         }
@@ -1463,7 +1624,16 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 heatmapContainer.style.display = 'block';
                 podsContainer.style.display = 'none';
 
-                const resourceType = usageType.includes('cpu') ? 'cpu' : 'memory';
+                let resourceType;
+                if (usageType.includes('cpu')) {
+                    resourceType = 'cpu';
+                } else if (usageType.includes('gpu-compute')) {
+                    resourceType = 'gpu-compute';
+                } else if (usageType.includes('gpu-memory')) {
+                    resourceType = 'gpu-memory';
+                } else {
+                    resourceType = 'memory';
+                }
 
                 // Fetch heatmap data
                 fetch('/api/nodes/heatmap')

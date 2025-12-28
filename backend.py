@@ -308,16 +308,31 @@ def get_node_heatmap_data():
             size_multiplier = max(1, cpu_capacity / 2)  # Scale based on CPU cores
             rect_size = min(base_size * size_multiplier, 200)  # Cap max size
 
+            # GPU usage percentage is already stored as a percentage (0-100)
+            gpu_usage_pct = node_info.get("gpuUsage", 0)
+            gpu_count = node_info.get("gpuCount", 0)
+            gpu_mem_usage = node_info.get("gpuMemUsage", 0)
+            gpu_mem_free = node_info.get("gpuMemFree", 0)
+            gpu_mem_total = gpu_mem_usage + gpu_mem_free
+            gpu_mem_usage_pct = (gpu_mem_usage / gpu_mem_total * 100) if gpu_mem_total > 0 else 0
+
             node_heatmap_info = {
                 "name": node_name,
                 "cpuUsagePercent": round(cpu_usage_pct, 2),
                 "memoryUsagePercent": round(memory_usage_pct, 2),
+                "gpuComputeUsagePercent": round(gpu_usage_pct, 2),
+                "gpuMemoryUsagePercent": round(gpu_mem_usage_pct, 2),
                 "cpuCapacity": node_info.get("cpuCapacity", 0),
                 "memoryCapacity": node_info.get("memCapacity", 0),
                 "cpuAllocatable": node_info.get("cpuAllocatable", 0),
                 "memoryAllocatable": node_info.get("memAllocatable", 0),
                 "cpuUsage": node_info.get("cpuUsage", 0),
                 "memoryUsage": node_info.get("memUsage", 0),
+                "gpuCount": gpu_count,
+                "gpuComputeUsage": gpu_usage_pct,
+                "gpuMemoryUsage": gpu_mem_usage,
+                "gpuMemoryFree": gpu_mem_free,
+                "gpuMemoryTotal": gpu_mem_total,
                 "state": node_info.get("state", "Unknown"),
                 "podsRunning": len(node_info.get("podsRunning", [])),
                 "rectSize": round(rect_size, 0),
@@ -377,6 +392,11 @@ class Node:
         self.os = ""
         self.instanceType = ""
         self.hourlyPrice = 0.0
+        # GPU metrics aggregated from pods running on this node
+        self.gpuCount = 0
+        self.gpuUsage = 0.0  # GPU compute utilization percentage
+        self.gpuMemUsage = 0.0  # GPU memory usage in bytes
+        self.gpuMemFree = 0.0  # GPU memory free in bytes
 
 
 class Pod:
@@ -391,6 +411,10 @@ class Pod:
         self.memUsage = 0.0
         self.cpuRequest = 0.0
         self.memRequest = 0.0
+        # GPU metrics (populated from gpuMetricsByPod)
+        self.gpuUsage = 0.0
+        self.gpuMemUsage = 0.0
+        self.gpuCount = 0
 
 
 class GpuMetrics:
@@ -438,6 +462,10 @@ class JSONMarshaller(json.JSONEncoder):
                 "containerRuntime": obj.containerRuntime,
                 "podsRunning": obj.podsRunning,
                 "podsNotRunning": obj.podsNotRunning,
+                "gpuCount": obj.gpuCount,
+                "gpuUsage": obj.gpuUsage,
+                "gpuMemUsage": obj.gpuMemUsage,
+                "gpuMemFree": obj.gpuMemFree,
             }
         elif isinstance(obj, Pod):
             return {
@@ -448,6 +476,9 @@ class JSONMarshaller(json.JSONEncoder):
                 "state": obj.state,
                 "cpuUsage": obj.cpuUsage,
                 "memUsage": obj.memUsage,
+                "gpuUsage": obj.gpuUsage,
+                "gpuMemUsage": obj.gpuMemUsage,
+                "gpuCount": obj.gpuCount,
             }
         elif isinstance(obj, ResourceCapacities):
             return {"cpu": obj.cpu, "mem": obj.mem}
@@ -798,12 +829,16 @@ class K8sUsage:
                 self.memAllocatable += node.memAllocatable
 
     def calculate_node_usage(self):
-        """Calculate individual node CPU and memory usage from running pods."""
+        """Calculate individual node CPU, memory, and GPU usage from running pods."""
         for _, node in self.nodes.items():
             node.cpuUsage = 0.0
             node.memUsage = 0.0
             node.cpuRequest = 0.0
             node.memRequest = 0.0
+            node.gpuCount = 0
+            node.gpuUsage = 0.0
+            node.gpuMemUsage = 0.0
+            node.gpuMemFree = 0.0
 
             # Sum up usage from all pods running on this node
             if hasattr(node, "podsRunning") and node.podsRunning:
@@ -815,6 +850,20 @@ class K8sUsage:
                         node.cpuRequest += pod.cpuRequest
                         node.memRequest += pod.memRequest
 
+                    # Aggregate GPU metrics from pod and copy to pod object
+                    pod_key = pod.name  # pod.name is already "podname.namespace"
+                    if pod_key in self.gpuMetricsByPod:
+                        gpu_metrics = self.gpuMetricsByPod[pod_key]
+                        # Copy GPU metrics to pod for frontend display
+                        pod.gpuUsage = gpu_metrics.gpuCpuUsage
+                        pod.gpuMemUsage = gpu_metrics.gpuMemUsage
+                        pod.gpuCount = gpu_metrics.gpuCount
+                        # Aggregate to node level
+                        node.gpuCount += gpu_metrics.gpuCount
+                        node.gpuUsage += gpu_metrics.gpuCpuUsage
+                        node.gpuMemUsage += gpu_metrics.gpuMemUsage
+                        node.gpuMemFree += gpu_metrics.gpuMemFree
+
             # Calculate usage percentages
             if hasattr(node, "cpuAllocatable") and node.cpuAllocatable > 0:
                 node.cpuUsagePercent = round((node.cpuUsage / node.cpuAllocatable) * 100, 2)
@@ -825,6 +874,10 @@ class K8sUsage:
                 node.memUsagePercent = round((node.memUsage / node.memAllocatable) * 100, 2)
             else:
                 node.memUsagePercent = 0.0
+
+            # Calculate average GPU usage if there are GPUs on this node
+            if node.gpuCount > 0:
+                node.gpuUsage = round(node.gpuUsage / node.gpuCount, 2)
 
     def dump_nodes(self):
         with open(str("%s/nodes.json" % KOA_CONFIG.frontend_data_location), "w") as fd:
