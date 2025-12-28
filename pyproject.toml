@@ -1,6 +1,6 @@
 [project]
 name = "kube-opex-analytics"
-version = "26.01.0"
+version = "26.01.0-beta1"
 description = "Kubernetes Opex Analytics"
 readme = "README.md"
 requires-python = ">=3.8"

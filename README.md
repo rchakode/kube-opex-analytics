@@ -28,7 +28,7 @@ It provides insightful usage analytics metrics and charts that engineering and f
 
 - **CPU** - Core usage and requests per namespace
 - **Memory** - RAM consumption and requests per namespace
-- **GPU** - NVIDIA GPU utilization via DCGM integration (v26.01.0 or later)
+- **GPU** - NVIDIA GPU utilization via DCGM integration (v26.01.0-beta1 or later)
 
 ![kube-opex-analytics-overview](screenshots/kube-opex-analytics-demo.gif)
 
