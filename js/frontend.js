@@ -408,7 +408,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
 
             g.append('g')
                 .attr('class', 'y-axis')
-                .call(d3.axisLeft(yScale).tickFormat(d3.format('.2f')));
+                .call(d3.axisLeft(yScale).tickFormat(d3.format('.2%')));
 
             // Add y-axis label
             g.append('text')
@@ -560,7 +560,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
 
             g.append('g')
                 .attr('class', 'y-axis')
-                .call(d3.axisLeft(yScale).tickFormat(d3.format(',.2f')));
+                .call(d3.axisLeft(yScale).tickFormat(d3.format('.2s')));
 
             // Add y-axis label
             g.append('text')
