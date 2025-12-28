@@ -122,8 +122,7 @@ Then run:
 kubectl create namespace kube-opex-analytics
 
 # Install with Helm
-helm upgrade --install kube-opex-analytics ./manifests/helm \
-  -n kube-opex-analytics
+helm upgrade --install kube-opex-analytics ./manifests/helm -n kube-opex-analytics
 
 # Watch pod status
 kubectl get pods -n kube-opex-analytics -w
