@@ -76,7 +76,6 @@ class Config:
     k8s_ssl_client_cert_key = os.getenv("KOA_K8S_AUTH_CLIENT_CERT_KEY", "NO_ENV_CLIENT_CERT_CERT")
     included_namespaces = [i for i in os.getenv("KOA_INCLUDED_NAMESPACES", "").replace(" ", ",").split(",") if i]
     excluded_namespaces = [i for i in os.getenv("KOA_EXCLUDED_NAMESPACES", "").replace(" ", ",").split(",") if i]
-    # NVIDIA DCGM exporter endpoint for GPU metrics collection (e.g., "http://dcgm-exporter:9400/metrics/json")
     nvidia_dcgm_endpoint = os.getenv("KOA_NVIDIA_DCGM_ENDPOINT", None)
 
     def process_cost_model_config(self):
@@ -98,7 +97,7 @@ class Config:
             self.billing_hourly_rate = float(-1.0)
 
     def __init__(self):
-        self.billing_hourly_rate = float(-1.0)
+        self.billing_hourly_rate = None
         self.process_billing_hourly_rate_config()
         self.load_rbac_auth_token()
         self.process_cost_model_config()
@@ -149,6 +148,14 @@ class Config:
     @staticmethod
     def usage_efficiency_db(ns):
         return "%s%s" % (ns, Config.request_efficiency_db_file_extention())
+
+    @staticmethod
+    def gpu_db_file_extension():
+        return "__gpu"
+
+    @staticmethod
+    def gpu_metrics_db(ns):
+        return "%s%s" % (ns, Config.gpu_db_file_extension())
 
 
 def configure_logger(debug_enabled):
@@ -228,9 +235,7 @@ wsgi_dispatcher = wsgi.DispatcherMiddleware(app, {"/metrics": prometheus_client.
 @app.route("/favicon.ico")
 def favicon():
     return flask.send_from_directory(
-        os.path.join(app.root_path, "static"),
-        "images/favicon.ico",
-        mimetype="image/vnd.microsoft.icon",
+        os.path.join(app.root_path, "static"), "images/favicon.ico", mimetype="image/vnd.microsoft.icon"
     )
 
 
@@ -368,6 +373,10 @@ class Node:
         self.containerRuntime = ""
         self.podsRunning = []
         self.podsNotRunning = []
+        self.region = ""
+        self.os = ""
+        self.instanceType = ""
+        self.hourlyPrice = 0.0
 
 
 class Pod:
@@ -489,9 +498,6 @@ class K8sUsage:
             "None": 1,
         }
 
-        self.cloudCostAvailable = None
-        self.hourlyRate = 0.0
-        self.managedControlPlanePrice = {"AKS": 0.10, "GKE": 0.10}
         # GPU metrics storage: key is "pod.namespace", value is GpuMetrics instance
         self.gpuMetricsByPod = {}
 
@@ -570,8 +576,6 @@ class K8sUsage:
                         break
 
             self.nodes[node.name] = node
-
-        self.hourlyRate += self.managedControlPlanePrice.get(self.cloudCostAvailable, 0.0)
 
     def extract_node_metrics(self, data):
         # exit if not valid data
@@ -795,7 +799,7 @@ class K8sUsage:
 
     def calculate_node_usage(self):
         """Calculate individual node CPU and memory usage from running pods."""
-        for _node_name, node in self.nodes.items():
+        for _, node in self.nodes.items():
             node.cpuUsage = 0.0
             node.memUsage = 0.0
             node.cpuRequest = 0.0
@@ -878,7 +882,7 @@ class Rrd:
                     round(cpu_usage, KOA_CONFIG.db_round_decimals),
                     round(mem_usage, KOA_CONFIG.db_round_decimals),
                 ),
-            )
+                )
         except rrdtool.OperationalError:
             KOA_LOGGER.error("failing adding rrd sample => %s", traceback.format_exc())
 
@@ -922,7 +926,7 @@ class Rrd:
                     sum_res_usage[ResUsageType.CPU] += current_cpu_usage
                     sum_res_usage[ResUsageType.MEMORY] += current_mem_usage
                     if calendar.timegm(rrd_cdp_gmtime) == int(
-                        int(now_epoch_utc / RrdPeriod.PERIOD_1_HOUR_SEC) * RrdPeriod.PERIOD_1_HOUR_SEC
+                            int(now_epoch_utc / RrdPeriod.PERIOD_1_HOUR_SEC) * RrdPeriod.PERIOD_1_HOUR_SEC
                     ):
                         PROMETHEUS_HOURLY_USAGE_EXPORTER.labels(self.dbname, ResUsageType.CPU.name).set(
                             current_cpu_usage
@@ -934,10 +938,7 @@ class Rrd:
                     pass
 
         if sum_res_usage[ResUsageType.CPU] > 0.0 and sum_res_usage[ResUsageType.MEMORY] > 0.0:
-            return (
-                ",".join(res_usage[ResUsageType.CPU]),
-                ",".join(res_usage[ResUsageType.MEMORY]),
-            )
+            return (",".join(res_usage[ResUsageType.CPU]), ",".join(res_usage[ResUsageType.MEMORY]))
         else:
             if step_in is None:
                 return self.dump_trend_data(period, step_in=RrdPeriod.PERIOD_5_MINS_SEC)
@@ -980,14 +981,18 @@ class Rrd:
         return periodic_cpu_usage, periodic_mem_usage
 
     @staticmethod
-    def dump_trend_analytics(dbfiles, category="usage"):
+    def dump_trend_analytics(dbfiles, category="usage", prefix=""):
         """Compute the analytics trends given a category.
 
         :param dbfiles: array of RRD files
         :param category: may be 'usage' or 'rf' (request factor) according the type of analytics trends expected
+        :param prefix: optional prefix for output filenames (e.g., 'gpu_')
         :return: None
         """
         res_usage = collections.defaultdict(list)
+        KOA_LOGGER.debug(
+            "[dump_trend_analytics] category=%s, prefix=%s, dbfiles_count=%d", category, prefix, len(dbfiles)
+        )
         for _, db in enumerate(dbfiles):
             if db == KOA_CONFIG.db_billing_hourly_rate:
                 if not KOA_CONFIG.enable_debug:
@@ -995,28 +1000,33 @@ class Rrd:
 
             rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=db)
             current_trend_data = rrd.dump_trend_data(period=RrdPeriod.PERIOD_7_DAYS_SEC)
+            KOA_LOGGER.debug(
+                "[dump_trend_analytics] db=%s, cpu_data_len=%d, mem_data_len=%d",
+                db,
+                len(current_trend_data[0]),
+                len(current_trend_data[1]),
+            )
             for res in [ResUsageType.CPU, ResUsageType.MEMORY]:
                 if current_trend_data[res]:
                     res_usage[res].append(current_trend_data[res])
 
-        with open(
-            str("%s/cpu_%s_trends.json" % (KOA_CONFIG.frontend_data_location, category)),
-            "w",
-        ) as fd:
+        mem_label = "mem" if prefix else "memory"
+        with open(str("%s/%scpu_%s_trends.json" % (KOA_CONFIG.frontend_data_location, prefix, category)), "w") as fd:
             fd.write("[" + ",".join(res_usage[0]) + "]")
 
         with open(
-            str("%s/memory_%s_trends.json" % (KOA_CONFIG.frontend_data_location, category)),
-            "w",
+                str("%s/%s%s_%s_trends.json" % (KOA_CONFIG.frontend_data_location, prefix, mem_label, category)), "w"
         ) as fd:
             fd.write("[" + ",".join(res_usage[1]) + "]")
 
     @staticmethod
-    def dump_histogram_analytics(dbfiles, period, cost_model):
+    def dump_histogram_analytics(dbfiles, period, cost_model, prefix=""):
         """Dump usage history data.
 
         :param dbfiles: The target RRD file
         :param period: the retrieval period
+        :param cost_model: the cost model to use
+        :param prefix: optional prefix for output filenames (e.g., 'gpu_')
         :return:
         """
         now_gmtime = time.gmtime()
@@ -1031,10 +1041,7 @@ class Rrd:
             rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=db)
             current_periodic_usage = rrd.dump_histogram_data(period=period)
 
-            rrd = Rrd(
-                db_files_location=KOA_CONFIG.db_location,
-                dbname=KOA_CONFIG.usage_efficiency_db(db),
-            )
+            rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.usage_efficiency_db(db))
             current_periodic_rf = rrd.dump_histogram_data(period=period)
 
             for res in [ResUsageType.CPU, ResUsageType.MEMORY]:
@@ -1080,7 +1087,7 @@ class Rrd:
                                 usage_cost = round(
                                     usage_ratio * usage_per_type_date[res][date_key][KOA_CONFIG.db_billing_hourly_rate],
                                     KOA_CONFIG.db_round_decimals,
-                                )
+                                    )
 
                         usage_export[res].append('{"stack":"%s","usage":%f,"date":"%s"}' % (db, usage_cost, date_key))
                         if Rrd.get_date_group(now_gmtime, period) == date_key:
@@ -1098,7 +1105,7 @@ class Rrd:
                                 req_cost = round(
                                     req_ratio * usage_per_type_date[res][date_key][KOA_CONFIG.db_billing_hourly_rate],
                                     KOA_CONFIG.db_round_decimals,
-                                )
+                                    )
 
                         requests_export[res].append('{"stack":"%s","usage":%f,"date":"%s"}' % (db, req_cost, date_key))
                         if Rrd.get_date_group(now_gmtime, period) == date_key:
@@ -1106,24 +1113,43 @@ class Rrd:
                                 req_cost
                             )  # noqa: E501
 
+        mem_label = "mem" if prefix else "memory"
         with open(
-            str("%s/cpu_usage_period_%d.json" % (KOA_CONFIG.frontend_data_location, period)),
-            "w",
+                str("%s/%scpu_usage_period_%d.json" % (
+                        KOA_CONFIG.frontend_data_location,
+                        prefix,
+                        period,
+                )),
+                "w"
         ) as fd:
             fd.write("[" + ",".join(usage_export[0]) + "]")
         with open(
-            str("%s/memory_usage_period_%d.json" % (KOA_CONFIG.frontend_data_location, period)),
-            "w",
+                str("%s/%s%s_usage_period_%d.json" % (
+                        KOA_CONFIG.frontend_data_location,
+                        prefix,
+                        mem_label,
+                        period,
+                )),
+                "w"
         ) as fd:
             fd.write("[" + ",".join(usage_export[1]) + "]")
         with open(
-            str("%s/cpu_requests_period_%d.json" % (KOA_CONFIG.frontend_data_location, period)),
-            "w",
+                str("%s/%scpu_requests_period_%d.json" % (
+                        KOA_CONFIG.frontend_data_location,
+                        prefix,
+                        period,
+                )),
+                "w"
         ) as fd:
             fd.write("[" + ",".join(requests_export[0]) + "]")
         with open(
-            str("%s/memory_requests_period_%d.json" % (KOA_CONFIG.frontend_data_location, period)),
-            "w",
+                str("%s/%s%s_requests_period_%d.json" % (
+                        KOA_CONFIG.frontend_data_location,
+                        prefix,
+                        mem_label,
+                        period),
+                    ),
+                "w"
         ) as fd:
             fd.write("[" + ",".join(requests_export[1]) + "]")
 
@@ -1143,23 +1169,17 @@ def pull_k8s(api_context):
         elif KOA_CONFIG.k8s_rbac_auth_token != "NO_ENV_TOKEN_FILE":
             headers["Authorization"] = "Bearer %s" % KOA_CONFIG.k8s_rbac_auth_token
         elif (
-            KOA_CONFIG.k8s_auth_username != "NO_ENV_AUTH_USERNAME"
-            and KOA_CONFIG.k8s_auth_password != "NO_ENV_AUTH_PASSWORD"
+                KOA_CONFIG.k8s_auth_username != "NO_ENV_AUTH_USERNAME"
+                and KOA_CONFIG.k8s_auth_password != "NO_ENV_AUTH_PASSWORD"
         ):
             token = base64.b64encode("%s:%s" % (KOA_CONFIG.k8s_auth_username, KOA_CONFIG.k8s_auth_password))
             headers["Authorization"] = "Basic %s" % token
         elif os.path.isfile(KOA_CONFIG.k8s_ssl_client_cert) and os.path.isfile(KOA_CONFIG.k8s_ssl_client_cert_key):
-            client_cert = (
-                KOA_CONFIG.k8s_ssl_client_cert,
-                KOA_CONFIG.k8s_ssl_client_cert_key,
-            )
+            client_cert = (KOA_CONFIG.k8s_ssl_client_cert, KOA_CONFIG.k8s_ssl_client_cert_key)
 
     try:
         http_req = requests.get(
-            api_endpoint,
-            verify=KOA_CONFIG.koa_verify_ssl_option,
-            headers=headers,
-            cert=client_cert,
+            api_endpoint, verify=KOA_CONFIG.koa_verify_ssl_option, headers=headers, cert=client_cert
         )
         if http_req.status_code == 200:
             data = http_req.text
@@ -1222,10 +1242,7 @@ def pull_dcgm_metrics():
         )
         if http_req.status_code == 200:
             data = jsonify_dcgm_metrics(http_req.text)
-            KOA_LOGGER.debug(
-                "[puller] Successfully fetched DCGM metrics from %s",
-                KOA_CONFIG.nvidia_dcgm_endpoint,
-            )
+            KOA_LOGGER.debug("[puller] Successfully fetched DCGM metrics from %s", KOA_CONFIG.nvidia_dcgm_endpoint)
         else:
             KOA_LOGGER.error(
                 "DCGM endpoint %s returned error (status=%d): %s",
@@ -1236,11 +1253,7 @@ def pull_dcgm_metrics():
     except requests.exceptions.Timeout:
         KOA_LOGGER.error("Timeout while querying DCGM endpoint %s", KOA_CONFIG.nvidia_dcgm_endpoint)
     except requests.exceptions.ConnectionError as ex:
-        KOA_LOGGER.error(
-            "Connection error to DCGM endpoint %s: %s",
-            KOA_CONFIG.nvidia_dcgm_endpoint,
-            ex,
-        )
+        KOA_LOGGER.error("Connection error to DCGM endpoint %s: %s", KOA_CONFIG.nvidia_dcgm_endpoint, ex)
     except requests.exceptions.RequestException as ex:
         KOA_LOGGER.error("Request error to DCGM endpoint %s: %s", KOA_CONFIG.nvidia_dcgm_endpoint, ex)
     except Exception as ex:
@@ -1272,19 +1285,20 @@ def create_metrics_puller():
             if k8s_usage.cpuCapacity > 0.0 and k8s_usage.memCapacity > 0.0:
                 now_epoch = calendar.timegm(time.gmtime())
 
-                # handle non-allocatable resources
+                # handle non-allocatable cpu
                 cpu_non_allocatable = compute_usage_percent_ratio(
-                    k8s_usage.cpuCapacity - k8s_usage.cpuAllocatable,
-                    k8s_usage.cpuCapacity,
+                    k8s_usage.cpuCapacity - k8s_usage.cpuAllocatable, k8s_usage.cpuCapacity
                 )
+                # handle non-allocatable memory
                 mem_non_allocatable = compute_usage_percent_ratio(
-                    k8s_usage.memCapacity - k8s_usage.memAllocatable,
-                    k8s_usage.memCapacity,
+                    k8s_usage.memCapacity - k8s_usage.memAllocatable, k8s_usage.memCapacity
                 )
+
                 rrd = Rrd(
                     db_files_location=KOA_CONFIG.db_location,
                     dbname=KOA_CONFIG.db_non_allocatable,
                 )
+
                 rrd.add_sample(
                     timestamp_epoch=now_epoch,
                     cpu_usage=cpu_non_allocatable,
@@ -1294,9 +1308,6 @@ def create_metrics_puller():
                 hourly_rate = -1
                 if KOA_CONFIG.billing_hourly_rate > 0:
                     hourly_rate = KOA_CONFIG.billing_hourly_rate
-                else:
-                    if k8s_usage.cloudCostAvailable is not None:
-                        hourly_rate = k8s_usage.hourlyRate
 
                 rrd = Rrd(
                     db_files_location=KOA_CONFIG.db_location,
@@ -1304,8 +1315,7 @@ def create_metrics_puller():
                 )
                 rrd.add_sample(
                     timestamp_epoch=now_epoch,
-                    cpu_usage=hourly_rate,
-                    mem_usage=hourly_rate,
+                    cpu_usage=hourly_rate, mem_usage=hourly_rate,
                 )
 
                 # handle resource request and usage by pods
@@ -1313,11 +1323,7 @@ def create_metrics_puller():
                     rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=ns)
                     cpu_usage = compute_usage_percent_ratio(ns_usage.cpu, k8s_usage.cpuCapacity)
                     mem_usage = compute_usage_percent_ratio(ns_usage.mem, k8s_usage.memCapacity)
-                    rrd.add_sample(
-                        timestamp_epoch=now_epoch,
-                        cpu_usage=cpu_usage,
-                        mem_usage=mem_usage,
-                    )
+                    rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_usage, mem_usage=mem_usage)
 
                     cpu_efficiency = 1.0
                     mem_efficiency = 1.0
@@ -1329,14 +1335,58 @@ def create_metrics_puller():
                             mem_efficiency = round(ns_usage.mem / request_capacities.mem, 2)
 
                     if cpu_efficiency > 0.0 or mem_efficiency > 0.0:
+                        rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=KOA_CONFIG.usage_efficiency_db(ns))
+                        rrd.add_sample(timestamp_epoch=now_epoch, cpu_usage=cpu_efficiency, mem_usage=mem_efficiency)
+
+                # handle GPU metrics by namespace (outside the namespace loop)
+                if k8s_usage.gpuMetricsByPod:
+                    # Aggregate GPU metrics by namespace
+                    gpu_by_namespace = {}
+                    for _, gpu_metrics in k8s_usage.gpuMetricsByPod.items():
+                        gpu_ns = gpu_metrics.namespace
+                        if gpu_ns not in gpu_by_namespace:
+                            gpu_by_namespace[gpu_ns] = {
+                                "gpuCpuUsage": 0.0,
+                                "gpuMemUsage": 0.0,
+                                "gpuMemFree": 0.0,
+                                "gpuCount": 0,
+                            }
+                        gpu_by_namespace[gpu_ns]["gpuCpuUsage"] += gpu_metrics.gpuCpuUsage
+                        gpu_by_namespace[gpu_ns]["gpuMemUsage"] += gpu_metrics.gpuMemUsage
+                        gpu_by_namespace[gpu_ns]["gpuMemFree"] += gpu_metrics.gpuMemFree
+                        gpu_by_namespace[gpu_ns]["gpuCount"] += gpu_metrics.gpuCount
+
+                    # Store GPU metrics in RRD databases
+                    for gpu_ns, gpu_data in gpu_by_namespace.items():
+                        # Calculate average GPU compute utilization across all GPUs in namespace
+                        gpu_count = gpu_data["gpuCount"]
+                        if gpu_count > 0:
+                            gpu_cpu_usage = gpu_data["gpuCpuUsage"] / gpu_count
+                        else:
+                            gpu_cpu_usage = 0.0
+
+                        # Calculate GPU memory utilization percentage
+                        total_gpu_mem = gpu_data["gpuMemUsage"] + gpu_data["gpuMemFree"]
+                        if total_gpu_mem > 0:
+                            gpu_mem_usage = (gpu_data["gpuMemUsage"] / total_gpu_mem) * 100
+                        else:
+                            gpu_mem_usage = 0.0
+
                         rrd = Rrd(
                             db_files_location=KOA_CONFIG.db_location,
-                            dbname=KOA_CONFIG.usage_efficiency_db(ns),
+                            dbname=KOA_CONFIG.gpu_metrics_db(gpu_ns),
                         )
+
                         rrd.add_sample(
                             timestamp_epoch=now_epoch,
-                            cpu_usage=cpu_efficiency,
-                            mem_usage=mem_efficiency,
+                            cpu_usage=gpu_cpu_usage,
+                            mem_usage=gpu_mem_usage,
+                        )
+                        KOA_LOGGER.debug(
+                            "[puller] GPU metrics for namespace %s: compute=%.2f%%, memory=%.2f%%",
+                            gpu_ns,
+                            gpu_cpu_usage,
+                            gpu_mem_usage,
                         )
 
             time.sleep(int(KOA_CONFIG.polling_interval_sec))
@@ -1361,14 +1411,27 @@ def dump_analytics(cost_model_by_user=None):
 
             ns_dbfiles = []
             rf_dbfiles = []
+            gpu_dbfiles = []
             for fn in dbfiles:
                 if fn.endswith(KOA_CONFIG.request_efficiency_db_file_extention()):
                     rf_dbfiles.append(fn)
+                elif fn.endswith(KOA_CONFIG.gpu_db_file_extension()):
+                    gpu_dbfiles.append(fn)
                 else:
                     ns_dbfiles.append(fn)
 
+            KOA_LOGGER.info(
+                "[dump_analytics] ns_dbfiles=%d, rf_dbfiles=%d, gpu_dbfiles=%d",
+                len(ns_dbfiles),
+                len(rf_dbfiles),
+                len(gpu_dbfiles),
+            )
+            if gpu_dbfiles:
+                KOA_LOGGER.info("[dump_analytics] gpu_dbfiles: %s", gpu_dbfiles)
+
             Rrd.dump_trend_analytics(ns_dbfiles, "usage")
             Rrd.dump_trend_analytics(rf_dbfiles, "rf")
+            Rrd.dump_trend_analytics(gpu_dbfiles, "usage", prefix="gpu_")
 
             cost_model_selected = cost_model_by_user
             if cost_model_by_user is None:
@@ -1384,26 +1447,33 @@ def dump_analytics(cost_model_by_user=None):
             Rrd.dump_histogram_analytics(
                 dbfiles=ns_dbfiles,
                 period=RrdPeriod.PERIOD_14_DAYS_SEC,
-                cost_model=cost_model_selected,
+                cost_model=cost_model_selected
             )  # noqa: E501
             Rrd.dump_histogram_analytics(
                 dbfiles=ns_dbfiles,
                 period=RrdPeriod.PERIOD_YEAR_SEC,
+                cost_model=cost_model_selected
+            )  # noqa: E501
+            Rrd.dump_histogram_analytics(
+                dbfiles=gpu_dbfiles,
+                period=RrdPeriod.PERIOD_14_DAYS_SEC,
+                cost_model=cost_model_selected, prefix="gpu_"
+            )  # noqa: E501
+            Rrd.dump_histogram_analytics(
+                dbfiles=gpu_dbfiles,
+                period=RrdPeriod.PERIOD_YEAR_SEC,
                 cost_model=cost_model_selected,
+                prefix="gpu_"
             )  # noqa: E501
             time.sleep(export_interval)
     except Exception as ex:
         exception_type = type(ex).__name__
-        KOA_LOGGER.error(
-            "%s Exception in dump_analytics => %s",
-            exception_type,
-            traceback.format_exc(),
-        )
+        KOA_LOGGER.error("%s Exception in dump_analytics => %s", exception_type, traceback.format_exc())
 
 
 if __name__ == "__main__":
     if KOA_CONFIG.cost_model == "CHARGE_BACK" and KOA_CONFIG.billing_hourly_rate <= 0.0:
-        KOA_LOGGER.warning("Unexpected hourly rate for CHARGE_BACK; value is non-positive. Check configuration.")
+        KOA_LOGGER.warning("Unexpected hourly rate for CHARGE_BACK => %f", KOA_CONFIG.billing_hourly_rate)
 
     parser = argparse.ArgumentParser(description="Kubernetes Opex Analytics Backend")
     parser.add_argument(
