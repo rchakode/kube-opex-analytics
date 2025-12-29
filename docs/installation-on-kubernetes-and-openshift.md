@@ -87,6 +87,10 @@ Below are some frequently used customizations:
   Set `.securityContext.openshift` to `true`. This binds the SCC `nonroot-v2` to the `kube-opex-analytics` service account.  
   If `emptyDir` is enabled, the SCC `hostaccess` is also bound to the service account.
 
+- **Enable DCGM Integration**
+  * Set `dcgm.enable` to `true`
+  * Set `dcgm.endpoint` with the URL of DCGM metrics endpoint (e.g. `http://dcgm-exporter.gpu-operator.svc:9400/metrics`)
+
 - **Customize CPU and memory requests**  
   Adjust `.resources.requests.cpu` and `.resources.requests.memory` as needed.
 

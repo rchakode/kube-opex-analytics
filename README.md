@@ -114,6 +114,7 @@ For advanced customization (OpenShift, custom storage, etc.), edit `manifests/he
 
 - **OpenShift:** Set `securityContext.openshift: true`
 - **Custom storage:** Set `dataVolume.storageClass` and `dataVolume.capacity`
+- **DCGM Integration:** Set `dcgm.enable: true` and `dcgm.endpoint`
 
 Then run:
 
