@@ -18,7 +18,7 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 
 ### How to Report
 
-Send an email to: **security@realopslabs.com**
+Send an email to: **contact@krossboard.app**
 
 Include the following information:
 
