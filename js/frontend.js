@@ -714,13 +714,15 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
             tooltip += '<tr><td>UID</td><td>' + node.id + '</td></tr>';
             tooltip += '<tr><td>Container Runtime</td><td>' + node.containerRuntime + '</td></tr>';
             tooltip += '<tr><td>State</td><td>' + node.state + '</td></tr>';
+            tooltip += '<tr><td>Pods Running</td><td>' + node.podsRunning.length + '</td></tr>';
             tooltip += '<tr><td>CPU</td><td>' + node.cpuCapacity + '</td></tr>';
             tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>' + computeLoadPercent(node.cpuAllocatable, node.cpuCapacity) + '</td></tr>';
             tooltip += '<tr><td>&nbsp;&nbsp;Usage</td><td>' + computeLoadPercent(node.cpuUsage, node.cpuCapacity) + '</td></tr>';
-            tooltip += '<tr><td>GPU</td><td>' + node.memCapacity + '</td></tr>';
-            tooltip += '<tr><td>Pods Running</td><td>' + node.podsRunning.length + '</td></tr>';
-            tooltip += '<tr><td>GPU</td><td>' + node.gpuCPUCapacity + '</td></tr>';
-            tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>' + computeLoadPercent(node.gpuCPUAllocatable, node.gpuCPUCapacity) + '</td></tr>';
+            tooltip += '<tr><td>Memory</td><td>' + node.memCapacity + '</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>' + computeLoadPercent(node.memAllocatable, node.memAllocatable) + '</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Usage</td><td>' + computeLoadPercent(node.memUsage, node.memCapacity) + '</td></tr>';
+            tooltip += '<tr><td>GPU</td><td>' + node.gpuCapacity + '</td></tr>';
+            tooltip += '<tr><td>&nbsp;&nbsp;Allocatable</td><td>' + computeLoadPercent(node.gpuAllocatable, node.gpuCapacity) + '</td></tr>';
             tooltip += '</tbody></table>';
             return tooltip;
         }

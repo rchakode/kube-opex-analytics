@@ -466,6 +466,8 @@ class JSONMarshaller(json.JSONEncoder):
                 "gpuUsage": obj.gpuUsage,
                 "gpuMemUsage": obj.gpuMemUsage,
                 "gpuMemFree": obj.gpuMemFree,
+                "gpuCapacity": obj.gpuCapacity,
+                "gpuAllocatable": obj.gpuAllocatable,
             }
         elif isinstance(obj, Pod):
             return {
@@ -584,8 +586,8 @@ class K8sUsage:
                 node.cpuAllocatable = self.decode_capacity(status["allocatable"]["cpu"])
                 node.memCapacity = self.decode_capacity(status["capacity"]["memory"])
                 node.memAllocatable = self.decode_capacity(status["allocatable"]["memory"])
-                node.gpuCPUCapacity = self.decode_capacity(status["capacity"].get("nvidia.com/gpu", 0))
-                node.gpuCPUAllocatable = self.decode_capacity(status["allocatable"].get("nvidia.com/gpu", 0))
+                node.gpuCapacity = self.decode_capacity(status["capacity"].get("nvidia.com/gpu", "0"))
+                node.gpuAllocatable = self.decode_capacity(status["allocatable"].get("nvidia.com/gpu", "0"))
 
                 for _, cond in enumerate(status["conditions"]):
                     node.message = cond["message"]
