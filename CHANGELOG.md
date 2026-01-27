@@ -1,5 +1,39 @@
 # Release Notes
 
+## v26.01.0-beta2
+
+### Highlights
+This release enhances Helm chart distribution with OCI registry support and GitHub Pages hosting, fixes GPU capacity tracking issues, and improves security documentation.
+
+### New Features
+
+#### Helm Chart Distribution
+- **OCI Registry Support**: Helm charts now pushed to GHCR as OCI artifacts
+- **Latest Tag**: Charts automatically tagged as `latest` for easier installation
+- **GitHub Pages Hosting**: Traditional Helm repository available via GitHub Pages
+- **ORAS Integration**: Added ORAS tooling for OCI artifact management
+
+#### GPU Capacity Tracking
+- **Node GPU Capacity**: Track total GPU capacity per node alongside utilization
+- **Improved Tooltips**: Node tooltips now display GPU capacity information
+
+### Bug Fixes
+- Fixed GPU capacity field names for correct data collection
+- Fixed node tooltip display for GPU metrics
+- Fixed Helm chart configuration issues
+
+### Documentation
+- Added detailed DCGM integration parameters documentation
+- Enhanced SECURITY.md with comprehensive security guidelines
+- Updated security contact email address
+- Renamed RELEASES.md to CHANGELOG.md
+
+### CI/CD
+- Added Helm chart release workflow with automatic versioning
+- GitHub Actions workflow for chart packaging and publishing
+
+---
+
 ## v26.01.0-beta1
 
 ### Highlights
