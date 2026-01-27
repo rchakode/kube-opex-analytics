@@ -7,6 +7,7 @@ on:
 permissions:
   contents: write
   packages: write
+  pages: write
 
 jobs:
   release-chart:
@@ -38,16 +39,47 @@ jobs:
           helm package manifests/helm -d .helm-packages
           echo "CHART_PACKAGE=$(ls .helm-packages/*.tgz)" >> $GITHUB_ENV
 
+      - name: Set up ORAS
+        uses: oras-project/setup-oras@v1
+
       - name: Login to GitHub Container Registry
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | oras login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Push chart to GHCR (OCI)
         run: |
           helm push ${{ env.CHART_PACKAGE }} oci://ghcr.io/${{ github.repository_owner }}/charts
+
+      - name: Tag chart as latest
+        run: |
+          oras copy ghcr.io/${{ github.repository_owner }}/charts/kube-opex-analytics:${{ steps.version.outputs.VERSION }} \
+            ghcr.io/${{ github.repository_owner }}/charts/kube-opex-analytics:latest
 
       - name: Upload chart to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ env.CHART_PACKAGE }}
           generate_release_notes: true
+
+      - name: Publish to GitHub Pages
+        run: |
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Fetch gh-pages branch or create it
+          git fetch origin gh-pages:gh-pages || git checkout --orphan gh-pages
+          git checkout gh-pages
+
+          # Copy the packaged chart
+          cp ${{ env.CHART_PACKAGE }} .
+
+          # Update the Helm repo index
+          helm repo index . --url https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }} --merge index.yaml || \
+          helm repo index . --url https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+
+          # Commit and push
+          git add .
+          git commit -m "Release chart ${{ steps.version.outputs.VERSION }}"
+          git push origin gh-pages
