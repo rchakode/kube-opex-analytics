@@ -1,0 +1,97 @@
+name: Helm Chart Release (KubeLedger)
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  packages: write
+  pages: write
+
+jobs:
+  release-chart:
+    name: Release Helm Chart
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Extract version
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+            echo "IS_TAG=true" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=0.0.0-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+            echo "IS_TAG=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update backend.py version
+        run: |
+          sed -i "s|version = '[^']*'|version = '${{ steps.version.outputs.VERSION }}'|" backend.py
+
+      - name: Update Chart details (Name & Image)
+        run: |
+          sed -i "s|^name:.*|name: kubeledger|" manifests/kubeledger/helm/Chart.yaml
+          sed -i "s|docker.io/rchakode/kube-opex-analytics|ghcr.io/realopslabs/kubeledger|g" manifests/kubeledger/helm/values.yaml
+
+      - name: Update Chart version
+        run: |
+          sed -i "s|^version:.*|version: ${{ steps.version.outputs.VERSION }}|" manifests/kubeledger/helm/Chart.yaml
+          sed -i "s|^appVersion:.*|appVersion: \"${{ steps.version.outputs.VERSION }}\"|" manifests/kubeledger/helm/Chart.yaml
+
+      - name: Lint chart
+        run: helm lint manifests/kubeledger/helm
+
+      - name: Package chart
+        run: |
+          helm package manifests/kubeledger/helm -d .helm-packages
+          echo "CHART_PACKAGE=$(ls .helm-packages/*.tgz)" >> $GITHUB_ENV
+
+      - name: Set up ORAS
+        uses: oras-project/setup-oras@v1
+
+      - name: Login to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | oras login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push chart to GHCR (OCI)
+        run: |
+          helm push ${{ env.CHART_PACKAGE }} oci://ghcr.io/${{ github.repository_owner }}/charts
+
+      - name: Tag chart as latest
+        if: steps.version.outputs.IS_TAG == 'true'
+        run: |
+          oras copy \
+            ghcr.io/${{ github.repository_owner }}/charts/kubeledger:${{ steps.version.outputs.VERSION }} \
+            ghcr.io/${{ github.repository_owner }}/charts/kubeledger:latest
+
+      - name: Upload chart to GitHub Release
+        if: steps.version.outputs.IS_TAG == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.CHART_PACKAGE }}
+          generate_release_notes: true
+
+      - name: Generate Helm repo index
+        if: steps.version.outputs.IS_TAG == 'true'
+        run: |
+          helm repo index .helm-packages \
+            --url https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+
+      - name: Publish to GitHub Pages
+        if: steps.version.outputs.IS_TAG == 'true'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .helm-packages
+          keep_files: true
+          enable_jekyll: false
