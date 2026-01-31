@@ -376,8 +376,8 @@ wheels = [
 ]
 
 [[package]]
-name = "kube-opex-analytics"
-version = "26.1.0b1"
+name = "kubeledger"
+version = "26.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "flask", version = "3.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
