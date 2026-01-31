@@ -51,18 +51,18 @@ def create_directory_if_not_exists(path):
         if e.errno != errno.EEXIST:
             raise
 
+
 def get_backend_config_env(var_name, default_value=None):
     """Retrieve environment variable, prioritizing KL_ prefix over KOA_ using explicit check."""
     kl_var = "KL_{}".format(var_name)
     if kl_var in os.environ:
         return os.environ[kl_var]
-    
+
     koa_var = "KOA_{}".format(var_name)
     if koa_var in os.environ:
         return os.environ[koa_var]
 
     return default_value
-
 
 
 class Config:
@@ -79,7 +79,9 @@ class Config:
     cost_model = get_backend_config_env("COST_MODEL", "CUMULATIVE_RATIO")
     billing_currency = get_backend_config_env("BILLING_CURRENCY_SYMBOL", "$")
     enable_debug = (lambda v: v.lower() in ("yes", "true"))(get_backend_config_env("ENABLE_DEBUG", "false"))
-    k8s_auth_token_file = get_backend_config_env("K8S_AUTH_TOKEN_FILE", "/var/run/secrets/kubernetes.io/serviceaccount/token")
+    k8s_auth_token_file = get_backend_config_env(
+        "K8S_AUTH_TOKEN_FILE", "/var/run/secrets/kubernetes.io/serviceaccount/token"
+    )
     k8s_auth_token = get_backend_config_env("K8S_AUTH_TOKEN", "NO_ENV_AUTH_TOKEN")
     k8s_auth_token_type = get_backend_config_env("K8S_AUTH_TOKEN_TYPE", "Bearer")
     k8s_auth_username = get_backend_config_env("K8S_AUTH_USERNAME", "NO_ENV_AUTH_USERNAME")
@@ -87,8 +89,12 @@ class Config:
     k8s_ssl_cacert = get_backend_config_env("K8S_CACERT", None)
     k8s_ssl_client_cert = get_backend_config_env("K8S_AUTH_CLIENT_CERT", "NO_ENV_CLIENT_CERT")
     k8s_ssl_client_cert_key = get_backend_config_env("K8S_AUTH_CLIENT_CERT_KEY", "NO_ENV_CLIENT_CERT_CERT")
-    included_namespaces = [i for i in get_backend_config_env("INCLUDED_NAMESPACES", "").replace(" ", ",").split(",") if i]
-    excluded_namespaces = [i for i in get_backend_config_env("EXCLUDED_NAMESPACES", "").replace(" ", ",").split(",") if i]
+    included_namespaces = [
+        i for i in get_backend_config_env("INCLUDED_NAMESPACES", "").replace(" ", ",").split(",") if i
+    ]
+    excluded_namespaces = [
+        i for i in get_backend_config_env("EXCLUDED_NAMESPACES", "").replace(" ", ",").split(",") if i
+    ]
     nvidia_dcgm_endpoint = get_backend_config_env("NVIDIA_DCGM_ENDPOINT", None)
 
     def process_cost_model_config(self):
