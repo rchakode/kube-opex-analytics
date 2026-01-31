@@ -1,5 +1,16 @@
 # Release Notes
 
+## v26.01.0
+
+### Highlights
+This release marks the official rebranding of the project to **KubeLedger** (formerly kube-opex-analytics) and the **General Availability (GA) of GPU support**. It introduces a new identity, updated configuration handling, and a dedicated documentation site.
+
+### Rebranding & Improvements
+- **GPU Support**: General Availability (GA) of GPU metrics collection and visualization.
+- **Project Rename**: officially renamed to **KubeLedger**.
+- **Configuration**: introduced `KL_` prefix for environment variables (e.g., `KL_RETENTION_PERIOD`), taking precedence over legacy `KOA_` variables. Note that `KOA_` variables are **deprecated** but will be maintained until the next major release.
+- **Documentation**: launched new documentation portal at [kubeledger.io](https://kubeledger.io).
+
 ## v26.01.0-beta2
 
 ### Highlights
