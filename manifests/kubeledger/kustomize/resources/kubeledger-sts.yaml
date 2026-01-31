@@ -1,0 +1,102 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kubeledger
+  labels:
+    app.kubernetes.io/name: kubeledger
+    app.kubernetes.io/instance: kubeledger
+    app: kubeledger
+spec:
+  replicas: 1
+  serviceName: kubeledger
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubeledger
+      app.kubernetes.io/instance: kubeledger
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubeledger
+        app.kubernetes.io/instance: kubeledger
+    spec:
+      securityContext:
+        runAsUser: 4583
+        fsGroup: 4583
+      serviceAccountName: kubeledger
+      restartPolicy: Always
+      containers:
+        - name: kubeledger
+          image: kubeledger
+          imagePullPolicy: Always
+          env:
+            - name: "KL_DB_LOCATION"
+              value: "/data/db"
+            - name: "KL_K8S_API_ENDPOINT"
+              valueFrom:
+                configMapKeyRef:
+                  key: KL_K8S_API_ENDPOINT
+                  name: kubeledger-config
+            - name: "KL_K8S_API_VERIFY_SSL"
+              valueFrom:
+                configMapKeyRef:
+                  key: KL_K8S_API_VERIFY_SSL
+                  name: kubeledger-config
+            - name: "KL_K8S_CACERT"
+              valueFrom:
+                configMapKeyRef:
+                  key: KL_K8S_CACERT
+                  name: kubeledger-config
+            - name: "KL_BILLING_CURRENCY_SYMBOL"
+              valueFrom:
+                configMapKeyRef:
+                  key: KL_BILLING_CURRENCY_SYMBOL
+                  name: kubeledger-config
+            - name: "KL_BILLING_HOURLY_RATE"
+              valueFrom:
+                configMapKeyRef:
+                  key: KL_BILLING_HOURLY_RATE
+                  name: kubeledger-config
+            - name: "KL_COST_MODEL"
+              valueFrom:
+                configMapKeyRef:
+                  key: KL_COST_MODEL
+                  name: kubeledger-config
+            - name: "KL_K8S_GOOGLE_API_KEY"
+              valueFrom:
+                secretKeyRef:
+                  key: KL_GOOGLE_API_KEY
+                  name: kubeledger-secrets
+          ports:
+            - name: http
+              containerPort: 5483
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+            - mountPath: /data/
+              name: data-vol
+            - mountPath: /koa/static/data/
+              name: static-data-vol
+      volumes:
+      - name: static-data-vol
+        emptyDir: {}
+  volumeClaimTemplates:
+  - metadata:
+      name: data-vol
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi

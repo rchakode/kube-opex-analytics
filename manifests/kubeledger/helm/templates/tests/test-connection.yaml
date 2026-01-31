@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "kubeledger.fullname" . }}-test-connection"
+  labels:
+    app.kubernetes.io/name: {{ include "kubeledger.name" . }}
+    helm.sh/chart: {{ include "kubeledger.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ["/bin/sh", "-c"]
+      args:
+        - echo 'waiting 60s';
+          sleep 60;
+          wget '{{ include "kubeledger.fullname" . }}:{{ .Values.service.port }}';
+          echo done;   
+  restartPolicy: Never

@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+{{- if .Values.dataVolume.persist }}
+kind: StatefulSet
+{{- else }}
+kind: Deployment
+{{- end }}
+metadata:
+  name: {{ include "kubeledger.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubeledger.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+{{- if .Values.dataVolume.persist }}
+  serviceName: {{ include "kubeledger.fullname" . }}
+{{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "kubeledger.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "kubeledger.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+    {{- if .Values.securityContext.enabled }}
+      securityContext:
+        runAsUser: {{ .Values.securityContext.uid }}
+        fsGroup: {{ .Values.securityContext.gid }}
+    {{- end }}
+      serviceAccountName: {{ include "kubeledger.fullname" . }}
+      restartPolicy: Always
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ include "kubeledger.imageVersion" . }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{- if .Values.envs }}
+          env:
+          {{- range $key, $val := .Values.envs }}
+            - name: {{ $key | quote }}
+              value: {{ $val | quote }}
+          {{- end }}
+          {{- if .Values.pricing.gcp }}
+            - name: "KL_GOOGLE_API_KEY"
+              valueFrom:
+                secretKeyRef:
+                  name: kubeledger-secrets
+                  key: KL_GOOGLE_API_KEY
+          {{- end }}
+          {{- if and .Values.dcgm.enabled .Values.dcgm.endpoint }}
+            - name: "KL_NVIDIA_DCGM_ENDPOINT"
+              value: {{ .Values.dcgm.endpoint | quote }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.includedNamespaces }}
+          {{- if not .Values.envs }}
+          env:
+          {{- end }}
+            - name: KL_INCLUDED_NAMESPACES
+              value: {{ join "," $.Values.includedNamespaces }}
+        {{- end }}
+        {{- if .Values.excludedNamespaces }}
+          {{- if not .Values.envs }}
+          env:
+          {{- end }}
+            - name: KL_EXCLUDED_NAMESPACES
+              value: {{ join "," $.Values.excludedNamespaces }}
+        {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - mountPath: /data/
+              name: data-vol
+            - mountPath: /koa/static/data/
+              name: static-data-vol
+      volumes:
+      - name: static-data-vol
+        emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- if .Values.dataVolume.persist }}
+  volumeClaimTemplates:
+  - metadata:
+      name: data-vol
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      {{- if .Values.dataVolume.storageClass }}
+      storageClassName: {{ .Values.dataVolume.storageClass }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.dataVolume.capacity }}
+{{- else }}
+      - name: data-vol
+        emptyDir: {}
+{{- end }}

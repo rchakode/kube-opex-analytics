@@ -14,4 +14,4 @@ resources:
 images:
   - name: kube-opex-analytics
     newName: docker.io/rchakode/kube-opex-analytics
-    newTag: 26.01.0-beta2
+    newTag: 26.01.0

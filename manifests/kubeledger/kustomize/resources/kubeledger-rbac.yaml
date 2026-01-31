@@ -1,0 +1,65 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubeledger
+  labels:
+    app.kubernetes.io/name: kubeledger
+    app.kubernetes.io/instance: kubeledger
+    app: kubeledger
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kubeledger
+  namespace: kubeledger
+  annotations:
+    kubernetes.io/service-account.name: "kubeledger"
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubeledger
+  labels:
+    app.kubernetes.io/name: kubeledger
+    app.kubernetes.io/instance: kubeledger
+    app: kubeledger
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - nodes
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - metrics.k8s.io
+  resources:
+  - nodes
+  - nodes/stats
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubeledger
+  labels:
+    app.kubernetes.io/name: kubeledger
+    app.kubernetes.io/instance: kubeledger
+    app: kubeledger
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubeledger
+subjects:
+- kind: ServiceAccount
+  name: kubeledger
+  namespace: kubeledger

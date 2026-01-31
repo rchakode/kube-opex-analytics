@@ -1,0 +1,97 @@
+# Default values for kubeledger.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+envs:
+  KL_DB_LOCATION: /data/db
+  KL_K8S_API_ENDPOINT: https://kubernetes.default
+  KL_COST_MODEL: CUMULATIVE_RATIO
+  KL_BILLING_HOURLY_RATE: 0.0
+  KL_BILLING_CURRENCY_SYMBOL: $
+  KL_K8S_API_VERIFY_SSL: true
+  KL_K8S_CACERT: /run/secrets/kubernetes.io/serviceaccount/ca.crt
+  KL_INCLUDED_NAMESPACES: ''
+  KL_EXCLUDED_NAMESPACES: ''
+
+# NVIDIA DCGM Exporter integration for GPU metrics
+# Set endpoint to enable GPU metrics collection (requires DCGM Exporter deployed in cluster)
+# Example: http://dcgm-exporter.gpu-operator:9400/metrics
+dcgm:
+  enabled: false
+  endpoint: 'http://dcgm-exporter.gpu-operator:9400/metrics'
+
+dataVolume:
+  persist: true
+  capacity: 1Gi
+#  storageClass: default
+
+# overrides envs.INCLUDED_NAMESPACES
+includedNamespaces: []
+
+# overrides envs.EXCLUDED_NAMESPACES
+excludedNamespaces: []
+
+prometheusOperator:
+  enabled: false
+  labels:
+
+securityContext:
+  enabled: true
+  openshift: false
+  uid: 4583
+  gid: 4583
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/realopslabs/kubeledger
+  pullPolicy: Always
+
+nameOverride: ""
+fullnameOverride: ""
+
+metadata:
+  labels:
+    app: kubeledger
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 5483
+
+ingress:
+  enabled: false
+  annotations: {}
+  labels: {}
+  hosts:
+    - host: kubeledger.local
+      paths: []
+# uncomment the following lines and ajust the values to enable TLS
+  # tls:
+  #  - secretName: kubeledger-tls
+  #    hosts:
+  #      - kubeledger.local
+
+# priorityClassName: default
+
+resources:
+# No resource requests not limits is specified by default.
+# We leave this as a conscious choice for the user, as this increases chances charts run
+# on environments with little resources, such as Minikube.
+# If you do want to specify resources, uncomment the following lines, adjust them as necessary,
+# and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 256m
+  #   memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+pricing:
+  gcp: false
