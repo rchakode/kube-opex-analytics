@@ -51,32 +51,45 @@ def create_directory_if_not_exists(path):
         if e.errno != errno.EEXIST:
             raise
 
+def get_backend_config_env(var_name, default_value=None):
+    """Retrieve environment variable, prioritizing KL_ prefix over KOA_ using explicit check."""
+    kl_var = "KL_{}".format(var_name)
+    if kl_var in os.environ:
+        return os.environ[kl_var]
+    
+    koa_var = "KOA_{}".format(var_name)
+    if koa_var in os.environ:
+        return os.environ[koa_var]
+
+    return default_value
+
+
 
 class Config:
-    version = "26.01.0-beta2"
+    version = "26.01.0"
     db_round_decimals = 6
     db_non_allocatable = "non-allocatable"
     db_billing_hourly_rate = ".billing-hourly-rate"
     static_content_location = "/static"
     frontend_data_location = ".%s/data" % (static_content_location)
-    k8s_api_endpoint = os.getenv("KOA_K8S_API_ENDPOINT", "http://127.0.0.1:8001")
-    k8s_verify_ssl = (lambda v: v.lower() in ("yes", "true"))(os.getenv("KOA_K8S_API_VERIFY_SSL", "true"))
-    db_location = os.getenv("KOA_DB_LOCATION", ("%s/.kube-opex-analytics/db") % os.getenv("HOME", "/tmp"))
-    polling_interval_sec = int(os.getenv("KOA_POLLING_INTERVAL_SEC", "300"))
-    cost_model = os.getenv("KOA_COST_MODEL", "CUMULATIVE_RATIO")
-    billing_currency = os.getenv("KOA_BILLING_CURRENCY_SYMBOL", "$")
-    enable_debug = (lambda v: v.lower() in ("yes", "true"))(os.getenv("KOA_ENABLE_DEBUG", "false"))
-    k8s_auth_token_file = os.getenv("KOA_K8S_AUTH_TOKEN_FILE", "/var/run/secrets/kubernetes.io/serviceaccount/token")
-    k8s_auth_token = os.getenv("KOA_K8S_AUTH_TOKEN", "NO_ENV_AUTH_TOKEN")
-    k8s_auth_token_type = os.getenv("KOA_K8S_AUTH_TOKEN_TYPE", "Bearer")
-    k8s_auth_username = os.getenv("KOA_K8S_AUTH_USERNAME", "NO_ENV_AUTH_USERNAME")
-    k8s_auth_password = os.getenv("KOA_K8S_AUTH_PASSWORD", "NO_ENV_AUTH_PASSWORD")
-    k8s_ssl_cacert = os.getenv("KOA_K8S_CACERT", None)
-    k8s_ssl_client_cert = os.getenv("KOA_K8S_AUTH_CLIENT_CERT", "NO_ENV_CLIENT_CERT")
-    k8s_ssl_client_cert_key = os.getenv("KOA_K8S_AUTH_CLIENT_CERT_KEY", "NO_ENV_CLIENT_CERT_CERT")
-    included_namespaces = [i for i in os.getenv("KOA_INCLUDED_NAMESPACES", "").replace(" ", ",").split(",") if i]
-    excluded_namespaces = [i for i in os.getenv("KOA_EXCLUDED_NAMESPACES", "").replace(" ", ",").split(",") if i]
-    nvidia_dcgm_endpoint = os.getenv("KOA_NVIDIA_DCGM_ENDPOINT", None)
+    k8s_api_endpoint = get_backend_config_env("K8S_API_ENDPOINT", "http://127.0.0.1:8001")
+    k8s_verify_ssl = (lambda v: v.lower() in ("yes", "true"))(get_backend_config_env("K8S_API_VERIFY_SSL", "true"))
+    db_location = get_backend_config_env("DB_LOCATION", ("%s/.kube-opex-analytics/db") % os.getenv("HOME", "/tmp"))
+    polling_interval_sec = int(get_backend_config_env("POLLING_INTERVAL_SEC", "300"))
+    cost_model = get_backend_config_env("COST_MODEL", "CUMULATIVE_RATIO")
+    billing_currency = get_backend_config_env("BILLING_CURRENCY_SYMBOL", "$")
+    enable_debug = (lambda v: v.lower() in ("yes", "true"))(get_backend_config_env("ENABLE_DEBUG", "false"))
+    k8s_auth_token_file = get_backend_config_env("K8S_AUTH_TOKEN_FILE", "/var/run/secrets/kubernetes.io/serviceaccount/token")
+    k8s_auth_token = get_backend_config_env("K8S_AUTH_TOKEN", "NO_ENV_AUTH_TOKEN")
+    k8s_auth_token_type = get_backend_config_env("K8S_AUTH_TOKEN_TYPE", "Bearer")
+    k8s_auth_username = get_backend_config_env("K8S_AUTH_USERNAME", "NO_ENV_AUTH_USERNAME")
+    k8s_auth_password = get_backend_config_env("K8S_AUTH_PASSWORD", "NO_ENV_AUTH_PASSWORD")
+    k8s_ssl_cacert = get_backend_config_env("K8S_CACERT", None)
+    k8s_ssl_client_cert = get_backend_config_env("K8S_AUTH_CLIENT_CERT", "NO_ENV_CLIENT_CERT")
+    k8s_ssl_client_cert_key = get_backend_config_env("K8S_AUTH_CLIENT_CERT_KEY", "NO_ENV_CLIENT_CERT_CERT")
+    included_namespaces = [i for i in get_backend_config_env("INCLUDED_NAMESPACES", "").replace(" ", ",").split(",") if i]
+    excluded_namespaces = [i for i in get_backend_config_env("EXCLUDED_NAMESPACES", "").replace(" ", ",").split(",") if i]
+    nvidia_dcgm_endpoint = get_backend_config_env("NVIDIA_DCGM_ENDPOINT", None)
 
     def process_cost_model_config(self):
         cost_model_label = "cumulative"
@@ -92,7 +105,7 @@ class Config:
     def process_billing_hourly_rate_config(self):
         """Process KOA_BILLING_HOURLY_RATE config setting."""
         try:
-            self.billing_hourly_rate = float(os.getenv("KOA_BILLING_HOURLY_RATE", -1))
+            self.billing_hourly_rate = float(get_backend_config_env("BILLING_HOURLY_RATE", -1))
         except:
             self.billing_hourly_rate = float(-1.0)
 
@@ -108,7 +121,7 @@ class Config:
 
         # check listener port
         try:
-            self.listener_port = int(os.getenv("KOA_LISTENER_PORT"))
+            self.listener_port = int(get_backend_config_env("LISTENER_PORT"))
         except:
             self.listener_port = 5483
 
