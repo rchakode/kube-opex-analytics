@@ -1,10 +1,15 @@
+# KubeLedger
+
 ![logo-thumbnail](screenshots/thumbnail-header.png)
 
-![Apache License](https://img.shields.io/github/license/rchakode/kube-opex-analytics.svg?label=License&style=for-the-badge)
-[![Calendar Versioning](https://img.shields.io/badge/calver-YY.MM.MICRO-bb8fce.svg?style=for-the-badge)](http://calver.org)
-![Docker pulls](https://img.shields.io/docker/pulls/rchakode/kube-opex-analytics.svg?label=Docker%20Pulls&style=for-the-badge)
+[![License](https://img.shields.io/github/license/realopslabs/kubeledger.svg?label=License&style=for-the-badge)](https://opensource.org/licenses/Apache-2.0)
+[![Release](https://img.shields.io/github/v/release/realopslabs/kubeledger?label=Latest%20Release&style=for-the-badge)](https://github.com/realopslabs/kubeledger/releases)
+[![Docker pulls](https://img.shields.io/badge/docker-ghcr.io%2Frealopslabs%2Fkubeledger-blue?style=for-the-badge)](https://github.com/realopslabs/kubeledger/pkgs/container/kubeledger)
 
 ---
+
+> **Note:** `kube-opex-analytics` has been renamed to **KubeLedger**.
+> Read more about this change and migration path in our [announcement blog post](https://kubeledger.io/blog/2025/01/01/kubeledger-announcement/). To handle the migration in a straightforward way, we have provided a [migration procedure](https://kubeledger.io/docs/migration-from-kube-opex-analytics-to-kubeledger/).
 
 ## Table of Contents
 
@@ -20,19 +25,19 @@
 
 ## Overview
 
-**kube-opex-analytics** is a Kubernetes usage accounting and analytics tool that helps organizations track **CPU, Memory, and GPU** resources consumed by their clusters over time (hourly, daily, monthly).
+**KubeLedger** is a Kubernetes usage accounting and analytics tool that helps organizations track **CPU, Memory, and GPU** resources consumed by their clusters over time (hourly, daily, monthly).
 
-It provides insightful usage analytics metrics and charts that engineering and financial teams can use as key indicators for cost optimization decisions.
+It acts as a **System of Record** for your cluster resources, providing insightful usage analytics metrics and charts that engineering and financial teams can use as key indicators for cost optimization decisions.
 
 ### Tracked Resources
 
 - **CPU** - Core usage and requests per namespace
 - **Memory** - RAM consumption and requests per namespace
-- **GPU** - NVIDIA GPU utilization via DCGM integration (v26.01.0-beta1 or later)
+- **GPU** - NVIDIA GPU utilization via DCGM integration
 
-![kube-opex-analytics-overview](screenshots/kube-opex-analytics-demo.gif)
+![kubeledger-overview](screenshots/kubeledger-demo.gif)
 
-> **Multi-cluster Integration:** kube-opex-analytics tracks usage for a single Kubernetes cluster. For centralized multi-cluster analytics, see [Krossboard Kubernetes Operator](https://github.com/2-alchemists/krossboard) ([demo video](https://youtu.be/lfkUIREDYDY)).
+> **Multi-cluster Integration:** KubeLedger tracks usage for a single Kubernetes cluster. For centralized multi-cluster analytics, see [Krossboard Kubernetes Operator](https://github.com/2-alchemists/krossboard) ([demo video](https://youtu.be/lfkUIREDYDY)).
 
 ## Key Features
 
@@ -68,7 +73,7 @@ kubectl -n kube-system get deploy | grep metrics-server
 kubectl top nodes
 
 # If not installed, deploy with kubectl
-kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+kubectl apply -f [https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml](https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml)
 ```
 
 ### Verify DCGM Exporter (GPU metrics)
@@ -89,28 +94,30 @@ helm install dcgm-exporter gpu-helm-charts/dcgm-exporter \
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/rchakode/kube-opex-analytics.git --depth=1
-cd kube-opex-analytics
+git clone https://github.com/realopslabs/kubeledger.git --depth=1
+cd kubeledger
 ```
 
-### Install with Kustomize (Quick Start)
+## Installation on Kubernetes/OpenShift Cluster
+
+### Install with Kustomize (Fast Path)
 
 > **OpenShift users:** Skip this section and use [Helm installation](#install-with-helm-advanced) with OpenShift-specific settings.
 
 ```bash
 # Create namespace
-kubectl create namespace kube-opex-analytics
+kubectl create namespace kubeledger
 
 # Deploy using Kustomize
-kubectl apply -k ./manifests/kustomize -n kube-opex-analytics
+kubectl apply -k ./manifests/kubeledger/kustomize -n kubeledger
 
 # Watch pod status
-kubectl get pods -n kube-opex-analytics -w
+kubectl get pods -n kubeledger -w
 ```
 
 ### Install with Helm (Advanced)
 
-For advanced customization (OpenShift, custom storage, etc.), edit `manifests/helm/values.yaml`:
+For advanced customization (OpenShift, custom storage, etc.), edit `manifests/kubeledger/helm/values.yaml`:
 
 - **OpenShift:** Set `securityContext.openshift: true`
 - **Custom storage:** Set `dataVolume.storageClass` and `dataVolume.capacity`
@@ -120,23 +127,25 @@ Then run:
 
 ```bash
 # Create namespace
-kubectl create namespace kube-opex-analytics
+kubectl create namespace kubeledger
 
 # Install with Helm
-helm upgrade --install kube-opex-analytics ./manifests/helm -n kube-opex-analytics
+helm upgrade --install kubeledger ./manifests/kubeledger/helm -n kubeledger
 
 # Watch pod status
-kubectl get pods -n kube-opex-analytics -w
+kubectl get pods -n kubeledger -w
 ```
 
-### Access the Dashboard
+### Access the Dashboard on Kubernetes/OpenShift Cluster
 
 ```bash
 # Port-forward to access the UI
-kubectl port-forward svc/kube-opex-analytics 5483:80 -n kube-opex-analytics
+kubectl port-forward svc/kubeledger 5483:80 -n kubeledger
 
 # Open http://localhost:5483 in your browser
 ```
+
+## Installation on Local Machine
 
 ### Install with Docker
 
@@ -146,38 +155,41 @@ Requires `kubectl proxy` running locally to provide API access:
 # Start kubectl proxy in background
 kubectl proxy &
 
-# Run kube-opex-analytics
+# Run KubeLedger
 docker run -d \
   --net="host" \
-  --name kube-opex-analytics \
-  -v /var/lib/kube-opex-analytics:/data \
-  -e KOA_DB_LOCATION=/data/db \
-  -e KOA_K8S_API_ENDPOINT=http://127.0.0.1:8001 \
-  rchakode/kube-opex-analytics
-
-# Access at http://localhost:5483
+  --name kubeledger \
+  -v /var/lib/kubeledger:/data \
+  -e KL_DB_LOCATION=/data/db \
+  -e KL_K8S_API_ENDPOINT=http://127.0.0.1:8001 \
+  ghcr.io/realopslabs/kubeledger
 ```
+
+### Access the Dashboard on Local Machine
+
+The dashboard is available at http://localhost:5483.
+
 
 ## Architecture
 
 ```
 ┌───────────────────┐
 │  Metrics Server   │──┐
-│  (CPU/Memory)     │  │    ┌──────────────────────────────────────┐
-└───────────────────┘  ├───>│         kube-opex-analytics          │
-┌───────────────────┐  │    │  ┌─────────┐  ┌────────┐  ┌─────────┐│
-│  DCGM Exporter    │──┘    │  │ Poller  │─>│RRD DBs │─>│ API     ││
-│  (GPU metrics)    │       │  │ (5 min) │  │        │  │         ││
-└───────────────────┘       │  └─────────┘  └────────┘  └────┬────┘│
-                            └───────────────────────────────┼──────┘
-                                                            │
-                            ┌───────────────────────────────┼──────┐
-                            │                               v      │
-                            │  ┌────────────┐    ┌────────────┐    │
-                            │  │  Web UI    │    │  /metrics  │    │
-                            │  │  (D3.js)   │    │ (Prometheus│    │
-                            │  └────────────┘    └────────────┘    │
-                            └──────────────────────────────────────┘
+│  (CPU/Memory)     │  │    ┌───────────────────────────────────────┐
+└───────────────────┘  ├───>│         KubeLedger                    │
+┌───────────────────┐  │    │  ┌─────────┐  ┌────────┐  ┌─────────┐ │
+│  DCGM Exporter    │──┘    │  │ Poller  │─>│RRD DBs │─>│ API     │ │
+│  (GPU metrics)    │       │  │ (5 min) │  │        │  │         │ │
+└───────────────────┘       │  └─────────┘  └────────┘  └────┬────┘ │
+                            └────────────────────────────────┼──────┘
+                                                             │
+                            ┌────────────────────────────────┼───────┐
+                            │                                v       │
+                            │  ┌────────────┐    ┌──────────────┐    │
+                            │  │  Web UI    │    │  /metrics    │    │
+                            │  │  (D3.js)   │    │ (Prometheus) │    │
+                            │  └────────────┘    └──────────────┘    │
+                            └────────────────────────────────────────┘
                                      │                  │
                                      v                  v
                               Built-in Dashboards   Grafana/Alerting
@@ -195,27 +207,29 @@ docker run -d \
 
 | Topic | Link |
 |-------|------|
-| Installation on Kubernetes/OpenShift | [docs/installation-on-kubernetes-and-openshift.md](./docs/installation-on-kubernetes-and-openshift.md) |
-| Installation on Docker | [docs/installation-on-docker.md](./docs/installation-on-docker.md) |
-| Built-in Dashboards | [docs/built-in-dashboards-and-charts.md](./docs/built-in-dashboards-and-charts.md) |
-| Prometheus & Grafana | [docs/prometheus-exporter-grafana-dashboard.md](./docs/prometheus-exporter-grafana-dashboard.md) |
-| Configuration Reference | [docs/configuration-settings.md](./docs/configuration-settings.md) |
-| Design Fundamentals | [docs/design-fundamentals.md](./docs/design-fundamentals.md) |
+| Installation on Kubernetes and OpenShift | https://kubeledger.io/docs/installation-on-kubernetes-and-openshift/ |
+| Installation on Docker | https://kubeledger.io/docs/installation-on-docker/ |
+| Built-in Dashboards and Charts of KubeLedger | https://kubeledger.io/docs/built-in-dashboards-and-charts/ |
+| Prometheus Exporter and Grafana dashboards | https://kubeledger.io/docs/prometheus-exporter-grafana-dashboard/ |
+| KubeLedger Configuration Settings | https://kubeledger.io/docs/configuration-settings/ |
+| Design Fundamentals | https://kubeledger.io/docs/design-fundamentals/ |
 
 ## Configuration
+
+> **Migration Note:** All environment variables now use the `KL_` prefix. Old `KOA_` variables are deprecated but will be supported for backward compatibility for 6 months.
 
 Key environment variables:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `KOA_K8S_API_ENDPOINT` | Kubernetes API server URL | Required |
-| `KOA_K8S_AUTH_TOKEN` | Service account token | Auto-detected in-cluster |
-| `KOA_DB_LOCATION` | Path for RRDtool databases | `/data` |
-| `KOA_POLLING_INTERVAL_SEC` | Metrics collection interval | `300` |
-| `KOA_COST_MODEL` | Billing model (`CUMULATIVE_RATIO`, `RATIO`, `CHARGE_BACK`) | `CUMULATIVE_RATIO` |
-| `KOA_BILLING_HOURLY_RATE` | Hourly cost for chargeback model | `-1.0` |
-| `KOA_BILLING_CURRENCY_SYMBOL` | Currency symbol for cost display | `$` |
-| `KOA_NVIDIA_DCGM_ENDPOINT` | NVIDIA DCGM Exporter endpoint for GPU metrics | Not set (GPU disabled) |
+| `KL_K8S_API_ENDPOINT` | Kubernetes API server URL | Required |
+| `KL_K8S_AUTH_TOKEN` | Service account token | Auto-detected in-cluster |
+| `KL_DB_LOCATION` | Path for RRDtool databases | `/data` |
+| `KL_POLLING_INTERVAL_SEC` | Metrics collection interval | `300` |
+| `KL_COST_MODEL` | Billing model (`CUMULATIVE_RATIO`, `RATIO`, `CHARGE_BACK`) | `CUMULATIVE_RATIO` |
+| `KL_BILLING_HOURLY_RATE` | Hourly cost for chargeback model | `-1.0` |
+| `KL_BILLING_CURRENCY_SYMBOL` | Currency symbol for cost display | `$` |
+| `KL_NVIDIA_DCGM_ENDPOINT` | NVIDIA DCGM Exporter endpoint for GPU metrics | Not set (GPU disabled) |
 
 ### GPU Metrics (NVIDIA DCGM)
 
@@ -223,10 +237,10 @@ To enable GPU metrics collection, set the DCGM Exporter endpoint:
 
 ```bash
 # Environment variable
-export KOA_NVIDIA_DCGM_ENDPOINT=http://dcgm-exporter.gpu-operator:9400/metrics
+export KL_NVIDIA_DCGM_ENDPOINT=http://dcgm-exporter.gpu-operator:9400/metrics
 
 # Or with Helm
-helm upgrade --install kube-opex-analytics ./manifests/helm \
+helm upgrade --install kubeledger ./manifests/kubeledger/helm \
   --set dcgm.enabled=true \
   --set dcgm.endpoint=http://dcgm-exporter.gpu-operator:9400/metrics
 ```
@@ -238,14 +252,14 @@ See [Configuration Settings](./docs/configuration-settings.md) for the complete 
 ### Common Issues
 
 **Pod stuck in CrashLoopBackOff**
-- Check logs: `kubectl logs -f deployment/kube-opex-analytics -n kube-opex-analytics`
+- Check logs: `kubectl logs -f deployment/kubeledger -n kubeledger`
 - Verify RBAC permissions are correctly applied
 - Ensure the service account has read access to pods and nodes
 
 **No data appearing in dashboard**
 - Wait at least 5-10 minutes for initial data collection
 - Verify the pod can reach the Kubernetes API: check for connection errors in logs
-- Confirm `KOA_K8S_API_ENDPOINT` is correctly set
+- Confirm `KL_K8S_API_ENDPOINT` is correctly set
 
 **Metrics not appearing in Prometheus**
 - Ensure the `/metrics` endpoint is accessible
@@ -254,24 +268,20 @@ See [Configuration Settings](./docs/configuration-settings.md) for the complete 
 
 **Pooling interval**
 - By default, the polling interval to collect raw metrics from Kubernetes API or NVIDIA DCGM is 300 seconds (5 minutes).
-- You can increase this limit using the variable `KOA_POLLING_INTERVAL_SEC`. Always use a multiple  300 seconds, as the backend RRD database is based on a 5-minutes resolution.
+- You can increase this limit using the variable `KL_POLLING_INTERVAL_SEC`. Always use a multiple  300 seconds, as the backend RRD database is based on a 5-minutes resolution.
 
-### Getting Help
 
-- Check existing [GitHub Issues](https://github.com/rchakode/kube-opex-analytics/issues)
-- Review the [Design Fundamentals](./docs/design-fundamentals.md) for architectural context
-
-## License
-
-kube-opex-analytics is licensed under [Apache License 2.0](./LICENSE).
-
-Third-party library licenses are documented in [NOTICE](./NOTICE).
-
-## Support & Contributions
+## Support & Feedback
 
 We welcome feedback and contributions!
 
-- **Report Issues:** [GitHub Issues](https://github.com/rchakode/kube-opex-analytics/issues)
-- **Contribute Code:** [Pull Requests](https://github.com/rchakode/kube-opex-analytics/pulls)
+- **Submit an issue:** [GitHub Issues](https://github.com/realopslabs/kubeledger/issues)
+- **Contribute Code:** [Pull Requests](https://github.com/realopslabs/kubeledger/pulls)
 
 All contributions must be released under Apache 2.0 License terms.
+
+## License
+
+KubeLedger is licensed under [Apache License 2.0](./LICENSE).
+
+Third-party library licenses are documented in [NOTICE](./NOTICE).
