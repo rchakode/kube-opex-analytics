@@ -1,0 +1,20 @@
+---
+# Source: kubeledger/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubeledger
+  labels:
+    app.kubernetes.io/name: kubeledger
+    app.kubernetes.io/instance: kubeledger
+    app: kubeledger
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 5483
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: kubeledger
+    app.kubernetes.io/instance: kubeledger
