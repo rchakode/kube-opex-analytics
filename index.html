@@ -18,6 +18,7 @@
 
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
+
 <head>
     <title>Kubernetes Opex Analytics | Hourly, Daily and Monthly Analytics of Kubernetes Cluster Usage</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -68,7 +69,8 @@
             transition: background-color 0.3s;
         }
 
-        legend, h4 {
+        legend,
+        h4 {
             color: var(--text-primary) !important;
         }
 
@@ -101,19 +103,19 @@
     <script src="../bower_components/html5shiv/dist/html5shiv.js"></script>
     <script src="../bower_components/respond/dest/respond.min.js"></script>
     <![endif]-->
-    <script type='text/javascript' >
+    <script type='text/javascript'>
         var FrontendApi = {};
         const UsageTypes = Object.freeze(
             {
                 "CPU": "cpu-pods",
                 "MEM": "memory-pods",
                 {% if koa_dcgm_enabled %}
-                "GPU_COMPUTE": "gpu-compute-pods",
-                "GPU_MEMORY": "gpu-memory-pods",
+        "GPU_COMPUTE": "gpu-compute-pods",
+            "GPU_MEMORY": "gpu-memory-pods",
                 {% endif %}
-                "CONSOLIDATED": "consolidated-pods",
+        "CONSOLIDATED": "consolidated-pods",
             });
-        FrontendApi.DATA_DIR='{{ koa_frontend_data_location }}';
+        FrontendApi.DATA_DIR = '{{ koa_frontend_data_location }}';
 
         // Theme toggle functionality
         function toggleTheme() {
@@ -130,7 +132,7 @@
         }
 
         // Load saved theme on page load
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
 
@@ -140,311 +142,338 @@
             }
         });
     </script>
-    <script data-main="js/frontend.js" src="js/require-v2.3.6.min.js" > </script>
+    <script data-main="js/frontend.js" src="js/require-v2.3.6.min.js"> </script>
     <script>
         require(['frontend']);
     </script>
 </head>
+
 <body>
-<div class="navbar navbar-default navbar-fixed-top">
-    <div class="container">
-        <div class="navbar-header">
-            <a href="/" class="navbar-brand"><img src="static/images/kube-opex-analytics.png" alt="Kubernetes Opex Analytics logo" height="50px"/></a>
-            <button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#navbar-main">
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-        </div>
-        <div class="navbar-collapse collapse" id="navbar-main">
-            <ul class="nav navbar-nav navbar-right">
-                <li><button class="theme-toggle" onclick="toggleTheme()" id="theme-toggle-btn">🌙 Dark Mode</button></li>
-                <li><a href="#" data-toggle="modal" data-target="#myModal">About</a></li>
-            </ul>
+    <div class="navbar navbar-default navbar-fixed-top">
+        <div class="container">
+            <div class="navbar-header">
+                <a href="/" class="navbar-brand"><img src="static/images/kubeledger-logo.png" alt="Kubeledger logo"
+                        height="50px" /></a>
+                <button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#navbar-main">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+            </div>
+            <div class="navbar-collapse collapse" id="navbar-main">
+                <ul class="nav navbar-nav navbar-right">
+                    <li><button class="theme-toggle" onclick="toggleTheme()" id="theme-toggle-btn">🌙 Dark Mode</button>
+                    </li>
+                    <li><a href="#" data-toggle="modal" data-target="#myModal">About</a></li>
+                </ul>
+            </div>
         </div>
     </div>
-</div>
 
-<div class="container page-header">
-    <div class="row">
-        <div class="col-md-12">
-            <div id="error-message-container">
-                <div class="alert alert-danger alert-dismissible">
-                    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-                    Processing error:
-                    <ul id="error-message"></ul>
+    <div class="container page-header">
+        <div class="row">
+            <div class="col-md-12">
+                <div id="error-message-container">
+                    <div class="alert alert-danger alert-dismissible">
+                        <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+                        Processing error:
+                        <ul id="error-message"></ul>
+                    </div>
                 </div>
-            </div>
-            <script type="javascript">
+                <script type="javascript">
                 $("#error-message-container").hide();
             </script>
-        </div>
-    </div>
-
-
-    <div class="row">
-        <div class="col-md-5">
-            <legend>
-                Usage Trends (% per namespace) - 7 days
-                <select id="selected-usage-trend-type" onchange="FrontendApi.showSelectedUsageTrendType()">
-                    <option value="default" disabled selected style="display:none;">Hourly Usage</option>
-                    <option value="hourly-usage">Hourly Usage</option>
-                    <option value="usage-efficiency">Usage/Request Efficiency</option>
-                </select>
-            </legend>
-        </div>
-        <div class="col-md-5">
-            <span class="control-label">Date Filter:</span>
-            <input type="datetime-local" id="filter-start-date" name="filter-start-date">
-            <input type="datetime-local" id="filter-end-date" name="filter-end-date">
-        </div>
-
-        <div class="col-md-2">
-            <div class="btn-group">
-                <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <a class="chart-download">&nbsp;export</a>
-                </button>
-                <ul class="dropdown-menu">
-                    <li class="disabled"><a id="trends-cpu-png"  class="dropdown-item" href="#">Export CPU Chart (PNG)</a></li>
-                    <li class="disabled"><a id="trends-cpu-json"  class="dropdown-item" href="#">Export CPU Data (JSON)</a></li>
-                    <li class="disabled"><a id="trends-cpu-csv"  class="dropdown-item" href="#">Export CPU Data (CSV)</a></li>
-                    <li class="disabled"><a id="trends-memory-png"  class="dropdown-item" href="#">Export Memory Chart (PNG)</a></li>
-                    <li class="disabled"><a id="trends-memory-json"  class="dropdown-item" href="#">Export Memory Data (JSON)</a></li>
-                    <li class="disabled"><a id="trends-memory-csv"  class="dropdown-item" href="#">Export Memory Data (CSV)</a></li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <div class="row chart-container">
-        <div id="chart-block-trends-rf">
-            <div class="col-md-6">
-                <div class="js-chart-trends-cpu-rf"></div>
-            </div>
-            <div class="col-md-6">
-                <div class="js-chart-trends-memory-rf"></div>
-            </div>
-        </div>
-
-        <div id="chart-block-trends-hourly-usage">
-            <div class="col-md-6">
-                <h4>CPU Usage</h4>
-                <div class="js-chart-trends-cpu-usage"></div>
-            </div>
-            <div class="col-md-6">
-                <h4>Memory Usage</h4>
-                <div class="js-chart-trends-memory-usage"></div>
-            </div>
-            {% if koa_dcgm_enabled %}
-            <div class="col-md-6">
-                <h4>GPU CPU Usage</h4>
-                <div class="js-chart-trends-gpu-cpu-usage"></div>
-            </div>
-            <div class="col-md-6">
-                <h4>GPU Memory Usage</h4>
-                <div class="js-chart-trends-gpu-mem-usage"></div>
-            </div>
-            {% endif %}
-        </div>
-
-    </div>
-
-
-    <div class="row chart-container">
-
-        <div class="col-md-9">
-            <legend>Usage Accounting <span class="accounting-cost-model"></span>
-                <select id="selected-cumulative-usage-type" onchange="FrontendApi.showCumulativeUsageByType()">
-                    <option value="default" disabled selected style="display:none;">Daily Usage</option>
-                    <option value="daily-usage">Daily Usage</option>
-                    <option value="daily-requests">Daily Requests</option>
-                    <option value="monthly-usage">Monthly Usage</option>
-                    <option value="monthly-requests">Monthly Requests</option>
-                </select>
-            </legend>
-        </div>
-        <div class="col-md-1">
-        </div>
-        <div class="col-md-2">
-            <div class="btn-group">
-                <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <a class="chart-download">&nbsp;export</a>
-                </button>
-                <ul class="dropdown-menu">
-                    <li class="disabled"><a id="consolidated-cpu-usage-png"  class="dropdown-item" href="#">Export CPU Chart (PNG)</a></li>
-                    <li class="disabled"><a id="consolidated-cpu-usage-json"  class="dropdown-item" href="#">Export CPU Data (JSON)</a></li>
-                    <li class="disabled"><a id="consolidated-cpu-usage-csv"  class="dropdown-item" href="#">Export CPU Data (CSV)</a></li>
-                    <li class="disabled"><a id="consolidated-memory-usage-png"  class="dropdown-item" href="#">Export Memory Chart (PNG)</a></li>
-                    <li class="disabled"><a id="consolidated-memory-usage-json"  class="dropdown-item" href="#">Export Memory Data (JSON)</a></li>
-                    <li class="disabled"><a id="consolidated-memory-usage-csv"  class="dropdown-item" href="#">Export Memory Data (CSV)</a></li>
-                </ul>
             </div>
         </div>
 
 
-        <div id="chart-block-daily">
-            <div class="col-md-6">
-                <h4>CPU Usage</h4>
-                <div class="js-chart-daily-cpu-usage"></div>
-            </div>
-            <div class="col-md-6">
-                <h4>Memory Usage</h4>
-                <div class="js-chart-daily-memory-usage"></div>
-            </div>
-            {% if koa_dcgm_enabled %}
-            <div class="col-md-6">
-                <h4>GPU CPU Usage</h4>
-                <div class="js-chart-daily-gpu-cpu-usage"></div>
-            </div>
-            <div class="col-md-6">
-                <h4>GPU Memory Usage</h4>
-                <div class="js-chart-daily-gpu-mem-usage"></div>
-            </div>
-            {% endif %}
-        </div>
-
-        <div id="chart-block-monthly">
-            <div class="col-md-6">
-                <h4>CPU Usage</h4>
-                <div class="js-chart-monthly-cpu-usage"></div>
-            </div>
-            <div class="col-md-6">
-                <h4>Memory Usage</h4>
-                <div class="js-chart-monthly-memory-usage"></div>
-            </div>
-            {% if koa_dcgm_enabled %}
-            <div class="col-md-6">
-                <h4>GPU CPU Usage</h4>
-                <div class="js-chart-monthly-gpu-cpu-usage"></div>
-            </div>
-            <div class="col-md-6">
-                <h4>GPU Memory Usage</h4>
-                <div class="js-chart-monthly-gpu-mem-usage"></div>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="row chart-container">
-        <div class="col-md-9">
-            <legend>Nodes Usage
-                <span>
-                    <select id="js-node-usage-type" onchange="FrontendApi.updateNodeUsage()">
-                        <option value="cpu-pods" disabled selected style="display:none;">CPU / Pods usage</option>
-                        <option value="cpu-pods">CPU / Pods usage</option>
-                        <option value="cpu-heatmap">CPU / Load heatmap</option>
-                        <option value="memory-pods">Memory / Pods usage</option>
-                        <option value="memory-heatmap">Memory / Load heatmap</option>
-                        {% if koa_dcgm_enabled %}
-                        <option value="gpu-compute-pods">GPU Compute / Pods usage</option>
-                        <option value="gpu-compute-heatmap">GPU Compute / Load heatmap</option>
-                        <option value="gpu-memory-pods">GPU Memory / Pods usage</option>
-                        <option value="gpu-memory-heatmap">GPU Memory / Load heatmap</option>
-                        {% endif %}
+        <div class="row">
+            <div class="col-md-5">
+                <legend>
+                    Usage Trends (% per namespace) - 7 days
+                    <select id="selected-usage-trend-type" onchange="FrontendApi.showSelectedUsageTrendType()">
+                        <option value="default" disabled selected style="display:none;">Hourly Usage</option>
+                        <option value="hourly-usage">Hourly Usage</option>
+                        <option value="usage-efficiency">Usage/Request Efficiency</option>
                     </select>
-                </span>
-            </legend>
-            <div id="js-nodes-load-container">
-                <div id="js-nodes-heatmap-container" style="display: none;">
-                    <div class="heatmap-legend">
-                        <span class="legend-title">Usage Level:</span>
-                        <span class="legend-item"><span class="legend-color" style="background-color: #2ecc71;"></span>Low (0-50%)</span>
-                        <span class="legend-item"><span class="legend-color" style="background-color: #f39c12;"></span>Medium (50-80%)</span>
-                        <span class="legend-item"><span class="legend-color" style="background-color: #e74c3c;"></span>High (80-100%)</span>
-                        <span class="legend-item"><span class="legend-color" style="background-color: #95a5a6;"></span>No Data</span>
-                    </div>
-                    <div id="js-node-heatmap-chart"></div>
+                </legend>
+            </div>
+            <div class="col-md-5">
+                <span class="control-label">Date Filter:</span>
+                <input type="datetime-local" id="filter-start-date" name="filter-start-date">
+                <input type="datetime-local" id="filter-end-date" name="filter-end-date">
+            </div>
+
+            <div class="col-md-2">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown"
+                        aria-haspopup="true" aria-expanded="false">
+                        <a class="chart-download">&nbsp;export</a>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li class="disabled"><a id="trends-cpu-png" class="dropdown-item" href="#">Export CPU Chart
+                                (PNG)</a></li>
+                        <li class="disabled"><a id="trends-cpu-json" class="dropdown-item" href="#">Export CPU Data
+                                (JSON)</a></li>
+                        <li class="disabled"><a id="trends-cpu-csv" class="dropdown-item" href="#">Export CPU Data
+                                (CSV)</a></li>
+                        <li class="disabled"><a id="trends-memory-png" class="dropdown-item" href="#">Export Memory
+                                Chart (PNG)</a></li>
+                        <li class="disabled"><a id="trends-memory-json" class="dropdown-item" href="#">Export Memory
+                                Data (JSON)</a></li>
+                        <li class="disabled"><a id="trends-memory-csv" class="dropdown-item" href="#">Export Memory Data
+                                (CSV)</a></li>
+                    </ul>
                 </div>
-                <div id="js-nodes-pods-container"></div>
             </div>
         </div>
-        <div class="col-md-3">
-            <legend>List of nodes</legend>
-            <div id="host-list-container"></div>
+
+        <div class="row chart-container">
+            <div id="chart-block-trends-rf">
+                <div class="col-md-6">
+                    <div class="js-chart-trends-cpu-rf"></div>
+                </div>
+                <div class="col-md-6">
+                    <div class="js-chart-trends-memory-rf"></div>
+                </div>
+            </div>
+
+            <div id="chart-block-trends-hourly-usage">
+                <div class="col-md-6">
+                    <h4>CPU Usage</h4>
+                    <div class="js-chart-trends-cpu-usage"></div>
+                </div>
+                <div class="col-md-6">
+                    <h4>Memory Usage</h4>
+                    <div class="js-chart-trends-memory-usage"></div>
+                </div>
+                {% if koa_dcgm_enabled %}
+                <div class="col-md-6">
+                    <h4>GPU CPU Usage</h4>
+                    <div class="js-chart-trends-gpu-cpu-usage"></div>
+                </div>
+                <div class="col-md-6">
+                    <h4>GPU Memory Usage</h4>
+                    <div class="js-chart-trends-gpu-mem-usage"></div>
+                </div>
+                {% endif %}
+            </div>
+
         </div>
-    </div>
-</div>
 
-<!-- Host popup container -->
-<div id="popup-container"></div>
 
-<!-- About Modal -->
-<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title" id="myModalLabel">About Kubernetes Opex Analytics</h4>
-            </div>
-            <div class="modal-body">
-                <p>
-                    Kubernetes Opex Analytics, Version {{ koa_version }}.
-                </p>
-                <p>
-                    Copyright &copy; 2019 Rodrigue Chakode and contributors.
-                </p>
-                <p>
-                    Kubernetes Opex Analytics is designed and made available free of charge thanks to the support of REALOPS'LABS company
-                    (<a href="https://realopslabs.com" target="_blank">https://realopslabs.com</a>).
-                </p>
-                <p>
-                    The product is licensed under the Apache License,
-                    Version 2.0 (the "License"); you may not use this product except
-                    in compliance with the License. You may obtain a copy of the
-                    License at: <a href="http://www.apache.org/licenses/LICENSE-2.0">
-                    http://www.apache.org/licenses/LICENSE-2.0
-                </a>
-                </p>
-                <p>
-                    Unless required by applicable law or agreed to in writing, the product
-                    is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
-                    ANY KIND, either express or implied.
-                    See the License for the specific language governing permissions and
-                    limitations under the License.
-                </p>
-                <p>
-                    This product uses third-party libraries released under their own license terms.
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
+        <div class="row chart-container">
 
-<footer>
-    <div class="container pos-rel z1">
-        <div class="flex-row gt20 mb20">
-            <div class="col-md-4">
-                &nbsp;&nbsp;
+            <div class="col-md-9">
+                <legend>Usage Accounting <span class="accounting-cost-model"></span>
+                    <select id="selected-cumulative-usage-type" onchange="FrontendApi.showCumulativeUsageByType()">
+                        <option value="default" disabled selected style="display:none;">Daily Usage</option>
+                        <option value="daily-usage">Daily Usage</option>
+                        <option value="daily-requests">Daily Requests</option>
+                        <option value="monthly-usage">Monthly Usage</option>
+                        <option value="monthly-requests">Monthly Requests</option>
+                    </select>
+                </legend>
             </div>
-            <div class="col-md-3">
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <legend>kube-opex-analytics v{{ koa_version }}</legend>
-                        <a class="nav-link active" href="https://github.com/rchakode/kube-opex-analytics/releases">Release notes</a>
-                        <a class="nav-link" href="https://github.com/rchakode/kube-opex-analytics/blob/master/LICENSE">License Terms</a>
-                        <a class="nav-link" href="https://github.com/rchakode/kube-opex-analytics">Issues & Contributions (Github)</a>
-                    </li>
-                </ul>
-            </div>
-            <div class="col-md-3">
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <legend>Related Products</legend>
-                        Centralized Multi-Kubernetes Usage Analytics
-                        <a class="nav-link disabled" href="https://krossboard.app/">Krossboard Project</a>
-                        Operations Monitoring for Kubernetes Applications
-                        <a class="nav-link disabled" href="http://realopinsight.com/">RealOpInsight Project</a>
-                    </li>
-                </ul>
+            <div class="col-md-1">
             </div>
             <div class="col-md-2">
-                &nbsp;
+                <div class="btn-group">
+                    <button type="button" class="btn btn-default dropdown-toggle menu-export" data-toggle="dropdown"
+                        aria-haspopup="true" aria-expanded="false">
+                        <a class="chart-download">&nbsp;export</a>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li class="disabled"><a id="consolidated-cpu-usage-png" class="dropdown-item" href="#">Export
+                                CPU Chart (PNG)</a></li>
+                        <li class="disabled"><a id="consolidated-cpu-usage-json" class="dropdown-item" href="#">Export
+                                CPU Data (JSON)</a></li>
+                        <li class="disabled"><a id="consolidated-cpu-usage-csv" class="dropdown-item" href="#">Export
+                                CPU Data (CSV)</a></li>
+                        <li class="disabled"><a id="consolidated-memory-usage-png" class="dropdown-item" href="#">Export
+                                Memory Chart (PNG)</a></li>
+                        <li class="disabled"><a id="consolidated-memory-usage-json" class="dropdown-item"
+                                href="#">Export Memory Data (JSON)</a></li>
+                        <li class="disabled"><a id="consolidated-memory-usage-csv" class="dropdown-item" href="#">Export
+                                Memory Data (CSV)</a></li>
+                    </ul>
+                </div>
+            </div>
+
+
+            <div id="chart-block-daily">
+                <div class="col-md-6">
+                    <h4>CPU Usage</h4>
+                    <div class="js-chart-daily-cpu-usage"></div>
+                </div>
+                <div class="col-md-6">
+                    <h4>Memory Usage</h4>
+                    <div class="js-chart-daily-memory-usage"></div>
+                </div>
+                {% if koa_dcgm_enabled %}
+                <div class="col-md-6">
+                    <h4>GPU CPU Usage</h4>
+                    <div class="js-chart-daily-gpu-cpu-usage"></div>
+                </div>
+                <div class="col-md-6">
+                    <h4>GPU Memory Usage</h4>
+                    <div class="js-chart-daily-gpu-mem-usage"></div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div id="chart-block-monthly">
+                <div class="col-md-6">
+                    <h4>CPU Usage</h4>
+                    <div class="js-chart-monthly-cpu-usage"></div>
+                </div>
+                <div class="col-md-6">
+                    <h4>Memory Usage</h4>
+                    <div class="js-chart-monthly-memory-usage"></div>
+                </div>
+                {% if koa_dcgm_enabled %}
+                <div class="col-md-6">
+                    <h4>GPU CPU Usage</h4>
+                    <div class="js-chart-monthly-gpu-cpu-usage"></div>
+                </div>
+                <div class="col-md-6">
+                    <h4>GPU Memory Usage</h4>
+                    <div class="js-chart-monthly-gpu-mem-usage"></div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row chart-container">
+            <div class="col-md-9">
+                <legend>Nodes Usage
+                    <span>
+                        <select id="js-node-usage-type" onchange="FrontendApi.updateNodeUsage()">
+                            <option value="cpu-pods" disabled selected style="display:none;">CPU / Pods usage</option>
+                            <option value="cpu-pods">CPU / Pods usage</option>
+                            <option value="cpu-heatmap">CPU / Load heatmap</option>
+                            <option value="memory-pods">Memory / Pods usage</option>
+                            <option value="memory-heatmap">Memory / Load heatmap</option>
+                            {% if koa_dcgm_enabled %}
+                            <option value="gpu-compute-pods">GPU Compute / Pods usage</option>
+                            <option value="gpu-compute-heatmap">GPU Compute / Load heatmap</option>
+                            <option value="gpu-memory-pods">GPU Memory / Pods usage</option>
+                            <option value="gpu-memory-heatmap">GPU Memory / Load heatmap</option>
+                            {% endif %}
+                        </select>
+                    </span>
+                </legend>
+                <div id="js-nodes-load-container">
+                    <div id="js-nodes-heatmap-container" style="display: none;">
+                        <div class="heatmap-legend">
+                            <span class="legend-title">Usage Level:</span>
+                            <span class="legend-item"><span class="legend-color"
+                                    style="background-color: #2ecc71;"></span>Low (0-50%)</span>
+                            <span class="legend-item"><span class="legend-color"
+                                    style="background-color: #f39c12;"></span>Medium (50-80%)</span>
+                            <span class="legend-item"><span class="legend-color"
+                                    style="background-color: #e74c3c;"></span>High (80-100%)</span>
+                            <span class="legend-item"><span class="legend-color"
+                                    style="background-color: #95a5a6;"></span>No Data</span>
+                        </div>
+                        <div id="js-node-heatmap-chart"></div>
+                    </div>
+                    <div id="js-nodes-pods-container"></div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <legend>List of nodes</legend>
+                <div id="host-list-container"></div>
             </div>
         </div>
     </div>
-</footer>
+
+    <!-- Host popup container -->
+    <div id="popup-container"></div>
+
+    <!-- About Modal -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                    <h4 class="modal-title" id="myModalLabel">About Kubernetes Opex Analytics</h4>
+                </div>
+                <div class="modal-body">
+                    <p>
+                        Kubernetes Opex Analytics, Version {{ koa_version }}.
+                    </p>
+                    <p>
+                        Copyright &copy; 2019 Rodrigue Chakode and contributors.
+                    </p>
+                    <p>
+                        Kubernetes Opex Analytics is designed and made available free of charge thanks to the support of
+                        REALOPS'LABS company
+                        (<a href="https://realopslabs.com" target="_blank">https://realopslabs.com</a>).
+                    </p>
+                    <p>
+                        The product is licensed under the Apache License,
+                        Version 2.0 (the "License"); you may not use this product except
+                        in compliance with the License. You may obtain a copy of the
+                        License at: <a href="http://www.apache.org/licenses/LICENSE-2.0">
+                            http://www.apache.org/licenses/LICENSE-2.0
+                        </a>
+                    </p>
+                    <p>
+                        Unless required by applicable law or agreed to in writing, the product
+                        is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
+                        ANY KIND, either express or implied.
+                        See the License for the specific language governing permissions and
+                        limitations under the License.
+                    </p>
+                    <p>
+                        This product uses third-party libraries released under their own license terms.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container pos-rel z1">
+            <div class="flex-row gt20 mb20">
+                <div class="col-md-4">
+                    &nbsp;&nbsp;
+                </div>
+                <div class="col-md-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <legend>kube-opex-analytics v{{ koa_version }}</legend>
+                            <a class="nav-link active"
+                                href="https://github.com/rchakode/kube-opex-analytics/releases">Release notes</a>
+                            <a class="nav-link"
+                                href="https://github.com/rchakode/kube-opex-analytics/blob/master/LICENSE">License
+                                Terms</a>
+                            <a class="nav-link" href="https://github.com/rchakode/kube-opex-analytics">Issues &
+                                Contributions (Github)</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <legend>Related Products</legend>
+                            Centralized Multi-Kubernetes Usage Analytics
+                            <a class="nav-link disabled" href="https://krossboard.app/">Krossboard Project</a>
+                            Operations Monitoring for Kubernetes Applications
+                            <a class="nav-link disabled" href="http://realopinsight.com/">RealOpInsight Project</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-2">
+                    &nbsp;
+                </div>
+            </div>
+        </div>
+    </footer>
 </body>
+
 </html>
