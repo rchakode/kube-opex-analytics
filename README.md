@@ -1,4 +1,4 @@
-# KubeLedger
+Jo# KubeLedger
 
 ![logo-thumbnail](screenshots/thumbnail-header.png)
 
@@ -284,6 +284,10 @@ All contributions must be released under Apache 2.0 License terms.
 
 ## License
 
-KubeLedger is licensed under [Apache License 2.0](./LICENSE).
+KubeLedger is licensed under the [Business Source License 1.1](LICENSE.md).
 
-Third-party library licenses are documented in [NOTICE](./NOTICE).
+**Permitted:** Non-commercial use, internal business use, development, testing, and personal projects.
+
+**Not Permitted:** Offering KubeLedger as a commercial hosted service or managed offering.
+
+The license converts to Apache 2.0 on [DATE + 4 years].
