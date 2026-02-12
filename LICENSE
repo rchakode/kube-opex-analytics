@@ -7,7 +7,7 @@ Licensor Contact:         contact@realopslabs.com
 Original Licensor:        RealOps Labs
 Licensed Work:            KubeLedger
 Licensed Work Description: The source code for KubeLedger, a Kubernetes resource accounting system.
-Change Date:              2030-02-12
+Change Date:              The earlier of: (i) the fourth anniversary of the first public release of this version, or (ii) a date specified by Licensor
 Change License:           Apache License, Version 2.0
 Additional Use Grant:     You may make use of the Licensed Work, provided that you may not use the Licensed Work for a production use to provide a software-as-a-service, platform-as-a-service, infrastructure-as-a-service or other similar online service that competes with RealOps Labs products or services.
 
