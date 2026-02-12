@@ -6,7 +6,7 @@
 [![Docker pulls](https://img.shields.io/badge/docker-ghcr.io%2Frealopslabs%2Fkubeledger-blue?style=for-the-badge)](https://github.com/realopslabs/kubeledger/pkgs/container/kubeledger)
 
 ---
-**KubeLedger** is the open-source System of Record that tracks the full picture of Kubernetes costs — revealing the 30% hidden in non-allocatable overhead for precise, per-namespace accounting.
+**KubeLedger** is the System of Record that tracks the full picture of Kubernetes costs — revealing the 30% hidden in non-allocatable overhead for precise, per-namespace accounting.
 
 
 > **Note:** KubeLedger was formerly known as **Kubernetes Opex Analytics** aka `kube-opex-analytics`.
