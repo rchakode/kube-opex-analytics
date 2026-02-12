@@ -2,7 +2,6 @@
 
 ![logo-thumbnail](screenshots/thumbnail-header.png)
 
-[![License](https://img.shields.io/github/license/realopslabs/kubeledger.svg?label=License&style=for-the-badge)](https://opensource.org/licenses/Apache-2.0)
 [![Release](https://img.shields.io/github/v/release/realopslabs/kubeledger?label=Latest%20Release&style=for-the-badge)](https://github.com/realopslabs/kubeledger/releases)
 [![Docker pulls](https://img.shields.io/badge/docker-ghcr.io%2Frealopslabs%2Fkubeledger-blue?style=for-the-badge)](https://github.com/realopslabs/kubeledger/pkgs/container/kubeledger)
 
