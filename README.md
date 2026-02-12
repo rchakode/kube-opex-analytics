@@ -7,8 +7,10 @@
 [![Docker pulls](https://img.shields.io/badge/docker-ghcr.io%2Frealopslabs%2Fkubeledger-blue?style=for-the-badge)](https://github.com/realopslabs/kubeledger/pkgs/container/kubeledger)
 
 ---
+KubeLedger is the open-source System of Record that tracks the full picture of Kubernetes costs — revealing the 30% hidden in non-allocatable overhead for precise, per-namespace accounting.
 
-> **Note:** `kube-opex-analytics` has been renamed to **KubeLedger**.
+
+> **Note:** **KubeLedger** was Formerly known as **Kubernetes Opex Analytics** or `kube-opex-analytics`.
 > Read more about this change and migration path in our [announcement blog post](https://kubeledger.io/blog/2025/01/01/kubeledger-announcement/). To handle the migration in a straightforward way, we have provided a [migration procedure](https://kubeledger.io/docs/migration-from-kube-opex-analytics-to-kubeledger/).
 
 ## Table of Contents
@@ -25,7 +27,7 @@
 
 ## Overview
 
-**KubeLedger** is a Kubernetes usage accounting and analytics tool that helps organizations track **CPU, Memory, and GPU** resources consumed by their clusters over time (hourly, daily, monthly).
+**KubeLedger** is a Kubernetes usage accounting that helps organizations track, analyse and optimize **CPU, Memory, and GPU** resources consumed by their clusters over time (hourly, daily, monthly).
 
 It acts as a **System of Record** for your cluster resources, providing insightful usage analytics metrics and charts that engineering and financial teams can use as key indicators for cost optimization decisions.
 
