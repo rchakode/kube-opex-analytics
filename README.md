@@ -27,9 +27,9 @@
 
 ## Overview
 
-**KubeLedger** is a Kubernetes usage accounting that helps organizations track, analyse and optimize **CPU, Memory, and GPU** resources consumed by their clusters over time (hourly, daily, monthly).
+**KubeLedger** is a usage accounting tool that helps organizations track, analyze, and optimize **CPU, Memory, and GPU** resources on Kubernetes clusters over time (hourly, daily, monthly).
 
-It acts as a **System of Record** for your cluster resources, providing insightful usage analytics metrics and charts that engineering and financial teams can use as key indicators for cost optimization decisions.
+It acts as a **System of Record** for your cluster resources, providing insightful usage analytics and charts that engineering and financial teams can use as key indicators for cost optimization decisions.
 
 ### Tracked Resources
 
