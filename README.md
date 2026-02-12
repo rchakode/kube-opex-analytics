@@ -1,4 +1,4 @@
-Jo# KubeLedger
+# KubeLedger
 
 ![logo-thumbnail](screenshots/thumbnail-header.png)
 
