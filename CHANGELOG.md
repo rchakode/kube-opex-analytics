@@ -6,10 +6,18 @@
 This release marks the official rebranding of the project to **KubeLedger** (formerly kube-opex-analytics) and the **General Availability (GA) of GPU support**. It introduces a new identity, updated configuration handling, and a dedicated documentation site.
 
 ### Rebranding & Improvements
-- **GPU Support**: General Availability (GA) of GPU metrics collection and visualization.
 - **Project Rename**: officially renamed to **KubeLedger**.
-- **Configuration**: introduced `KL_` prefix for environment variables (e.g., `KL_RETENTION_PERIOD`), taking precedence over legacy `KOA_` variables. Note that `KOA_` variables are **deprecated** but will be maintained until the next major release.
+- **GPU Support**: General Availability (GA) of GPU metrics collection and visualization.
 - **Documentation**: launched new documentation portal at [kubeledger.io](https://kubeledger.io).
+- **UI**: updated interface with new KubeLedger branding and logo.
+
+### Licensing & Legal
+- **License Change**: Changed from Apache 2.0 to **Business Source License (BSL) 1.1**.
+
+### Configuration & Manifests
+- **Configuration**: introduced `KL_` prefix for environment variables, taking precedence over legacy `KOA_` variables.
+- **Storage**: Reduced default persistent volume claim size from 1Gi to 500Mi.
+- **Cleanup**: Removed deprecated GCP pricing configuration and `KL_GOOGLE_API_KEY` support.
 
 ## v26.01.0-beta2
 
