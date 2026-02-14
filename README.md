@@ -3,7 +3,8 @@
 ![logo-thumbnail](screenshots/thumbnail-header.png)
 
 [![Release](https://img.shields.io/github/v/release/realopslabs/kubeledger?label=Latest%20Release&style=for-the-badge)](https://github.com/realopslabs/kubeledger/releases)
-[![Docker pulls](https://img.shields.io/badge/docker-ghcr.io%2Frealopslabs%2Fkubeledger-blue?style=for-the-badge)](https://github.com/realopslabs/kubeledger/pkgs/container/kubeledger)
+![Docker Hub pulls](https://img.shields.io/docker/pulls/rchakode/kube-opex-analytics.svg?label=Docker%20Pulls&style=for-the-badge)
+[![GHCR Pulls](https://img.shields.io/badge/docker-ghcr.io%2Frealopslabs%2Fkubeledger-blue?style=for-the-badge)](https://github.com/realopslabs/kubeledger/pkgs/container/kubeledger)
 
 ---
 **KubeLedger** is the System of Record that tracks the full picture of Kubernetes costs — revealing the 30% hidden in non-allocatable overhead for precise, per-namespace accounting.
