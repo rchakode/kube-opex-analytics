@@ -44,13 +44,6 @@ spec:
             - name: {{ $key | quote }}
               value: {{ $val | quote }}
           {{- end }}
-          {{- if .Values.pricing.gcp }}
-            - name: "KOA_GOOGLE_API_KEY"
-              valueFrom:
-                secretKeyRef:
-                  name: kube-opex-analytics-secrets
-                  key: KOA_GOOGLE_API_KEY
-          {{- end }}
           {{- if and .Values.dcgm.enabled .Values.dcgm.endpoint }}
             - name: "KOA_NVIDIA_DCGM_ENDPOINT"
               value: {{ .Values.dcgm.endpoint | quote }}
