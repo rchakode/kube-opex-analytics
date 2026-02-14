@@ -118,20 +118,32 @@ kubectl get pods -n kubeledger -w
 
 ### Install with Helm (Advanced)
 
-For advanced customization (OpenShift, custom storage, etc.), edit `manifests/kubeledger/helm/values.yaml`:
+The following steps covers the following scenarios of advanced customization (see `manifests/kubeledger/helm/values.yaml` for more options):
 
 - **OpenShift:** Set `securityContext.openshift: true`
 - **Custom storage:** Set `dataVolume.storageClass` and `dataVolume.capacity`
 - **DCGM Integration:** Set `dcgm.enable: true` and `dcgm.endpoint`
 
-Then run:
-
 ```bash
 # Create namespace
 kubectl create namespace kubeledger
 
-# Install with Helm
+# Install with Helm on Kubernetes
 helm upgrade --install kubeledger ./manifests/kubeledger/helm -n kubeledger
+
+# Install with Helm on Kubernetes with GPU support
+helm upgrade --install kubeledger ./manifests/kubeledger/helm -n kubeledger \
+  --set dcgm.enable=true \
+  --set dcgm.endpoint="dcgm-exporter.monotiring.svc.cluster.local:9400"
+
+# Install with Helm on OpenShift
+helm upgrade --install kubeledger ./manifests/kubeledger/helm -n kubeledger --set securityContext.openshift=true
+
+# Install with Helm on OpenShift with GPU support
+helm upgrade --install kubeledger ./manifests/kubeledger/helm -n kubeledger \
+  --set securityContext.openshift=true \
+  --set dcgm.enable=true \
+  --set dcgm.endpoint="dcgm-exporter.monotiring.svc.cluster.local:9400"
 
 # Watch pod status
 kubectl get pods -n kubeledger -w
