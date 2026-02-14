@@ -22,7 +22,7 @@ dcgm:
 
 dataVolume:
   persist: true
-  capacity: 1Gi
+  capacity: 500Mi
 #  storageClass: default
 
 # overrides envs.INCLUDED_NAMESPACES
@@ -92,6 +92,3 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
-
-pricing:
-  gcp: false
