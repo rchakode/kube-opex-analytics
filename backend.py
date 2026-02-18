@@ -112,7 +112,7 @@ class Config:
         """Process KOA_BILLING_HOURLY_RATE config setting."""
         try:
             self.billing_hourly_rate = float(get_backend_config_env("BILLING_HOURLY_RATE", -1))
-        except:
+        except Exception:
             self.billing_hourly_rate = float(-1.0)
 
     def __init__(self):
@@ -128,7 +128,7 @@ class Config:
         # check listener port
         try:
             self.listener_port = int(get_backend_config_env("LISTENER_PORT"))
-        except:
+        except Exception:
             self.listener_port = 5483
 
         # handle cacert file if applicable
@@ -157,7 +157,7 @@ class Config:
         try:
             with open(KOA_CONFIG.k8s_auth_token_file, "r", encoding=None) as rbac_token_file:
                 self.k8s_rbac_auth_token = rbac_token_file.read()
-        except:
+        except Exception:
             self.k8s_rbac_auth_token = "NO_ENV_TOKEN_FILE"
 
     @staticmethod
@@ -1010,7 +1010,7 @@ class Rrd:
                         PROMETHEUS_HOURLY_USAGE_EXPORTER.labels(self.dbname, ResUsageType.MEMORY.name).set(
                             current_mem_usage
                         )
-                except:
+                except Exception:
                     pass
 
         if sum_res_usage[ResUsageType.CPU] > 0.0 and sum_res_usage[ResUsageType.MEMORY] > 0.0:
@@ -1052,7 +1052,7 @@ class Rrd:
                     current_mem_usage = round(100 * float(cdp[1]), KOA_CONFIG.db_round_decimals) / 100
                     periodic_cpu_usage[date_group] += current_cpu_usage
                     periodic_mem_usage[date_group] += current_mem_usage
-                except:
+                except Exception:
                     pass
         return periodic_cpu_usage, periodic_mem_usage
 
@@ -1269,8 +1269,6 @@ def pull_k8s(api_context):
             KOA_LOGGER.error("call to %s returned error (%s)", api_endpoint, http_req.text)
     except Exception as ex:
         KOA_LOGGER.error("Exception calling HTTP endpoint %s (%s)", api_endpoint, ex)
-    except:
-        KOA_LOGGER.error("unknown exception requesting %s", api_endpoint)
 
     return data
 
