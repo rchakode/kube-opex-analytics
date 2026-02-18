@@ -1,16 +1,18 @@
 [project]
 name = "kubeledger"
-version = "26.01.0"
+version = "26.01.1"
 description = "Open source Kubernetes resource usage tracking, accounting and optimization — CPU, memory, and GPU usage"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.12"
 dependencies = [
-    "flask",
-    "flask-cors",
-    "requests",
-    "rrdtool",
-    "prometheus-client",
-    "waitress",
+    "flask>=3.0.0",
+    "flask-cors>=6.0.0",
+    "requests>=2.32.3",
+    "rrdtool>=0.1.16",
+    "prometheus-client>=0.20.0",
+    "waitress>=3.0.1",
+    "urllib3>=2.6.3",
+    "werkzeug>=3.1.5",
 ]
 authors = [{ name = "Rodrigue Chakode", email = "rodrigue.chakode@gmail.com" }]
 
