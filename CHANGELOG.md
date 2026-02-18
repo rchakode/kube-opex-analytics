@@ -1,5 +1,26 @@
 # Release Notes
 
+## v26.01.1
+
+### Security fixes
+
+* CVE-2026-21441: Decompression-bomb safeguards bypassed when following HTTP redirects (streaming API) #16
+* CVE-2026-21860: Werkzeug safe_join() allows Windows special device names with compound extensions #17
+* CVE-2025-66418: urllib3 allows an unbounded number of links in the decompression chain #14
+* CVE-2025-66471: urllib3 streaming API improperly handles highly compressed data #15
+* CVE-2024-6866: Flask-CORS vulnerable to Improper Handling of Case Sensitivity #9
+* CVE-2024-49769: Waitress has request processing race condition in HTTP pipelining with invalid first request #7
+* CVE-2024-49768: Waitress vulnerable to DoS leading to high CPU usage/resource exhaustion #6
+* CVE-2025-66221: Werkzeug safe_join() allows Windows special device names #13
+* CVE-2024-6844: Flask-CORS allows for inconsistent CORS matching #8
+* CVE-2025-50181: urllib3 redirects are not disabled when retries are disabled on PoolManager instantiation #11
+* CVE-2025-50182: urllib3 does not control redirects in browsers and Node.js #12
+* CVE-2024-6839: Flask-CORS improper regex path matching vulnerability #10
+
+### Misc
+
+* Various typos and style fixes.
+
 ## v26.01.0
 
 ### Highlights
