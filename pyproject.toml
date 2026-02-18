@@ -48,7 +48,6 @@ select = [
 ]
 
 ignore = [
-    # "B001", # do not use bare except, specify exception instead (Handled by E722)
     # "B901", # blind except: statement
     "D100", # Missing docstring in public module
     "D101", # Missing docstring in public class
@@ -57,7 +56,6 @@ ignore = [
     "D104", # Missing docstring in public package
     "D105", # Missing docstring in magic method
     "D107", # Missing docstring in __init__
-    "E722", # do not use bare except, specify exception instead
     "C901", # Method is too complex
     "D203", # 1 blank line required before class docstring (incompatible with D211)
     "D213", # Multi-line docstring summary should start at the second line (incompatible with D212)
