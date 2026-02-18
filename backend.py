@@ -161,12 +161,12 @@ class Config:
             self.k8s_rbac_auth_token = "NO_ENV_TOKEN_FILE"
 
     @staticmethod
-    def request_efficiency_db_file_extention():
+    def request_efficiency_db_file_extension():
         return "__rf"
 
     @staticmethod
     def usage_efficiency_db(ns):
-        return "%s%s" % (ns, Config.request_efficiency_db_file_extention())
+        return "%s%s" % (ns, Config.request_efficiency_db_file_extension())
 
     @staticmethod
     def gpu_db_file_extension():
@@ -1496,7 +1496,7 @@ def dump_analytics(cost_model_by_user=None):
             rf_dbfiles = []
             gpu_dbfiles = []
             for fn in dbfiles:
-                if fn.endswith(KOA_CONFIG.request_efficiency_db_file_extention()):
+                if fn.endswith(KOA_CONFIG.request_efficiency_db_file_extension()):
                     rf_dbfiles.append(fn)
                 elif fn.endswith(KOA_CONFIG.gpu_db_file_extension()):
                     gpu_dbfiles.append(fn)
