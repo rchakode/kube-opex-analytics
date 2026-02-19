@@ -4,18 +4,18 @@
 
 ### Security fixes
 
-* CVE-2026-21441: Decompression-bomb safeguards bypassed when following HTTP redirects (streaming API) #16
-* CVE-2026-21860: Werkzeug safe_join() allows Windows special device names with compound extensions #17
-* CVE-2025-66418: urllib3 allows an unbounded number of links in the decompression chain #14
-* CVE-2025-66471: urllib3 streaming API improperly handles highly compressed data #15
-* CVE-2024-6866: Flask-CORS vulnerable to Improper Handling of Case Sensitivity #9
-* CVE-2024-49769: Waitress has request processing race condition in HTTP pipelining with invalid first request #7
-* CVE-2024-49768: Waitress vulnerable to DoS leading to high CPU usage/resource exhaustion #6
-* CVE-2025-66221: Werkzeug safe_join() allows Windows special device names #13
-* CVE-2024-6844: Flask-CORS allows for inconsistent CORS matching #8
-* CVE-2025-50181: urllib3 redirects are not disabled when retries are disabled on PoolManager instantiation #11
+* CVE-2025-50181 (urllib3 < 2.5.0): urllib3 redirects are not disabled when retries are disabled on PoolManager instantiation #11
+* CVE-2025-66418 (urllib3 >= 1.24, < 2.6.0): urllib3 allows an unbounded number of links in the decompression chain #14
 * CVE-2025-50182: urllib3 does not control redirects in browsers and Node.js #12
-* CVE-2024-6839: Flask-CORS improper regex path matching vulnerability #10
+* CVE-2025-66471 (urllib >= 1.0, < 2.6.0): urllib3 streaming API improperly handles highly compressed data #15
+* CVE-2026-21441 (urllib3 >= 1.22, < 2.6.3): Decompression-bomb safeguards bypassed when following HTTP redirects (streaming API) #16
+* CVE-2025-66221 (werkzeug < 3.1.4): Werkzeug safe_join() allows Windows special device names #13
+* CVE-2026-21860 (werkzeug < 3.1.5): Werkzeug safe_join() allows Windows special device names with compound extensions #17
+* CVE-2024-49768 (waitress < 3.0.1): Waitress vulnerable to DoS leading to high CPU usage/resource exhaustion #6
+* CVE-2024-49769 (waitress >= 2.0.0, < 3.0.1): Waitress has request processing race condition in HTTP pipelining with invalid first request #7
+* CVE-2024-6844 (flask-cors < 3.1.5): Flask-CORS allows for inconsistent CORS matching #8
+* CVE-2024-6866 (flask-cors < 5.0.1): Flask-CORS vulnerable to Improper Handling of Case Sensitivity #9
+* CVE-2024-6839 (flask-cors <= 5.0.1): Flask-CORS improper regex path matching vulnerability #10
 
 ### Misc
 
