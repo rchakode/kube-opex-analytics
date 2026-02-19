@@ -73,7 +73,7 @@ class Config:
     frontend_data_location = ".%s/data" % (static_content_location)
     k8s_api_endpoint = get_backend_config_env("K8S_API_ENDPOINT", "http://127.0.0.1:8001")
     k8s_verify_ssl = (lambda v: v.lower() in ("yes", "true"))(get_backend_config_env("K8S_API_VERIFY_SSL", "true"))
-    db_location = get_backend_config_env("DB_LOCATION", ("%s/.kube-opex-analytics/db") % os.getenv("HOME", "/tmp"))
+    db_location = get_backend_config_env("DB_LOCATION", ("%s/.kubeledger/db") % os.getenv("HOME", "/tmp"))
     polling_interval_sec = int(get_backend_config_env("POLLING_INTERVAL_SEC", "300"))
     cost_model = get_backend_config_env("COST_MODEL", "CUMULATIVE_RATIO")
     billing_currency = get_backend_config_env("BILLING_CURRENCY_SYMBOL", "$")
@@ -179,7 +179,7 @@ class Config:
 def configure_logger(debug_enabled):
     log_level = logging.DEBUG if debug_enabled else logging.WARN
 
-    logger = logging.getLogger("kube-opex-analytics")
+    logger = logging.getLogger("kubeledger")
     logger.setLevel(log_level)
     logger_handler = logging.StreamHandler()
     logger_handler.setLevel(log_level)
