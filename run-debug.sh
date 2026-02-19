@@ -33,4 +33,4 @@ export KOA_POLLING_INTERVAL_SEC=${KOA_POLLING_INTERVAL_SEC:-300}
 export KOA_NVIDIA_DCGM_ENDPOINT="http://127.0.0.1:9400/metrics"
 
 fuser -k 5483/tcp || true
-./entrypoint.sh
+python3 -u ./backend.py

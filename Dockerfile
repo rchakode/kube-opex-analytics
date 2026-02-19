@@ -24,8 +24,7 @@ RUN uv sync --frozen --no-dev --no-install-project --no-editable --link-mode=cop
 COPY css $APP_HOME/css
 COPY js $APP_HOME/js
 COPY static/images $APP_HOME/static/images
-COPY entrypoint.sh \
-    backend.py \
+COPY backend.py \
     index.html \
     LICENSE \
     NOTICE \

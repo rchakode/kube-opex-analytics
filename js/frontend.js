@@ -4,11 +4,11 @@
 #                                                                                        #
 # Copyright © 2019 Rodrigue Chakode and contributors.                                    #
 #                                                                                        #
-# This file is part of Kubernetes Opex Analytics software.                               #
+# This file is part of KubeLedger software.                                              #
 #                                                                                        #
-# Kubernetes Opex Analytics is licensed under the Apache License 2.0 (the "License");    #
+# KubeLedger is licensed under the Business Source License 1.1 (the "License");          #
 # you may not use this file except in compliance with the License. You may obtain        #
-# a copy of the License at: http://www.apache.org/licenses/LICENSE-2.0                   #
+# a copy of the License at: https://raw.githubusercontent.com/realopslabs/kubeledger/refs/heads/main/LICENSE
 #                                                                                        #
 # Unless required by applicable law or agreed to in writing, software distributed        #
 # under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR            #
@@ -201,10 +201,10 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
 
             // Return legend API for compatibility
             return {
-                highlight: function(id) {
+                highlight: function (id) {
                     legendItems.style('opacity', (d, i) => d.id === id ? 1 : 0.3);
                 },
-                clearHighlight: function() {
+                clearHighlight: function () {
                     legendItems.style('opacity', 1);
                 }
             };
@@ -229,7 +229,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
 
             // Get container dimensions
             let htmlContainerWidth = htmlContainerNode.getBoundingClientRect().width;
-            let margin = {left: 75, top: 50, right: 25, bottom: 50};
+            let margin = { left: 75, top: 50, right: 25, bottom: 50 };
             let width = htmlContainerWidth - margin.left - margin.right;
             let height = 400 - margin.top - margin.bottom;
 
@@ -238,7 +238,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
 
             // Filter out invalid data and parse
             let validData = [];
-            rawData.forEach(function(d) {
+            rawData.forEach(function (d) {
                 // Handle both formats: {dateUTC, usage} and {date, value}
                 let dateStr = d.dateUTC || d.date;
                 let usageVal = d.usage !== undefined ? d.usage : d.value;
@@ -260,7 +260,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
 
             // Group data by name (series)
             let seriesMap = {};
-            validData.forEach(function(d) {
+            validData.forEach(function (d) {
                 if (!seriesMap[d.name]) {
                     seriesMap[d.name] = [];
                 }
@@ -271,40 +271,40 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
             });
 
             // Convert to array of series
-            let seriesData = Object.keys(seriesMap).map(function(name) {
+            let seriesData = Object.keys(seriesMap).map(function (name) {
                 return {
                     name: name,
-                    values: seriesMap[name].sort(function(a, b) { return a.date - b.date; })
+                    values: seriesMap[name].sort(function (a, b) { return a.date - b.date; })
                 };
             });
 
             // Create scales
             let xScale = d3.scaleTime()
-                .domain(d3.extent(validData, function(d) { return d.date; }))
+                .domain(d3.extent(validData, function (d) { return d.date; }))
                 .range([0, width]);
 
             let yScale = d3.scaleLinear()
-                .domain([0, d3.max(validData, function(d) { return d.usage; })])
+                .domain([0, d3.max(validData, function (d) { return d.usage; })])
                 .nice()
                 .range([height, 0]);
 
             let colorScale = d3.scaleOrdinal()
-                .domain(seriesData.map(function(d) { return d.name; }))
+                .domain(seriesData.map(function (d) { return d.name; }))
                 .range(KoaColorSchema);
 
             // Create line generator
             let line = d3.line()
-                .x(function(d) { return xScale(d.date); })
-                .y(function(d) { return yScale(d.usage); })
+                .x(function (d) { return xScale(d.date); })
+                .y(function (d) { return yScale(d.usage); })
                 .curve(d3.curveMonotoneX);
 
             // Create area generator if needed
             let area = null;
             if (showAreaFill) {
                 area = d3.area()
-                    .x(function(d) { return xScale(d.date); })
+                    .x(function (d) { return xScale(d.date); })
                     .y0(height)
-                    .y1(function(d) { return yScale(d.usage); })
+                    .y1(function (d) { return yScale(d.usage); })
                     .curve(d3.curveMonotoneX);
             }
 
@@ -353,8 +353,8 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                     .data(seriesData)
                     .join('path')
                     .attr('class', 'area-path')
-                    .attr('d', function(d) { return area(d.values); })
-                    .attr('fill', function(d) { return colorScale(d.name); })
+                    .attr('d', function (d) { return area(d.values); })
+                    .attr('fill', function (d) { return colorScale(d.name); })
                     .attr('opacity', 0.3)
                     .style('pointer-events', 'none');
             }
@@ -364,22 +364,22 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 .data(seriesData)
                 .join('path')
                 .attr('class', 'line-path')
-                .attr('d', function(d) { return line(d.values); })
-                .attr('stroke', function(d) { return colorScale(d.name); })
+                .attr('d', function (d) { return line(d.values); })
+                .attr('stroke', function (d) { return colorScale(d.name); })
                 .attr('stroke-width', 2)
                 .attr('fill', 'none')
-                .on('mouseover', function(event, d) {
+                .on('mouseover', function (event, d) {
                     d3.select(this).attr('stroke-width', 3);
                     tooltip.transition()
                         .duration(200)
                         .style('opacity', 0.9);
                 })
-                .on('mousemove', function(event, d) {
+                .on('mousemove', function (event, d) {
                     let mouseX = d3.pointer(event, g.node())[0];
                     let dateValue = xScale.invert(mouseX);
 
                     // Find closest data point
-                    let bisect = d3.bisector(function(d) { return d.date; }).left;
+                    let bisect = d3.bisector(function (d) { return d.date; }).left;
                     let index = bisect(d.values, dateValue);
                     let dataPoint = d.values[index] || d.values[d.values.length - 1];
 
@@ -391,7 +391,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                         .style('left', (event.pageX + 10) + 'px')
                         .style('top', (event.pageY - 28) + 'px');
                 })
-                .on('mouseout', function() {
+                .on('mouseout', function () {
                     d3.select(this).attr('stroke-width', 2);
                     tooltip.transition()
                         .duration(500)
@@ -434,13 +434,13 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
 
             // Get container dimensions
             let htmlContainerWidth = htmlContainerNode.getBoundingClientRect().width;
-            let margin = {left: 75, top: 50, right: 25, bottom: 50};
+            let margin = { left: 75, top: 50, right: 25, bottom: 50 };
             let width = htmlContainerWidth - margin.left - margin.right;
             let height = 400 - margin.top - margin.bottom;
 
             // Group data by date for stacking
             let dateMap = {};
-            dataset.data.forEach(function(d) {
+            dataset.data.forEach(function (d) {
                 if (!dateMap[d.date]) {
                     dateMap[d.date] = [];
                 }
@@ -448,18 +448,18 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
             });
 
             // Get dates and sort them
-            let dates = Object.keys(dateMap).sort(function(date1, date2) {
+            let dates = Object.keys(dateMap).sort(function (date1, date2) {
                 let ts1 = Date.parse(date1 + ' GMT');
                 let ts2 = Date.parse(date2 + ' GMT');
                 return ts1 - ts2;
             });
 
-            let stacks = Array.from(new Set(dataset.data.map(function(d) { return d.stack; })));
+            let stacks = Array.from(new Set(dataset.data.map(function (d) { return d.stack; })));
 
             // Transform data for stacking
-            let stackData = dates.map(function(date) {
-                let entry = {date: date};
-                dateMap[date].forEach(function(d) {
+            let stackData = dates.map(function (date) {
+                let entry = { date: date };
+                dateMap[date].forEach(function (d) {
                     entry[d.stack] = d.usage;
                 });
                 return entry;
@@ -524,15 +524,15 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 .data(series)
                 .join('g')
                 .attr('class', 'series')
-                .attr('fill', function(d) { return colorScale(d.key); })
+                .attr('fill', function (d) { return colorScale(d.key); })
                 .selectAll('rect')
-                .data(function(d) { return d; })
+                .data(function (d) { return d; })
                 .join('rect')
-                .attr('x', function(d) { return xScale(d.data.date); })
-                .attr('y', function(d) { return yScale(d[1]); })
-                .attr('height', function(d) { return yScale(d[0]) - yScale(d[1]); })
+                .attr('x', function (d) { return xScale(d.data.date); })
+                .attr('y', function (d) { return yScale(d[1]); })
+                .attr('height', function (d) { return yScale(d[0]) - yScale(d[1]); })
                 .attr('width', xScale.bandwidth())
-                .on('mouseover', function(event, d) {
+                .on('mouseover', function (event, d) {
                     let stackKey = d3.select(this.parentNode).datum().key;
                     let value = d.data[stackKey];
 
@@ -546,7 +546,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                         .style('left', (event.pageX + 10) + 'px')
                         .style('top', (event.pageY - 28) + 'px');
                 })
-                .on('mouseout', function() {
+                .on('mouseout', function () {
                     tooltip.transition()
                         .duration(500)
                         .style('opacity', 0);
@@ -642,7 +642,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 .attr('stroke', 'white')
                 .attr('stroke-width', 2)
                 .style('cursor', 'pointer')
-                .on('mouseover', function(event, d) {
+                .on('mouseover', function (event, d) {
                     // Highlight arc
                     d3.select(this)
                         .transition()
@@ -671,12 +671,12 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                         .style('left', (event.pageX + 10) + 'px')
                         .style('top', (event.pageY - 28) + 'px');
                 })
-                .on('mousemove', function(event) {
+                .on('mousemove', function (event) {
                     tooltip
                         .style('left', (event.pageX + 10) + 'px')
                         .style('top', (event.pageY - 28) + 'px');
                 })
-                .on('mouseout', function(event, d) {
+                .on('mouseout', function (event, d) {
                     // Reset arc
                     d3.select(this)
                         .transition()
@@ -698,9 +698,9 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
             arcs.selectAll('path')
                 .transition()
                 .duration(750)
-                .attrTween('d', function(d) {
-                    let interpolate = d3.interpolate({startAngle: 0, endAngle: 0}, d);
-                    return function(t) {
+                .attrTween('d', function (d) {
+                    let interpolate = d3.interpolate({ startAngle: 0, endAngle: 0 }, d);
+                    return function (t) {
                         return arc(interpolate(t));
                     };
                 });
@@ -748,7 +748,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
         }
 
         function buildNodesDataSet(data, usageType) {
-            let dataset = {"data": new Map()};
+            let dataset = { "data": new Map() };
 
             let nodeHtmlList = '';
             let nodePopupHtml = '';
@@ -845,7 +845,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                     });
                     loadColors.push(computeLoadPercentHeatColor(0));
 
-                    dataset.data.set(nname, {'chartData': chartData, 'colorSchema': loadColors});
+                    dataset.data.set(nname, { 'chartData': chartData, 'colorSchema': loadColors });
                     continue;
                 }
 
@@ -895,7 +895,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                     });
                     loadColors.push(computeLoadPercentHeatColor(0));
 
-                    dataset.data.set(nname, {'chartData': chartData, 'colorSchema': loadColors});
+                    dataset.data.set(nname, { 'chartData': chartData, 'colorSchema': loadColors });
                     continue;
                 }
 
@@ -952,7 +952,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                     "percentage": nonAllocatableRatio
                 });
 
-                let unusedCapacity = node[resCapacity] * (1 - sumLoad / 100) ;
+                let unusedCapacity = node[resCapacity] * (1 - sumLoad / 100);
                 chartData.push({
                     "name": 'unused',
                     "id": 9999,
@@ -961,7 +961,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 });
 
                 loadColors.push(computeLoadPercentHeatColor(0));
-                dataset.data.set(nname, {'chartData': chartData, 'colorSchema': loadColors})
+                dataset.data.set(nname, { 'chartData': chartData, 'colorSchema': loadColors })
             }
             return dataset;
         }
@@ -1007,11 +1007,11 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
         }
 
         function getNodeCssClass(nodeCssId) {
-            return "js-" + nodeCssId ;
+            return "js-" + nodeCssId;
         }
 
         function getNodeLegendCssClass(nodeCssId) {
-            return "js-" + nodeCssId + "-legend" ;
+            return "js-" + nodeCssId + "-legend";
         }
 
         function showUsageTrendByType() {
@@ -1069,7 +1069,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
         function exportJSON(data) {
             return new Blob(
                 [JSON.stringify(data)],
-                {type: 'application/json'})
+                { type: 'application/json' })
         }
 
 
@@ -1091,7 +1091,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
 
             return new Blob(
                 [csv],
-                {type: 'text/csv;charset=utf-8'}
+                { type: 'text/csv;charset=utf-8' }
             );
         }
 
@@ -1117,7 +1117,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
             let svgString = serializer.serializeToString(clonedSvg);
 
             // Create blob and download link
-            let blob = new Blob([svgString], {type: 'image/svg+xml'});
+            let blob = new Blob([svgString], { type: 'image/svg+xml' });
             let url = URL.createObjectURL(blob);
 
             // Create temporary link and trigger download
@@ -1159,7 +1159,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 url: FrontendApi.DATA_DIR + '/backend.json',
                 dataType: 'json',
                 success: function (backend_config) {
-                    $(".accounting-cost-model").text('(' + backend_config.cost_model  + ' ' + backend_config.currency + ')');
+                    $(".accounting-cost-model").text('(' + backend_config.cost_model + ' ' + backend_config.currency + ')');
                 },
                 error: function (xhr, ajaxOptions, thrownError) {
                     $(".accounting-cost-model").text('(%)');
@@ -1192,8 +1192,8 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                     let filterDate2 = $('#filter-end-date').val();
                     if (filterDate1 > filterDate2) {
                         let df = filterDate1;
-                        filterDate1 =  filterDate2;
-                        filterDate2 =  df;
+                        filterDate1 = filterDate2;
+                        filterDate2 = df;
                     }
 
                     if (trendType === 'rf') {
@@ -1201,7 +1201,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                             data:
                                 data.filter(item => (item.dateUTC >= filterDate1 && item.dateUTC <= filterDate2))
                                     .map(
-                                        ({name, usage, dateUTC}) => ({
+                                        ({ name, usage, dateUTC }) => ({
                                             topicName: name.substring(0, name.length - 4),
                                             name: name,
                                             date: dateUTC,
@@ -1219,7 +1219,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                         const dataset =
                             data.filter(item => (item.dateUTC >= filterDate1 && item.dateUTC <= filterDate2))
                                 .map(
-                                    ({name, usage, dateUTC}) => ({
+                                    ({ name, usage, dateUTC }) => ({
                                         name: name,
                                         date: dateUTC,
                                         value: usage
@@ -1253,7 +1253,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 "monthly-requests": `${resourceTypeLowered}_requests_period_31968000.json`,
             });
 
-            let dataSetKey = (periodType+'-'+usageType).toLowerCase();
+            let dataSetKey = (periodType + '-' + usageType).toLowerCase();
             let filenamePrefix = 'kopex-' + resourceTypeLowered + '-' + dataSetKey;
             let dataFile = DATASET_FILES[dataSetKey];
             $.ajax({
@@ -1266,7 +1266,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                     installExporter(`consolidated-${resourceTypeLowered}-usage-json`, filenamePrefix + '.json', () => exportJSON(data));
                     installExporter(`consolidated-${resourceTypeLowered}-usage-csv`, filenamePrefix + '.csv', () => exportCSV(data));
 
-                    updateStackedBarChart({"data": data},
+                    updateStackedBarChart({ "data": data },
                         chartContainerClass,
                         `${resourceType} consumption`,
                         `${periodType} ${resourceType} ${usageType}`);
@@ -1301,7 +1301,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                     }
 
                     const dataset = data.filter(item => (item.dateUTC >= filterDate1 && item.dateUTC <= filterDate2))
-                        .map(({name, usage, dateUTC}) => ({
+                        .map(({ name, usage, dateUTC }) => ({
                             name: name.replace('__gpu', ''),
                             date: dateUTC,
                             value: usage
@@ -1338,7 +1338,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 url: `${FrontendApi.DATA_DIR}/${dataFile}`,
                 dataType: 'json',
                 success: function (data) {
-                    updateStackedBarChart({"data": data},
+                    updateStackedBarChart({ "data": data },
                         chartContainerClass,
                         `GPU ${resourceType.toUpperCase()} consumption`,
                         `${periodType} GPU ${resourceType.toUpperCase()} usage`);
@@ -1366,12 +1366,12 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
             const formatDatetimeFilter = (dt) => {
                 let dformat;
                 dformat = [dt.getFullYear(),
-                        (dt.getMonth() + 1).toString().padStart(2, 0),
-                        dt.getDate().toString().padStart(2, 0)].join('-') + 'T' +
+                (dt.getMonth() + 1).toString().padStart(2, 0),
+                dt.getDate().toString().padStart(2, 0)].join('-') + 'T' +
                     [dt.getHours().toString().padStart(2, 0),
-                        dt.getMinutes().toString().padStart(2, 0),
-                        dt.getSeconds().toString().padStart(2, 0)].join(':');
-                return dformat ;
+                    dt.getMinutes().toString().padStart(2, 0),
+                    dt.getSeconds().toString().padStart(2, 0)].join(':');
+                return dformat;
             }
 
             let todayDatetime = new Date();
@@ -1475,7 +1475,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
             nodes = filteredNodes;
 
             // Create SVG canvas
-            const margin = {top: 20, right: 20, bottom: 60, left: 20};
+            const margin = { top: 20, right: 20, bottom: 60, left: 20 };
             const containerWidth = container.node().getBoundingClientRect().width;
             const width = containerWidth - margin.left - margin.right;
             const height = 400 - margin.top - margin.bottom;
@@ -1534,7 +1534,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                     }
                     return percentage > 0 ? getUsageColor(percentage) : '#95a5a6';
                 })
-                .on('mouseover', function(event, d) {
+                .on('mouseover', function (event, d) {
                     let percentage, capacity, usage, label;
                     if (resourceType === 'cpu') {
                         percentage = d.cpuUsagePercent;
@@ -1570,11 +1570,11 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                         .style('left', (event.pageX + 10) + 'px')
                         .style('top', (event.pageY - 28) + 'px');
                 })
-                .on('mousemove', function(event) {
+                .on('mousemove', function (event) {
                     tooltipDiv.style('left', (event.pageX + 10) + 'px')
                         .style('top', (event.pageY - 28) + 'px');
                 })
-                .on('mouseout', function(d) {
+                .on('mouseout', function (d) {
                     tooltipDiv.style('opacity', 0);
                 });
 
@@ -1639,7 +1639,7 @@ define(['jquery', 'bootstrap', 'bootswatch', 'd3', 'd3Selection'],
                 // Fetch heatmap data
                 fetch('/api/nodes/heatmap')
                     .then(response => {
-                        if (! response.ok) {
+                        if (!response.ok) {
                             throw new Error(`HTTP error! status: ${response.status}`);
                         }
                         return response.json();

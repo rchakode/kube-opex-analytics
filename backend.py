@@ -2,10 +2,9 @@
 __author__ = "Rodrigue Chakode"
 __copyright__ = "Copyright 2019 Rodrigue Chakode and contributors"
 __credits__ = ["Rodrigue Chakode and contributors"]
-__license__ = "Apache"
+__license__ = "Business Source License 1.1"
 __version__ = "2.0"
 __maintainer__ = "Rodrigue Chakode"
-__email__ = "Rodrigue Chakode <rodrigue.chakode @ gmail dot com"
 __status__ = "Production"
 
 import argparse

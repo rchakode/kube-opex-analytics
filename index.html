@@ -4,11 +4,11 @@
 #                                                                                        #
 # Copyright © 2019 Rodrigue Chakode and contributors.                                    #
 #                                                                                        #
-# This file is part of Kubernetes Opex Analytics software.                               #
+# This file is part of KubeLedger software.                                              #
 #                                                                                        #
-# Kubernetes Opex Analytics is licensed under the Apache License 2.0 (the "License");    #
+# KubeLedger is licensed under the Business Source License 1.1 (the "License");          #
 # you may not use this file except in compliance with the License. You may obtain        #
-# a copy of the License at: http://www.apache.org/licenses/LICENSE-2.0                   #
+# a copy of the License at: https://raw.githubusercontent.com/realopslabs/kubeledger/refs/heads/main/LICENSE                  #
 #                                                                                        #
 # Unless required by applicable law or agreed to in writing, software distributed        #
 # under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR            #
@@ -20,7 +20,9 @@
 <html lang="en" data-theme="light">
 
 <head>
-    <title>Kubernetes Opex Analytics | Hourly, Daily and Monthly Analytics of Kubernetes Cluster Usage</title>
+    <title>KubeLedger | The System of Record for Kubernetes accounting. Tracks CPU, RAM and GPU usage and costs per
+        namespace. Reveals hidden overhead.
+    </title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="utf-8">
     <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
@@ -397,37 +399,37 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                    <h4 class="modal-title" id="myModalLabel">About Kubernetes Opex Analytics</h4>
+                    <h4 class="modal-title" id="myModalLabel">About KubeLedger</h4>
                 </div>
                 <div class="modal-body">
                     <p>
-                        Kubernetes Opex Analytics, Version {{ koa_version }}.
+                        KubeLedger, Version {{ koa_version }}.
                     </p>
                     <p>
                         Copyright &copy; 2019 Rodrigue Chakode and contributors.
                     </p>
                     <p>
-                        Kubernetes Opex Analytics is designed and made available free of charge thanks to the support of
-                        REALOPS'LABS company
-                        (<a href="https://realopslabs.com" target="_blank">https://realopslabs.com</a>).
+                        KubeLedger is an open source project developed and made available by the
+                        <a href="https://realopslabs.com" target="_blank">RealOps Labs</a>.
                     </p>
                     <p>
-                        The product is licensed under the Apache License,
-                        Version 2.0 (the "License"); you may not use this product except
+                        The software is licensed under the Business Source License 1.1,
+                        Version 2.0 (the "License"); you may not use this software except
                         in compliance with the License. You may obtain a copy of the
-                        License at: <a href="http://www.apache.org/licenses/LICENSE-2.0">
-                            http://www.apache.org/licenses/LICENSE-2.0
+                        License at: <a
+                            href="https://raw.githubusercontent.com/realopslabs/kubeledger/refs/heads/main/LICENSE">
+                            https://raw.githubusercontent.com/realopslabs/kubeledger/refs/heads/main/LICENSE
                         </a>
                     </p>
                     <p>
-                        Unless required by applicable law or agreed to in writing, the product
+                        Unless required by applicable law or agreed to in writing, the software
                         is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
                         ANY KIND, either express or implied.
                         See the License for the specific language governing permissions and
                         limitations under the License.
                     </p>
                     <p>
-                        This product uses third-party libraries released under their own license terms.
+                        This software uses third-party components released under their own license terms.
                     </p>
                 </div>
                 <div class="modal-footer">
@@ -446,25 +448,13 @@
                 <div class="col-md-3">
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <legend>kube-opex-analytics v{{ koa_version }}</legend>
-                            <a class="nav-link active"
-                                href="https://github.com/rchakode/kube-opex-analytics/releases">Release notes</a>
-                            <a class="nav-link"
-                                href="https://github.com/rchakode/kube-opex-analytics/blob/master/LICENSE">License
+                            <legend>KubeLedger v{{ koa_version }}</legend>
+                            <a class="nav-link active" href="https://github.com/rchakode/kubeledger/releases">Release
+                                notes</a>
+                            <a class="nav-link" href="https://github.com/rchakode/kubeledger/blob/main/LICENSE">License
                                 Terms</a>
-                            <a class="nav-link" href="https://github.com/rchakode/kube-opex-analytics">Issues &
+                            <a class="nav-link" href="https://github.com/rchakode/kubeledger">Issues &
                                 Contributions (Github)</a>
-                        </li>
-                    </ul>
-                </div>
-                <div class="col-md-3">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <legend>Related Products</legend>
-                            Centralized Multi-Kubernetes Usage Analytics
-                            <a class="nav-link disabled" href="https://krossboard.app/">Krossboard Project</a>
-                            Operations Monitoring for Kubernetes Applications
-                            <a class="nav-link disabled" href="http://realopinsight.com/">RealOpInsight Project</a>
                         </li>
                     </ul>
                 </div>
