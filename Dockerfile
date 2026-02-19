@@ -35,4 +35,7 @@ RUN chown -R $RUNTIME_USER:$RUNTIME_USER $APP_HOME && \
     chown -R $RUNTIME_USER:$RUNTIME_USER /data
 
 VOLUME ["/data"]
-ENTRYPOINT ["sh", "./entrypoint.sh"]
+
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+ENTRYPOINT ["python3", "-u", "./backend.py"]
