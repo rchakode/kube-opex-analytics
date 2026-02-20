@@ -45,6 +45,8 @@ select = [
     "D",   # pydocstyle
     "G",   # flake8-logging-format
     "C90", # mccabe (complexity)
+    "PIE",  # flake8-pie
+    "SIM",  # flake8-simplify
 ]
 
 ignore = [

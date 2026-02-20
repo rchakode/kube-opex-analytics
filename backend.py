@@ -113,7 +113,7 @@ class Config:
         try:
             self.billing_hourly_rate = float(get_backend_config_env("BILLING_HOURLY_RATE", -1))
         except Exception:
-            self.billing_hourly_rate = float(-1.0)
+            self.billing_hourly_rate = -1.0
 
     def __init__(self):
         self.billing_hourly_rate = None
@@ -178,10 +178,7 @@ class Config:
 
 
 def configure_logger(debug_enabled):
-    if debug_enabled:
-        log_level = logging.DEBUG
-    else:
-        log_level = logging.WARN
+    log_level = logging.DEBUG if debug_enabled else logging.WARN
 
     logger = logging.getLogger("kube-opex-analytics")
     logger.setLevel(log_level)
@@ -964,10 +961,7 @@ class Rrd:
 
     def dump_trend_data(self, period, step_in=None):
         now_epoch_utc = calendar.timegm(time.gmtime())
-        if step_in is not None:
-            step = int(step_in)
-        else:
-            step = int(RrdPeriod.PERIOD_1_HOUR_SEC)
+        step = int(step_in) if step_in is not None else int(RrdPeriod.PERIOD_1_HOUR_SEC)
 
         rrd_end_ts_in = int(int(calendar.timegm(time.gmtime()) * step) / step)
         rrd_start_ts_in = int(rrd_end_ts_in - int(period))
@@ -1021,10 +1015,7 @@ class Rrd:
         return "", ""
 
     def dump_histogram_data(self, period, step_in=None):
-        if step_in is not None:
-            step = int(step_in)
-        else:
-            step = int(RrdPeriod.PERIOD_1_HOUR_SEC)
+        step = int(step_in) if step_in is not None else int(RrdPeriod.PERIOD_1_HOUR_SEC)
 
         rrd_end_ts = int(int(calendar.timegm(time.gmtime()) * step) / step)
         rrd_start_ts = int(rrd_end_ts - int(period))
@@ -1070,9 +1061,8 @@ class Rrd:
             "[dump_trend_analytics] category=%s, prefix=%s, dbfiles_count=%d", category, prefix, len(dbfiles)
         )
         for _, db in enumerate(dbfiles):
-            if db == KOA_CONFIG.db_billing_hourly_rate:
-                if not KOA_CONFIG.enable_debug:
-                    continue
+            if db == KOA_CONFIG.db_billing_hourly_rate and not KOA_CONFIG.enable_debug:
+                continue
 
             rrd = Rrd(db_files_location=KOA_CONFIG.db_location, dbname=db)
             current_trend_data = rrd.dump_trend_data(period=RrdPeriod.PERIOD_7_DAYS_SEC)
@@ -1441,17 +1431,11 @@ def create_metrics_puller():
                     for gpu_ns, gpu_data in gpu_by_namespace.items():
                         # Calculate average GPU compute utilization across all GPUs in namespace
                         gpu_count = gpu_data["gpuCount"]
-                        if gpu_count > 0:
-                            gpu_cpu_usage = gpu_data["gpuCpuUsage"] / gpu_count
-                        else:
-                            gpu_cpu_usage = 0.0
+                        gpu_cpu_usage = gpu_data["gpuCpuUsage"] / gpu_count if gpu_count > 0 else 0.0
 
                         # Calculate GPU memory utilization percentage
                         total_gpu_mem = gpu_data["gpuMemUsage"] + gpu_data["gpuMemFree"]
-                        if total_gpu_mem > 0:
-                            gpu_mem_usage = (gpu_data["gpuMemUsage"] / total_gpu_mem) * 100
-                        else:
-                            gpu_mem_usage = 0.0
+                        gpu_mem_usage = (gpu_data["gpuMemUsage"] / total_gpu_mem) * 100 if total_gpu_mem > 0 else 0.0
 
                         rrd = Rrd(
                             db_files_location=KOA_CONFIG.db_location,
